@@ -1,0 +1,44 @@
+<!--
+  Supabase Auth email template — "Magic Link" (passwordless login / "here's your link").
+  Paste into: Supabase Dashboard -> Authentication -> Email Templates -> Magic Link
+  (or push via Management API config: mailer_templates_magic_link_content + mailer_subjects_magic_link)
+
+  Link variable: {{ .ConfirmationURL }}  = the one-click login link (lands them in the CRM).
+  To rebrand to OffRamp later: swap BRAND, LOGO_URL, and the CRM label below. Nothing else changes.
+-->
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#F6F5F1;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F5F1;padding:32px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="440" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e7e5e0;">
+            <tr>
+              <td style="background:#1B4332;padding:22px 28px;">
+                <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:.2px;">Revive Buyers</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 28px 8px 28px;">
+                <p style="margin:0 0 14px 0;font-size:16px;color:#1c1c1c;">Here's your link to Revive Buyers.</p>
+                <p style="margin:0 0 24px 0;font-size:14px;line-height:22px;color:#555;">Tap the button below to sign in. No password needed — this link logs you straight in.</p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:0 28px 28px 28px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#1B4332;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 34px;border-radius:10px;">Open Revive Buyers</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 30px 28px;">
+                <p style="margin:0;font-size:12px;line-height:18px;color:#999;">If the button doesn't work, copy and paste this link into your browser:<br>
+                <a href="{{ .ConfirmationURL }}" style="color:#1B4332;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+                <p style="margin:16px 0 0 0;font-size:12px;color:#bbb;">If you didn't request this, you can ignore this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>OffRamp ↔ CRM — Feature Reconciliation</title>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--line:#2d333b;--fg:#e6edf3;--mut:#9198a1;
+    --grn:#3fb950;--amb:#d29922;--red:#f85149;--acc:#58a6ff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%}
+  .wrap{max-width:820px;margin:0 auto;padding:20px 16px 80px}
+  h1{font-size:24px;margin:.2em 0 .1em}
+  h2{font-size:19px;margin:1.6em 0 .5em;padding-top:.6em;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:1.1em 0 .3em;color:var(--acc)}
+  .sub{color:var(--mut);font-size:14px;margin-top:0}
+  .lede{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:16px 0}
+  .lede b{color:var(--acc)}
+  table{width:100%;border-collapse:collapse;margin:.4em 0 1em;font-size:14.5px}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+  td.f{font-weight:600}
+  .b{color:var(--grn)}.p{color:var(--amb)}.m{color:var(--red)}
+  .pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .pill.b{background:rgba(63,185,80,.15);color:var(--grn)}
+  .pill.p{background:rgba(210,153,34,.15);color:var(--amb)}
+  .pill.m{background:rgba(248,81,73,.15);color:var(--red)}
+  .two{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+  .surf{flex:1;min-width:240px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .surf h4{margin:.1em 0 .4em;font-size:15px}
+  .surf .tag{font-size:12px;color:var(--mut)}
+  ul{margin:.3em 0 .3em;padding-left:1.2em}li{margin:.15em 0}
+  .legend{font-size:13px;color:var(--mut);margin:.3em 0 1em}
+  .gap{background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);border-radius:12px;padding:12px 14px;margin:14px 0}
+  .win{background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.3);border-radius:12px;padding:12px 14px;margin:14px 0}
+  .foot{color:var(--mut);font-size:12.5px;margin-top:30px;border-top:1px solid var(--line);padding-top:12px}
+  code{background:#20262e;padding:1px 5px;border-radius:5px;font-size:13px}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>OffRamp ↔ CRM — Feature Reconciliation</h1>
+<p class="sub">Prepared for Ted · Aug 23, 2026 · scored from actual code in <code>revive-buyers-app</code> + <code>offramp</code></p>
+
+<div class="lede">
+<b>The model we're building toward — two surfaces, one database:</b>
+<div class="two">
+  <div class="surf"><h4>🖥️ Desktop (the "DataSift" surface)</h4>
+    <div class="tag">Manager / office view</div>
+    <ul><li>Browse &amp; filter the national foreclosure data</li>
+    <li>Build lists</li><li>Allocate leads to team members</li></ul></div>
+  <div class="surf"><h4>📱 Mobile app (the field surface)</h4>
+    <div class="tag">Reps working allocated leads</div>
+    <ul><li>Call &amp; text from the truck</li><li>Driving for Dollars: pins, routes, photos</li>
+    <li>Reveal owner on-tap (JIT credit spend)</li></ul></div>
+</div>
+Office allocates → field executes. A DealMachine + DataSift hybrid nobody has fused.
+</div>
+
+<p class="legend"><span class="pill b">✅ Built</span> &nbsp;<span class="pill p">⚠️ Partial</span> &nbsp;<span class="pill m">❌ Missing</span></p>
+
+<h2>Scored reconciliation</h2>
+
+<h3>A. Foreclosure data</h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">Hit List (crm.hit_list)</td><td class="b">✅ Full</td><td class="b">✅ Full (same DB)</td></tr>
+<tr><td class="f">National scrape coverage</td><td class="p">⚠️ UT/MT/ID/AZ/WY only</td><td class="p">⚠️ same, market-limited</td></tr>
+<tr><td class="f">Dedup (APN + address)</td><td class="p">⚠️ backfill pending</td><td class="p">⚠️ inherits CRM</td></tr>
+<tr><td class="f">Daily refresh cadence</td><td class="m">❌ none wired</td><td class="m">❌ none wired</td></tr></table>
+
+<h3>B. Map + GPS + Driving-for-Dollars <span class="tag">(the key question)</span></h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">Map w/ clustered pins</td><td class="p">⚠️ web-only, pins capped 5k/8k</td><td class="m">❌ placeholder (Leaflet linked, no code)</td></tr>
+<tr><td class="f">Live GPS "you are here"</td><td class="b">✅ car marker + recenter</td><td class="m">❌</td></tr>
+<tr><td class="f">Native map</td><td class="m">❌ "ships next"</td><td class="m">❌</td></tr>
+<tr><td class="f">Route / breadcrumb tracking</td><td class="m">❌</td><td class="m">❌</td></tr>
+<tr><td class="f">Tap-to-pin a NEW property</td><td class="m">❌</td><td class="m">❌</td></tr>
+<tr><td class="f">Photo capture (field)</td><td class="m">❌ (P2)</td><td class="p">⚠️ server-fetched only</td></tr>
+<tr><td class="f">Offline capture + sync</td><td class="m">❌</td><td class="m">❌</td></tr></table>
+
+<h3>C. Enrichment (skip trace / owner / equity)</h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">Skip trace (DealMachine)</td><td class="b">✅ JIT, on-demand</td><td class="b">✅ JIT, metered</td></tr>
+<tr><td class="f">Property data (REAPI)</td><td class="b">✅ JIT</td><td class="b">✅ JIT + cached</td></tr>
+<tr><td class="f">Enrich-once cache</td><td class="p">⚠️ partial</td><td class="b">✅ offramp_lookups</td></tr>
+<tr><td class="f">Credit-gated reveal</td><td class="m">❌ free</td><td class="b">✅ paywalled</td></tr></table>
+<p class="legend"><b>Critical divergence:</b> CRM reveals free; OffRamp meters &amp; charges. They disagree today — the merged product needs ONE model (the JIT/credit one).</p>
+
+<h3>D. Lead / deal management</h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">List + search + filter</td><td class="b">✅ Full</td><td class="b">✅ Full</td></tr>
+<tr><td class="f">Statuses / pipeline</td><td class="b">✅</td><td class="m">❌ stored, not in UI</td></tr>
+<tr><td class="f">Follow-ups / tasks</td><td class="b">✅</td><td class="m">❌</td></tr>
+<tr><td class="f">Notes / activity log</td><td class="b">✅</td><td class="m">❌</td></tr>
+<tr><td class="f">Deal analyzer / underwriting</td><td class="p">⚠️ table only</td><td class="b">✅ /api/analyze</td></tr>
+<tr><td class="f">Buyers universe</td><td class="b">✅ ~2,955, faceted</td><td class="m">❌</td></tr>
+<tr><td class="f">Dispo matching (lead→buyers)</td><td class="m">❌ P4 backlog</td><td class="m">❌</td></tr></table>
+
+<h3>E. Communications</h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">SMS templates</td><td class="b">✅</td><td class="m">❌</td></tr>
+<tr><td class="f">Call (tel: link)</td><td class="p">⚠️ link, no dialer</td><td class="m">❌</td></tr>
+<tr><td class="f">Dialer / auto-advance</td><td class="m">❌ P3</td><td class="m">❌</td></tr>
+<tr><td class="f">RVM / voicemail</td><td class="m">❌</td><td class="m">❌</td></tr></table>
+
+<h3>F. Monetization</h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">Credit / metering system</td><td class="m">❌</td><td class="b">✅ lookups/skiptrace/export</td></tr>
+<tr><td class="f">Free / Pro tiers</td><td class="m">❌</td><td class="p">⚠️ tiers exist, no Stripe</td></tr>
+<tr><td class="f">Stripe / billing</td><td class="m">❌</td><td class="m">❌</td></tr></table>
+
+<h3>G. Auth / accounts / team</h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">Email + Google SSO</td><td class="b">✅</td><td class="b">✅ (verified live)</td></tr>
+<tr><td class="f">Org row-level security</td><td class="p">⚠️ phases A–D live</td><td class="m">❌ single-user</td></tr>
+<tr><td class="f">assigned_to field</td><td class="b">✅ on hit_list + contacts</td><td class="m">❌</td></tr>
+<tr><td class="f">Team lead-ALLOCATION UI</td><td class="m">❌ not built</td><td class="m">❌</td></tr>
+<tr><td class="f">Roles / permissions</td><td class="m">❌</td><td class="m">❌</td></tr></table>
+
+<h3>H. Export / integrations</h3>
+<table><tr><th>Feature</th><th>CRM</th><th>OffRamp</th></tr>
+<tr><td class="f">CSV export</td><td class="m">❌ P4</td><td class="b">✅ Pro-only</td></tr>
+<tr><td class="f">Zapier / webhooks</td><td class="m">❌</td><td class="m">❌</td></tr></table>
+
+<h2>Bottom line</h2>
+
+<div class="win"><b>What already exists (don't rebuild):</b>
+<ul>
+<li>Foreclosure data + JIT skip trace / property enrichment — <b>both apps</b></li>
+<li>The <b>5-tab field-app shell</b> (📞 Calls · 📋 Leads · 💵 Buyers · 🗺️ Map · ⋯ More), statuses, follow-ups, notes, SMS, GPS map, buyers universe — <b>CRM</b></li>
+<li>Credit metering + paywall + deal analyzer + CSV export — <b>OffRamp</b></li>
+<li>Google SSO + org row-security foundation + <code>assigned_to</code> plumbing — <b>CRM</b></li>
+</ul></div>
+
+<div class="gap"><b>What's missing to hit DealMachine-class + your JIT edge:</b>
+<ul>
+<li><b>D4D field capture</b> — route/breadcrumb tracking, tap-to-pin a new house, on-device photo capture, offline sync <span class="tag">(neither app)</span></li>
+<li><b>Team lead-allocation UI</b> — the manager desktop view to hand foreclosure leads to reps <span class="tag">(data plumbing exists, screen doesn't)</span></li>
+<li><b>One unified paywall</b> — merge CRM (free) onto OffRamp's JIT/credit model</li>
+<li><b>National scrape + daily refresh</b> — expand beyond 5 states, wire the cron</li>
+<li><b>OffRamp lacks the 5-tab shell</b> — port the CRM tab experience so OffRamp = desktop structure + mobile field app</li>
+<li><b>Dispo matching + Stripe billing</b> — later phases</li>
+</ul></div>
+
+<div class="lede">
+<b>Recommended framing:</b> the CRM (revive-buyers-app) is already ~70% of the field app you described — it has the tabs, map, GPS, statuses, SMS, buyers. OffRamp has the money layer (credits, paywall, analyzer, export). The build is <b>a merge, not two rebuilds</b>: put OffRamp's credit/paywall engine under the CRM's field-app shell, then add the 4 true D4D capture features + the team allocation screen.
+</div>
+
+<p class="foot">Internal working doc · unlisted · generated from source audit. Figures (row counts, tiers) reflect code + schema as of the audit and may shift as data refreshes.</p>
+
+</div></body></html>

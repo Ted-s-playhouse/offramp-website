@@ -1,0 +1,112 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OffRamp REI — Briefing for James</title>
+<style>
+ :root{--green:#1f6f43;--green-d:#155233;--gold:#c79a3b;--ink:#1a1a1a;--paper:#faf9f7;--line:#e4e4e4;--muted:#5a5a5a}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6}
+ .wrap{max-width:820px;margin:0 auto;padding:0 20px}
+ header{background:linear-gradient(160deg,var(--green-d),var(--green));color:#fff;padding:40px 0 34px}
+ .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:700;margin:0 0 8px}
+ h1{font-size:28px;line-height:1.15;margin:0 0 10px}
+ header p{font-size:16px;color:#eaf3ee;margin:0;max-width:620px}
+ h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--green);border-bottom:2px solid var(--line);padding-bottom:8px;margin:40px 0 14px}
+ h3{font-size:17px;margin:0 0 6px}
+ p{font-size:15.5px}
+ .lead{font-size:16.5px;color:#333}
+ .hurdle{background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:10px;padding:20px 22px;margin:16px 0}
+ .hurdle .tag{display:inline-block;background:var(--green);color:#fff;font-size:12px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:20px;margin-bottom:10px}
+ .q{background:#f0f7f2;border:1px solid #cfe6d8;border-radius:8px;padding:12px 14px;margin:12px 0 0;font-size:15px}
+ .q b{color:var(--green-d)}
+ ul{padding-left:20px} li{margin:6px 0;font-size:15px}
+ .box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
+ .stat{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0}
+ .stat div{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+ .stat .n{font-size:20px;font-weight:700;color:var(--green)} .stat .l{font-size:12.5px;color:var(--muted)}
+ a{color:var(--green-d)}
+ .foot{color:var(--muted);font-size:13px;margin:40px 0 60px;border-top:1px solid var(--line);padding-top:16px}
+ code{background:#f0f0ee;padding:1px 5px;border-radius:4px;font-size:13px}
+</style></head><body>
+
+<header><div class="wrap">
+ <p class="kicker">OffRamp REI &middot; technical briefing for an advisor review</p>
+ <h1>James — I want your engineering read on three problems.</h1>
+ <p>You're the technical set of eyes here. Below is what's actually built, the current stack and scale, and the three places I need architecture advice before I push this to production for real users. Tell me where I'm wrong.</p>
+</div></header>
+
+<div class="wrap">
+
+<h2>What it does (context)</h2>
+<p class="lead">At its core OffRamp REI is a <b>data aggregator built specifically around pre-auction, high-equity foreclosures</b>. It pulls that inventory nationally, <b>fuses distress data that no single source joins</b> (county recorders, PACER bankruptcies, probate, liens, MLS, skip-trace) into one scored lead record, and runs an AI agent on top that enriches and works the phone.</p>
+<p><b>Secondary use case — the buyer side.</b> By scraping <b>recorded deeds from completed auction/trustee sales</b>, we identify who is <i>actually</i> buying at auction (repeat cash buyers, funds, flippers) and build a live <b>cash-buyer list</b> from public record. Same pipeline, opposite end of the deal: the primary side finds the distressed seller before the sale, the secondary side finds the proven cash buyer after it. Product walkthrough: <a href="https://offramprei.com/how-it-works/">offramprei.com/how-it-works</a>.</p>
+<p><b>The USP:</b> nobody else holds the <b>entire lifecycle of a single property in one record</b> — pre-auction distress → the foreclosure/auction event → the <b>auction result</b> (did it sell, for how much) → <b>who bought it</b>, plus enriched <b>data on that buyer</b>. Every incumbent has a slice; we chain the whole timeline, seller side through buyer side, on the same parcel.</p>
+
+<h2>Current stack &amp; scale today</h2>
+<div class="box">
+<ul>
+ <li><b>Data / DB:</b> Supabase (Postgres) — the <code>hit_list</code> is the foreclosure universe (~6,700 live leads); <code>crm.contacts</code> is the CRM (~33k rows). Sorts/filters on equity, auction date, state/county, pipeline.</li>
+ <li><b>App:</b> Expo / React-Native (web + mobile), mobile is the source of truth; Google Maps layer with 2,000+ pins.</li>
+ <li><b>External data APIs:</b> REAPI + DealMachine (property/deeds/enrichment/photos), Tracerfy/DealMachine (skip-trace), Twilio (voice/SMS), plus per-county recorder + auction/listing scrapes.</li>
+ <li><b>Orchestration:</b> cortextOS — an autonomous-agent engine (agents + cron + message bus) already runs ingestion/enrichment/QA jobs on a schedule; a daily leads-QA loop runs today.</li>
+ <li><b>Users today:</b> ~6 partner tenants, heading toward paid multi-tenant.</li>
+</ul>
+</div>
+<p>Full walkthrough of how it works: <a href="https://offramprei.com/how-it-works/">offramprei.com/how-it-works</a></p>
+
+<h2>Where I'm looking for your take</h2>
+
+<div class="hurdle">
+ <span class="tag">HURDLE 1</span>
+ <h3>Scalability &amp; API-call limits on the data layer</h3>
+ <p>The engine scales fine — the bottleneck is <b>data</b>. Right now I'm leaning on enrichment/property APIs (REAPI, DealMachine, skip-trace) plus per-county scrapes. At real volume that means <b>a lot of API calls</b>, rising cost-per-lead, rate limits, and the risk a vendor cuts us off. Foreclosure data is scattered across ~3,100 counties, each in a different format/cadence — so "cover the US" isn't one integration, it's thousands.</p>
+ <p><b>Concretely, here's the actual source mix</b> — what each is for technically, what business signal it produces, and where it's headed. In the MVP most of these run as <b>silent, scheduled scrapers</b> on the cortextOS cron — but that's the bottleneck: scraping ~3,100 county portals is brittle, and scraping commercial sites carries copyright/ToS exposure, so <b>at production the direction is to move onto licensed APIs + public record</b> and keep scraping only where it stays legitimate:</p>
+ <table style="border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13.5px;margin:10px 0">
+  <tr style="background:#f3f3f1"><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #eee">Source</th><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #eee">Technical purpose</th><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #eee">Business use case</th><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #eee">Where it's headed</th></tr>
+  <tr><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top"><b>County recorder portals</b> (many on Apache&nbsp;Tomcat / Java-servlet or .aspx backends — e.g. Salt&nbsp;Lake's <code>DocumentTypeByDate</code>)</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Headless scrape of newly recorded doc types (NOD, lis pendens, trustee sale) filtered by date</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Source of truth, and the <i>earliest</i> signal — often days before it hits any paid site</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Migrate to an enterprise multi-county data API wherever one exists; keep a silent self-healing scraper only for counties no vendor covers</td></tr>
+  <tr><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top"><b>foreclosure.com</b></td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">National listing scrape of pre-foreclosure / auction inventory</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Breadth floor across all 50 states while per-county coverage is built out</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Replace the scrape with a licensed listing/data feed at scale; deduped against recorder truth on APN+FIPS</td></tr>
+  <tr><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top"><b>auction.com</b> (behind Incapsula, run via Apify)</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Scrape auction dates, opening/credit bids, sale status</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Time-to-sale urgency + bid economics — how long you have and what it takes; plus <b>auction results / who won</b> (feeds the buyer-side cash-buyer list)</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Licensed auction-data feed where available; scrape as fallback</td></tr>
+  <tr><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top"><b>REAPI</b> (RealEstateAPI)</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Property/deeds/ownership/loan/lien/value enrichment API</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Turns a bare address into a scored deal — the equity math</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">On-demand hydration only when a lead enters the funnel, then cached/frozen</td></tr>
+  <tr><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top"><b>PACER</b></td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Federal bankruptcy docket cross-reference by owner name/address</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">The <i>fusion</i> signal (foreclosure + active BK = high distress) + auto-stay compliance awareness</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Scheduled match against the live lead set</td></tr>
+  <tr><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top"><b>MLS / Redfin / Zillow</b> (roadmap)</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Listing status, list/sale price, days-on-market, photos, comps — via MLS feed where licensed, else Redfin/Zillow scrape</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Detects when a distressed owner is already listed (competition + retail exit read), sharpens ARV/equity, adds condition photos</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top">Added as a later enrichment layer — MLS via a licensed feed, portals as scrape fallback</td></tr>
+ </table>
+ <p>The honest trajectory: scraping (county portals, foreclosure.com, auction.com) is how I <b>bootstrap the MVP cheaply today</b>, but I don't think it survives to production — it's brittle, and scraping commercial sites like foreclosure.com / auction.com raises <b>copyright / terms-of-use exposure</b> and won't be reliable at scale. So production coverage has to move onto <b>licensed enterprise APIs and public-record data</b>. The one place scraping likely <i>does</i> stay legitimate long-term is <b>foreclosing / closing-attorney (trustee) websites that actively publish auction notices as public notice</b> — that content is meant to be public, so it's the durable scrape surface. Enrichment (REAPI, PACER) stays <b>on-demand</b> so the expensive calls scale with the funnel, not the raw universe. <i>(Skip-trace / contact enrichment I run separately for our own outreach — out of scope for this scalability question.)</i></p>
+ <p>My current thinking: keep a <b>thin national index</b> from an enterprise vendor for the 50-state floor, then <b>hydrate deep on-demand</b> — only pull expensive county-level detail for a record when it actually enters the funnel, and cache it. Buy the breadth, build the freshness edge on top, and wrap everything behind one internal normalization API so I can swap a vendor without touching the app.</p>
+ <div class="q"><b>Questions for you:</b> Is on-demand hydration the right call vs. bulk ingest? What enterprise data API would you anchor national coverage on? How do I keep API cost-per-lead sane at volume — caching, tiering, batching? And how do I not build a business that dies if one vendor changes terms?</div>
+</div>
+
+<div class="hurdle">
+ <span class="tag">HURDLE 2</span>
+ <h3>Moving this from my internal system to a real app platform</h3>
+ <p>Today it runs as my own back-office desk. To let the 6 partners (and eventually paying subscribers) use it, I need to turn it into a proper multi-tenant app — fast enough to serve a sortable 6,700-lead list + a live map + per-property enrichment to a phone without freezing the device or blowing the data bill.</p>
+ <p>Architecture I'm considering: split write-heavy scraping/enrichment (staging → normalize → upsert into serving tables) from reads so the app never waits on a scraper; idempotent upserts on <code>APN + county FIPS</code> for dedup; composite indexes for the equity/auction-date/state sorts; PostGIS + server-side clustering so the map ships pins by viewport, not all at once; cursor pagination; a materialized "worth-a-call" scored list; Expo/React-Native web (mobile as source of truth); row-level security for multi-tenant with per-tenant metered API caps.</p>
+ <div class="q"><b>Questions for you:</b> Is that the right shape for a first real platform, or am I over/under-building? What would you prioritize to get partners on it soonest? Build vs. buy on the app layer? And where do multi-tenant + metered usage-caps most commonly go wrong?</div>
+</div>
+
+<div class="hurdle">
+ <span class="tag">HURDLE 3</span>
+ <h3>Getting it to production-grade — and QA for an app that runs data services</h3>
+ <p>Standard app QA tests the code. My harder problem is that <b>the data itself can be wrong even when every test passes</b> — a county drops a lien, a feed goes stale, an equity number is off by a mortgage, a scraper silently returns half the fields. If bad data reaches a user, they call the wrong lead or, worse, buy on fake equity. So "production-grade" here means the pipeline has to be trustworthy, monitored, and self-healing, not just the UI.</p>
+ <p>What I have / am considering: a <b>QA/validator agent</b> that sanity-checks every pull (missing fields, dropped liens, implausible equity) and flags/retries; self-healing scrapers that detect a county form change, retry, and escalate; idempotent upserts that double as a change-log; and a daily leads-QA loop that already runs today. What I don't have is a real production discipline around it — SLAs, monitoring/alerting, data-freshness guarantees, staging-vs-prod, incident response.</p>
+ <div class="q"><b>Questions for you:</b> How do you QA <i>data correctness</i> (not just code) at scale — golden datasets, statistical drift checks, source cross-validation? What does a real monitoring/alerting stack look like for a data pipeline like this? What's the minimum bar to honestly call this "production-grade" for paying users, and what would you not ship without?</div>
+</div>
+
+<h2>Why the problem is technically hard (context for the three above)</h2>
+<ul>
+ <li><b>The data is fragmented by design</b> — no national land database; property is recorded county-by-county, each with its own portal, format, and cadence, many semi-manual. "Cover the US" is thousands of integrations, not one.</li>
+ <li><b>The fusion is the hard part, not the scrape</b> — joining foreclosure + bankruptcy + probate + equity into one record that's actually correct is the real engineering. A single stale or conflicting source silently corrupts the join.</li>
+ <li><b>Real-time delivery at scale</b> — serving a large, freshly-enriched, sortable dataset fast to a phone (map + list + per-property detail) without blowing the data bill is its own systems problem.</li>
+</ul>
+
+<h2>The honest constraints</h2>
+<div class="box">
+<ul>
+ <li><b>Unit economics at scale</b> — I need a defensible data-cost-per-lead and per-state number before I push volume.</li>
+ <li><b>Vendor dependency</b> — need multi-source redundancy so no single cutoff is fatal.</li>
+ <li><b>Compliance</b> — skip-trace is DPPA/GLBA-gated; that has to be clean.</li>
+ <li><b>Focus</b> — I'm rebuilding the core business at the same time, so I need the highest-leverage moves first, not a two-year rebuild.</li>
+</ul>
+</div>
+
+<p class="foot">Prepared for James at Ted's request &middot; OffRamp REI / America Home Restoration &middot; confidential — please don't forward.</p>
+
+</div></body></html>

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1B4332">
+<title>OffRamp REI — Deal Room</title>
+<link rel="icon" href="/brand/mark_ramp.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+  /* ---- Revive/OffRamp brand palette (matches CRM theme.ts) ---- */
+  :root{
+    --bg:#F6F5F1; --card:#FFFFFF; --text:#15221B; --sub:#5C6B62; --border:#E3E1D9;
+    --accent:#1B4332; --accent2:#2D6A4F; --accentSoft:#DDE9E1; --danger:#C0392B;
+    --gold:#B8894A; --hot:#E4572E; --warm:#E9A620; --cold:#4A7BA6;
+    --shadow:0 2px 6px rgba(11,31,22,.06),0 8px 24px rgba(11,31,22,.05);
+    --maxw:520px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text);background:#e9e7e0;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent2);text-decoration:none}
+  button,input,select{font-family:inherit}
+  button{cursor:pointer}
+  .hidden{display:none!important}
+  img{display:block}
+
+  /* phone-frame shell centered on desktop, full-bleed on mobile */
+  #shell{max-width:var(--maxw);margin:0 auto;min-height:100%;background:var(--bg);position:relative;
+    box-shadow:0 0 60px rgba(0,0,0,.12);display:flex;flex-direction:column;min-height:100dvh}
+
+  /* ---------- AUTH ---------- */
+  #auth{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:22px;
+    background:linear-gradient(160deg,var(--accent) 0%,var(--accent2) 60%,#173a2c 100%)}
+  .authcard{background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.28);width:100%;max-width:400px;padding:28px}
+  .brandrow{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .brandrow img{width:32px;height:32px}
+  .brandrow b{font-size:20px;color:var(--accent);font-weight:900}
+  .brandrow span{color:var(--accent2);font-weight:800;font-size:20px}
+  .authcard p.sub{color:var(--sub);font-size:13.5px;margin:2px 0 18px}
+  .tabs{display:flex;gap:6px;background:#f0efe9;border-radius:10px;padding:4px;margin-bottom:16px}
+  .tabs button{flex:1;border:0;background:transparent;padding:9px;border-radius:8px;font-weight:800;color:var(--sub);font-size:14px}
+  .tabs button.on{background:#fff;color:var(--accent);box-shadow:var(--shadow)}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+  .field input{width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:#fff}
+  .field input:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px rgba(45,106,79,.15)}
+  .btn-primary{width:100%;border:0;padding:13px;border-radius:10px;font-size:15px;font-weight:800;color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .or{display:flex;align-items:center;gap:12px;color:var(--sub);font-size:12px;margin:16px 0}
+  .or:before,.or:after{content:"";flex:1;height:1px;background:var(--border)}
+  .sso{display:flex;flex-direction:column;gap:9px}
+  .sso button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px;border-radius:10px;
+    border:1px solid var(--border);background:#fff;font-weight:700;font-size:14px;color:#25302a}
+  .sso .apple{background:#000;color:#fff;border-color:#000}
+  .sso svg{width:18px;height:18px}
+  .authmsg{margin-top:12px;font-size:13.5px;padding:10px 12px;border-radius:9px;display:none}
+  .authmsg.err{display:block;background:#fbeae6;color:var(--danger);border:1px solid #e6b6ab}
+  .demohint{margin-top:16px;font-size:12px;color:var(--sub);text-align:center;line-height:1.5}
+  .demohint code{background:#f0efe9;padding:1px 6px;border-radius:5px;color:var(--accent);font-weight:700}
+
+  /* ---------- APP TOP BAR ---------- */
+  header.top{background:var(--accent);color:#fff;display:flex;align-items:center;gap:10px;
+    padding:0 15px;height:54px;position:sticky;top:0;z-index:40;padding-top:env(safe-area-inset-top)}
+  header.top .logo{display:flex;align-items:center;gap:7px;font-weight:900;font-size:16px}
+  header.top .logo img{width:24px;height:24px}
+  header.top .logo span{color:#b7e4c7}
+  header.top .grow{flex:1}
+  .plan-pill{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 9px;border-radius:20px}
+  .plan-pill.pro{background:var(--gold);color:#231a0c}
+  .plan-pill.free{background:rgba(255,255,255,.16);color:#fff}
+  .meterchip{font-size:11px;color:#cfe6d8}
+  .meterchip b{color:#fff}
+
+  /* ---------- SCREENS ---------- */
+  main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:74px}
+  .screen{display:none}
+  .screen.on{display:block}
+
+  /* search + filter chips */
+  .searchbar{padding:11px 12px 6px}
+  .searchbox{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 12px}
+  .searchbox svg{width:18px;height:18px;color:var(--sub);flex:none}
+  .searchbox input{flex:1;border:0;outline:none;padding:11px 8px;font-size:15px;background:transparent;color:var(--text)}
+  .chiprow{display:flex;gap:8px;overflow-x:auto;padding:8px 12px 4px;scrollbar-width:none}
+  .chiprow::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);
+    font-size:13px;font-weight:700;color:var(--text)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .subfilter{display:flex;gap:8px;padding:2px 12px 6px}
+  .subfilter select{flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:13.5px;background:var(--card);color:var(--text)}
+  .countline{font-size:12px;color:var(--sub);font-weight:700;padding:2px 16px 8px}
+
+  /* lead card (mirrors CRM LeadCard) */
+  .lead{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--sub);border-radius:14px;
+    margin:0 12px 12px;padding:13px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s}
+  .lead:active{transform:scale(.985)}
+  .lead .top{display:flex;align-items:center;gap:12px}
+  .thumb{width:88px;height:88px;border-radius:11px;overflow:hidden;background:var(--border);flex:none;position:relative}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .thumb.noimg::after{content:"No photo";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:11px}
+  .lead .mid{flex:1;min-width:0}
+  .lead .owner{font-size:15.5px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lead .street{font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lead .csz{font-size:12px;color:var(--sub);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lead .right{text-align:right;flex:none}
+  .lead .right .eq{font-size:17px;font-weight:800;color:var(--text)}
+  .lead .right .eqk{font-size:11px;color:var(--sub)}
+  .lead .right .val{font-size:12px;color:var(--sub);margin-top:4px}
+  .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+  .badge{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:20px;border:1px solid transparent}
+  .badge.status{color:#fff}
+  .badge.soon{background:var(--danger);color:#fff}
+  .badge.auc{background:var(--warm);color:#3a2a06}
+  .badge.outline{background:transparent;border-color:var(--border);color:var(--sub)}
+
+  .empty{padding:48px 24px;text-align:center;color:var(--sub);font-size:14px}
+  .loadrow{padding:26px;text-align:center;color:var(--sub)}
+
+  /* map screen */
+  #mapScreen{height:calc(100dvh - 54px - 62px)}
+  #map{width:100%;height:100%}
+
+  /* lookup + account cards */
+  .pad{padding:14px}
+  .h2{font-size:19px;font-weight:900;color:var(--accent);margin:4px 2px 12px}
+  .lookupbox{display:flex;gap:8px;margin-bottom:12px}
+  .lookupbox input{flex:1;padding:12px;border:1px solid var(--border);border-radius:11px;font-size:15px;background:var(--card)}
+  .infocard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .infocard .hero{width:100%;height:180px;object-fit:cover;background:var(--border)}
+  .infocard .inner{padding:14px}
+  .rowline{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:14px}
+  .rowline:last-child{border-bottom:0}
+  .rowline .k{color:var(--sub)}
+  .rowline .v{font-weight:700;text-align:right}
+
+  .acct-plan{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .acct-plan .big{font-size:22px;font-weight:900;color:var(--accent)}
+  .meter{margin:10px 0}
+  .meter .lab{display:flex;justify-content:space-between;font-size:12.5px;color:var(--sub);margin-bottom:5px}
+  .meter .bar{height:9px;border-radius:6px;background:var(--border);overflow:hidden}
+  .meter .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .btn-ghost{width:100%;background:var(--card);border:1px solid var(--border);color:var(--accent);padding:13px;border-radius:11px;font-weight:800;font-size:14.5px;margin-top:10px}
+  .btn-gold{width:100%;background:var(--gold);border:0;color:#231a0c;padding:13px;border-radius:11px;font-weight:800;font-size:14.5px;margin-top:10px}
+
+  /* ---------- BOTTOM NAV ---------- */
+  nav.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:var(--maxw);
+    background:var(--card);border-top:1px solid var(--border);display:flex;z-index:50;
+    padding-bottom:env(safe-area-inset-bottom)}
+  nav.bottom button{flex:1;background:transparent;border:0;padding:9px 0 8px;display:flex;flex-direction:column;
+    align-items:center;gap:3px;color:var(--sub);font-size:11px;font-weight:700}
+  nav.bottom button svg{width:23px;height:23px;stroke:var(--sub);fill:none;stroke-width:2}
+  nav.bottom button.on{color:var(--accent)}
+  nav.bottom button.on svg{stroke:var(--accent)}
+
+  /* ---------- DETAIL (full-screen slide-over) ---------- */
+  #detail{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
+    width:100%;max-width:var(--maxw);background:var(--bg);z-index:70;overflow-y:auto;transition:transform .25s ease;-webkit-overflow-scrolling:touch}
+  #detail.open{transform:translateX(-50%) translateY(0)}
+  .dhero{width:100%;height:210px;object-fit:cover;background:var(--border)}
+  .dhead{background:var(--accent);color:#fff;padding:14px 16px 16px}
+  .dback{display:inline-flex;align-items:center;gap:4px;background:transparent;border:0;color:#cfe6d8;font-weight:800;font-size:14.5px;margin-bottom:8px}
+  .dhead .owner{font-size:23px;font-weight:900;line-height:1.2}
+  .dhead .street{font-size:15px;font-weight:600;margin-top:3px}
+  .dhead .csz{font-size:12.5px;opacity:.82;margin-top:1px}
+  .dhead .badges{margin-top:11px}
+  .dhead .badge.hbadge{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.24)}
+  .dkv{display:flex;flex-wrap:wrap;margin-top:8px}
+  .dkv .cell{width:50%;padding:6px 8px 0 0}
+  .dkv .cell .k{font-size:11px;opacity:.75}
+  .dkv .cell .v{font-size:16px;font-weight:700}
+  .dbody{padding:14px 14px 60px}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px}
+  .kpi.big{grid-column:span 2}
+  .kpi .k{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.03em}
+  .kpi .v{font-size:18px;font-weight:900;color:var(--accent);margin-top:2px}
+  .sec{margin:20px 2px 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub)}
+  .card2{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px 12px}
+  .card2 .rowline{font-size:14px}
+  .flagstrip{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .flag{font-size:11px;font-weight:800;letter-spacing:.02em;padding:4px 10px;border-radius:20px;border:1px solid transparent}
+  .flag.probate{background:#efe7f7;color:#5b3a86;border-color:#d9c8ee}
+  .flag.bk{background:#fbeae6;color:var(--danger);border-color:#e6b6ab}
+  .flag.mls{background:#e7f0fb;color:#2b5f92;border-color:#c2d8ef}
+  .flag.rev{background:#fff4e0;color:#8a5a12;border-color:#f0d9a8}
+  .flag.abs{background:var(--accentSoft);color:var(--accent2);border-color:rgba(45,106,79,.25)}
+  .maplinks{display:flex;gap:9px;margin-top:12px}
+  .maplinks a{flex:1;text-align:center;background:var(--accentSoft);border:1px solid rgba(27,67,50,.25);color:var(--accent);font-weight:800;font-size:13.5px;padding:10px;border-radius:11px}
+
+  .analyzer{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .analyzer .ins{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .analyzer label{font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase}
+  .analyzer input{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:3px;background:var(--bg)}
+  .analyzer .out{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .analyzer .out .box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px}
+  .analyzer .out .box .k{font-size:10.5px;color:var(--sub);text-transform:uppercase}
+  .analyzer .out .box .v{font-size:16px;font-weight:900;color:var(--accent)}
+  .verdict{margin-top:11px;padding:10px 12px;border-radius:9px;font-weight:800;font-size:13.5px;text-align:center}
+  .verdict.good{background:#e7f4ec;color:var(--accent2)}
+  .verdict.bad{background:#fbeae6;color:var(--danger)}
+  .verdict.neutral{background:var(--bg);color:var(--sub)}
+
+  .locked{background:var(--card);border:1px dashed var(--border);border-radius:12px;padding:16px;text-align:center;color:var(--sub)}
+  .locked b{color:var(--accent);display:block;margin-bottom:6px}
+  .cta{display:inline-block;background:var(--gold);color:#231a0c;font-weight:800;padding:10px 18px;border-radius:10px;border:0;margin-top:8px;font-size:13.5px}
+  .revealbtn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:0;padding:13px;border-radius:11px;font-weight:800;font-size:14.5px}
+  .phone{display:flex;align-items:center;justify-content:space-between;padding:11px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-top:8px}
+  .phone .num{font-weight:800;font-size:16px;color:var(--accent)}
+  .phone .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;background:var(--accentSoft);color:var(--accent2)}
+  .phone .tag.dnc{background:#fbeae6;color:var(--danger)}
+  .emailchip{display:inline-block;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin:6px 6px 0 0;font-size:13px}
+
+  .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none}
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH ============ -->
+<div id="auth">
+  <div class="authcard">
+    <div class="brandrow"><img src="/brand/mark_ramp.png" alt=""><b>OffRamp</b> <span>REI</span></div>
+    <p class="sub">The deal room for pre-foreclosure, auction &amp; probate.</p>
+    <div class="tabs">
+      <button id="tabLogin" class="on" onclick="setTab('login')">Log in</button>
+      <button id="tabSignup" onclick="setTab('signup')">Create account</button>
+    </div>
+    <form id="authForm" onsubmit="return doAuth(event)">
+      <div class="field" id="nameField" style="display:none">
+        <label>Full name</label><input id="f_name" type="text" autocomplete="name">
+      </div>
+      <div class="field"><label>Email</label><input id="f_email" type="email" autocomplete="email" required></div>
+      <div class="field"><label>Password</label><input id="f_pw" type="password" autocomplete="current-password" required></div>
+      <button class="btn-primary" id="authSubmit" type="submit">Log in</button>
+    </form>
+    <div class="or">or continue with</div>
+    <div class="sso">
+      <button onclick="ssoLogin('google')">
+        <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.8 6.1C12.2 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.9-10 6.9-17.5z"/><path fill="#FBBC05" d="M10.3 28.3c-.5-1.4-.8-3-.8-4.3s.3-2.9.8-4.3l-7.8-6.1C.9 16.5 0 20.1 0 24s.9 7.5 2.5 10.4l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.3-7.7 2.3-6.4 0-11.8-4.1-13.7-9.8l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
+        Continue with Google</button>
+      <!-- Apple Sign In deferred until Apple Developer Program is enrolled -->
+    </div>
+    <div class="authmsg" id="authMsg"></div>
+    <div class="demohint">Demo &mdash; Pro: <code>demo@offramprei.com</code> · Free: <code>free@offramprei.com</code><br>password <code>offramp2026</code></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="shell" class="hidden">
+  <header class="top">
+    <div class="logo"><img src="/brand/mark_ramp.png" alt="">OffRamp <span>REI</span></div>
+    <div class="grow"></div>
+    <span class="meterchip" id="meterChip"></span>
+    <span class="plan-pill" id="planPill"></span>
+  </header>
+
+  <main>
+    <!-- DEALS -->
+    <section class="screen on" id="s-deals">
+      <div class="searchbar">
+        <div class="searchbox">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="fSearch" type="text" placeholder="Owner, street, city, zip…" onkeydown="if(event.key==='Enter')search()">
+        </div>
+      </div>
+      <div class="chiprow" id="stateChips"></div>
+      <div class="subfilter">
+        <select id="fStatus" onchange="search()">
+          <option value="">All statuses</option>
+          <option>Pre-Foreclosure</option>
+          <option>Auction</option>
+          <option>Notice of Default</option>
+          <option>Notice of Trustee's Sale</option>
+        </select>
+        <select id="fEquity" onchange="search()">
+          <option value="">Any equity</option>
+          <option value="50000">$50k+ equity</option>
+          <option value="100000">$100k+ equity</option>
+          <option value="200000">$200k+ equity</option>
+        </select>
+      </div>
+      <div class="countline" id="countLine"></div>
+      <div id="list"><div class="loadrow">Loading deals…</div></div>
+    </section>
+
+    <!-- MAP -->
+    <section class="screen" id="s-map">
+      <div id="mapScreen"><div id="map"></div></div>
+    </section>
+
+    <!-- LOOKUP -->
+    <section class="screen" id="s-lookup">
+      <div class="pad">
+        <div class="h2">Address lookup</div>
+        <div class="lookupbox">
+          <input id="lookupAddr" type="text" placeholder="123 Main St, City, ST 00000" onkeydown="if(event.key==='Enter')runLookup()">
+          <button class="btn-primary" style="width:auto;padding:12px 18px" onclick="runLookup()">Go</button>
+        </div>
+        <div id="lookupOut"></div>
+      </div>
+    </section>
+
+    <!-- ACCOUNT -->
+    <section class="screen" id="s-acct">
+      <div class="pad" id="acctBody"></div>
+    </section>
+  </main>
+
+  <nav class="bottom">
+    <button id="n-deals" class="on" onclick="showScreen('deals')">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Deals</button>
+    <button id="n-map" onclick="showScreen('map')">
+      <svg viewBox="0 0 24 24"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>Map</button>
+    <button id="n-lookup" onclick="showScreen('lookup')">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Lookup</button>
+    <button id="n-acct" onclick="showScreen('acct')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Account</button>
+  </nav>
+</div>
+
+<!-- ============ DETAIL ============ -->
+<div id="detail"><div id="detailInner"></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+var ME=null, MAP=null, MARKERS=null, ROWS=[], CUR=null, SCREEN='deals';
+var STATE='UT';
+
+function money(n){ if(n===null||n===undefined||n==='')return '—'; var x=Number(n); if(isNaN(x))return '—'; return '$'+Math.round(x).toLocaleString(); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(function(){t.style.display='none';},2600); }
+function api(path,opts){ opts=opts||{}; opts.credentials='include'; if(opts.body&&typeof opts.body!=='string'){opts.headers=Object.assign({'Content-Type':'application/json'},opts.headers||{});opts.body=JSON.stringify(opts.body);} return fetch(path,opts); }
+function fullAddr(r){ return [r.property_street,r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '); }
+function photoUrl(r){ var a=fullAddr(r); return a?('/api/photo?address='+encodeURIComponent(a)):''; }
+function tempColor(t){ t=(t||'').toLowerCase(); return t==='hot'?'#E4572E':t==='warm'?'#E9A620':t==='cold'?'#4A7BA6':'#5C6B62'; }
+
+/* ---------- auth ---------- */
+function setTab(t){
+  var login=t==='login';
+  document.getElementById('tabLogin').classList.toggle('on',login);
+  document.getElementById('tabSignup').classList.toggle('on',!login);
+  document.getElementById('nameField').style.display=login?'none':'block';
+  document.getElementById('authSubmit').textContent=login?'Log in':'Create account';
+  document.getElementById('f_pw').autocomplete=login?'current-password':'new-password';
+  document.getElementById('authForm').dataset.mode=t;
+}
+function authErr(m){ var e=document.getElementById('authMsg'); e.textContent=m; e.className='authmsg err'; }
+function doAuth(ev){
+  ev.preventDefault();
+  var mode=document.getElementById('authForm').dataset.mode||'login';
+  var body={email:document.getElementById('f_email').value.trim(),password:document.getElementById('f_pw').value};
+  if(mode==='signup') body.full_name=document.getElementById('f_name').value.trim();
+  api('/api/auth/'+mode,{method:'POST',body:body}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+   .then(function(res){ if(!res.ok){authErr(res.j.error||'Something went wrong');return;} ME=res.j.user; enterApp(); })
+   .catch(function(){authErr('Network error');});
+  return false;
+}
+function ssoLogin(p){ window.location.href='/api/auth/sso?provider='+p; }
+function doLogout(){ api('/api/auth/logout',{method:'POST'}).then(function(){location.reload();}); }
+
+/* ---------- boot ---------- */
+function enterApp(){
+  document.getElementById('auth').classList.add('hidden');
+  document.getElementById('shell').classList.remove('hidden');
+  renderHeader();
+  // state chips
+  if(ME.markets.indexOf(STATE)<0) STATE=ME.markets[0];
+  document.getElementById('stateChips').innerHTML=ME.markets.map(function(m){
+    return '<button class="chip'+(m===STATE?' on':'')+'" onclick="pickState(\''+m+'\')">'+m+'</button>';
+  }).join('');
+  search();
+  renderAccount();
+}
+function renderHeader(){
+  var pill=document.getElementById('planPill');
+  pill.textContent=ME.plan==='pro'?'Pro':'Free';
+  pill.className='plan-pill '+ME.plan;
+  var u=ME.usage;
+  document.getElementById('meterChip').innerHTML='Lookups <b>'+u.lookups.used+'/'+u.lookups.limit+'</b>';
+}
+function pickState(m){ STATE=m;
+  document.querySelectorAll('#stateChips .chip').forEach(function(c){c.classList.toggle('on',c.textContent===m);});
+  search();
+}
+function showScreen(name){
+  SCREEN=name;
+  ['deals','map','lookup','acct'].forEach(function(n){
+    document.getElementById('s-'+n).classList.toggle('on',n===name);
+    document.getElementById('n-'+n).classList.toggle('on',n===name);
+  });
+  if(name==='map'){ ensureMap(); setTimeout(function(){ if(MAP){MAP.invalidateSize();renderPins();} },80); }
+}
+
+/* ---------- search ---------- */
+function search(){
+  var qs=new URLSearchParams();
+  qs.set('state',STATE);
+  var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('city',c);
+  var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);
+  var e=document.getElementById('fEquity').value; if(e)qs.set('min_equity',e);
+  qs.set('limit','200');
+  document.getElementById('list').innerHTML='<div class="loadrow">Searching…</div>';
+  api('/api/search?'+qs.toString()).then(function(r){return r.json();}).then(function(j){
+    ROWS=j.results||[]; renderList(); if(MAP)renderPins();
+    document.getElementById('countLine').textContent=(j.count||0)+' deals in '+STATE;
+  }).catch(function(){document.getElementById('list').innerHTML='<div class="empty">Search failed. Try again.</div>';});
+}
+function badgeHtml(r){
+  var out='';
+  if(r.foreclosure_status){ out+='<span class="badge status" style="background:'+tempColor(r.temperature||'')+'">'+esc(r.foreclosure_status)+'</span>'; }
+  var d=r.days_to_auction;
+  if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
+  return out;
+}
+function renderList(){
+  var el=document.getElementById('list');
+  if(!ROWS.length){ el.innerHTML='<div class="empty">No deals match. Widen your filters or pick another state.</div>'; return; }
+  el.innerHTML=ROWS.map(function(r,i){
+    var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
+    var pu=photoUrl(r);
+    var thumb=pu
+      ? '<div class="thumb"><img loading="lazy" src="'+pu+'" alt="" onerror="this.parentNode.classList.add(\'noimg\');this.remove()"></div>'
+      : '<div class="thumb noimg"></div>';
+    return '<div class="lead" style="border-left-color:'+tempColor(r.temperature)+'" onclick="openDetail('+i+')">'+
+      '<div class="top">'+thumb+
+        '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
+          '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
+          '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+'</div></div>'+
+        '<div class="right"><div class="eq">'+(r.equity_pct!=null?r.equity_pct+'%':'—')+'</div><div class="eqk">equity</div>'+
+          '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
+      '</div>'+
+      '<div class="badges">'+badgeHtml(r)+'</div></div>';
+  }).join('');
+}
+
+/* ---------- map ---------- */
+function ensureMap(){
+  if(MAP)return;
+  MAP=L.map('map',{zoomControl:true}).setView([39.3,-111.7],6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(MAP);
+  MARKERS=L.layerGroup().addTo(MAP);
+}
+function renderPins(){
+  if(!MARKERS)return;
+  MARKERS.clearLayers(); var pts=[];
+  ROWS.forEach(function(r,i){
+    if(r.latitude&&r.longitude){
+      var m=L.circleMarker([r.latitude,r.longitude],{radius:7,color:'#1B4332',weight:2,fillColor:tempColor(r.temperature),fillOpacity:.85});
+      m.on('click',function(){openDetail(i);});
+      m.bindTooltip((r.property_street||'')+' · '+(r.equity_pct!=null?r.equity_pct+'%':''),{direction:'top'});
+      m.addTo(MARKERS); pts.push([r.latitude,r.longitude]);
+    }
+  });
+  if(pts.length){ try{MAP.fitBounds(pts,{padding:[40,40],maxZoom:12});}catch(e){} }
+}
+
+/* ---------- detail ---------- */
+function openDetail(i){
+  CUR=ROWS[i]; var r=CUR;
+  var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
+  var addr=fullAddr(r);
+  var pu=photoUrl(r);
+  var hero=pu?'<img class="dhero" src="'+pu+'" alt="" onerror="this.style.display=\'none\'">':'';
+  var hbadges='';
+  if(r.temperature)hbadges+='<span class="badge hbadge" style="background:'+tempColor(r.temperature)+';border:0">'+esc(r.temperature.toUpperCase())+'</span>';
+  if(r.foreclosure_status)hbadges+='<span class="badge hbadge">'+esc(r.foreclosure_status)+'</span>';
+  if(r.days_to_auction!=null&&r.days_to_auction>=0)hbadges+='<span class="badge hbadge">auction '+r.days_to_auction+'d</span>';
+  var maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(addr);
+  var zillow='https://www.zillow.com/homes/'+encodeURIComponent(addr)+'_rb/';
+
+  var html=hero+
+    '<div class="dhead">'+
+      '<button class="dback" onclick="closeDetail()">‹ Back</button>'+
+      '<div class="owner">'+esc(owner)+'</div>'+
+      '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
+      '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
+      '<div class="badges">'+hbadges+'</div>'+
+      '<div class="dkv">'+
+        cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
+        cell('Sq ft',r.living_area_sqft?Number(r.living_area_sqft).toLocaleString():'—')+
+        cell('Year built',r.year_built||'—')+
+        cell('Occupancy',r.occupancy||'—')+
+      '</div>'+
+    '</div>'+
+    '<div class="dbody">'+
+      '<div class="kpis">'+
+        '<div class="kpi"><div class="k">Est. value</div><div class="v">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
+        '<div class="kpi"><div class="k">Loan balance</div><div class="v">'+money(r.mortgage_balance)+'</div></div>'+
+        '<div class="kpi big"><div class="k">Estimated equity</div><div class="v">'+money(r.equity_dollars)+(r.equity_pct!=null?' &nbsp;·&nbsp; '+r.equity_pct+'%':'')+'</div></div>'+
+      '</div>'+
+      '<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a></div>'+
+      flagStrip(r)+
+      section('Foreclosure',[
+        lineIf('Status',r.foreclosure_status),
+        lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
+        lineIf('Auction date',fmtDate(r.auction_date)+(r.auction_time?(' · '+r.auction_time):'')),
+        lineIf('Days to auction',(r.days_to_auction!=null)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
+        lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
+        lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
+        lineIf('Case / NOD #',r.nod_case_number),
+        lineIf('Trustee file #',r.trustee_file_no),
+        lineIf('Foreclosing atty',r.foreclosing_attorney),
+        r.attorney_phone?lineRaw('Attorney phone','<a href="tel:'+String(r.attorney_phone).replace(/\D/g,'')+'">'+esc(r.attorney_phone)+'</a>'):'',
+        r.notice_url?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
+      ])+
+      section('Mortgage',[
+        lineIf('Lender',r.mortgage_lender),
+        lineIf('Balance',r.mortgage_balance!=null?money(r.mortgage_balance):''),
+        lineIf('Interest rate',r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),
+        lineIf('Loan-to-value',r.ltv_pct!=null?pct(r.ltv_pct):''),
+        lineIf('Loan type',r.mortgage_loan_type),
+        lineIf('Recorded',fmtDate(r.mortgage_recording_date)),
+        lineIf('Maturity',fmtDate(r.mortgage_maturity_date)),
+        r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
+      ])+
+      section('Property',[
+        lineIf('Type',r.property_type),
+        lineIf('APN',r.apn),
+        lineIf('Owner mailing',r.mailing_address)
+      ])+
+      '<div class="sec">Deal Analyzer</div>'+
+      '<div class="analyzer">'+
+        '<div class="ins">'+
+          '<div><label>ARV</label><input id="an_arv" type="number" value="'+(r.arv||r.market_value||r.avm||'')+'" oninput="runAnalyze()"></div>'+
+          '<div><label>Rehab</label><input id="an_rehab" type="number" value="0" oninput="runAnalyze()"></div>'+
+          '<div><label>Your offer</label><input id="an_offer" type="number" placeholder="e.g. 180000" oninput="runAnalyze()"></div>'+
+          '<div><label>Loan balance</label><input id="an_mb" type="number" value="'+(r.mortgage_balance||'')+'" oninput="runAnalyze()"></div>'+
+        '</div>'+
+        '<div class="out">'+
+          '<div class="box"><div class="k">Est. profit</div><div class="v" id="o_profit">—</div></div>'+
+          '<div class="box"><div class="k">ROI</div><div class="v" id="o_roi">—</div></div>'+
+        '</div>'+
+        '<div class="verdict neutral" id="o_verdict">Enter an offer to score the deal</div>'+
+      '</div>'+
+      '<div class="sec">Owner contact</div>'+
+      '<div id="contacts"></div>'+
+    '</div>';
+  document.getElementById('detailInner').innerHTML=html;
+  document.getElementById('detail').scrollTop=0;
+  document.getElementById('detail').classList.add('open');
+  renderContacts(); runAnalyze();
+}
+function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
+function lineIf(k,v){ return (v===null||v===undefined||v===''||v==='—')?'':line(k,v); }
+function lineRaw(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+function pct(x){ return (x===null||x===undefined||x==='')?'':(Number(x).toFixed(Number(x)%1?1:0)+'%'); }
+function fmtDate(d){ if(!d)return ''; var s=String(d).slice(0,10); var p=s.split('-'); return p.length===3?(p[1]+'/'+p[2]+'/'+p[0]):s; }
+function section(title,rows){ var body=rows.filter(Boolean).join(''); return body?('<div class="sec">'+title+'</div><div class="card2">'+body+'</div>'):''; }
+function flagStrip(r){
+  var f=[];
+  if(r.deceased_flag===true) f.push(['probate','Probate / deceased owner']);
+  if(r.bankruptcy_flag===true) f.push(['bk','Bankruptcy'+(r.bankruptcy_chapter?(' Ch. '+r.bankruptcy_chapter):'')]);
+  if(r.mls_active===true||r.mls_status) f.push(['mls','Listed on MLS'+(r.mls_list_price?(' · '+money(r.mls_list_price)):'')]);
+  if(r.reverse_mortgage===true) f.push(['rev','Reverse mortgage']);
+  var mail=(r.mailing_address||'').toLowerCase(), street=(r.property_street||'').toLowerCase();
+  if(mail&&street&&mail.indexOf(street.slice(0,8))<0) f.push(['abs','Absentee owner']);
+  if(!f.length) return '';
+  return '<div class="flagstrip">'+f.map(function(x){return '<span class="flag '+x[0]+'">'+esc(x[1])+'</span>';}).join('')+'</div>';
+}
+function closeDetail(){ document.getElementById('detail').classList.remove('open'); }
+
+function renderContacts(){
+  var el=document.getElementById('contacts'); var r=CUR;
+  if(ME.plan!=='pro'){
+    el.innerHTML='<div class="locked"><b>🔒 Owner phones &amp; emails are a Pro feature</b>Skip-traced mobile numbers (DNC-flagged) + emails unlock on Pro.<br><button class="cta" onclick="showScreen(\'acct\');closeDetail()">See Pro</button></div>';
+    return;
+  }
+  if(r.phones&&r.phones.length){ el.innerHTML=phoneHtml(r.phones,r.emails); return; }
+  el.innerHTML='<button class="revealbtn" onclick="reveal()">☎ Reveal owner contact (skip-trace)</button>'+
+    '<div style="font-size:11.5px;color:var(--sub);margin-top:8px;text-align:center">Uses 1 of your '+ME.usage.skiptraces.limit+' monthly skip-traces · mobile numbers only</div>';
+}
+function phoneHtml(phones,emails){
+  var mob=(phones||[]).filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});
+  if(!mob.length)mob=phones||[];
+  var h=mob.map(function(p){var n=String(p.number||'').replace(/\D/g,'');var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n;
+    return '<div class="phone"><a class="num" href="tel:'+n+'">'+f+'</a><span class="tag'+(p.dnc?' dnc':'')+'">'+(p.dnc?'DNC':esc(p.type||'mobile'))+'</span></div>';}).join('');
+  if(emails&&emails.length){ h+='<div style="margin-top:10px">'+emails.map(function(e){var em=(typeof e==='string')?e:(e.email||'');return '<span class="emailchip">'+esc(em)+'</span>';}).join('')+'</div>'; }
+  return h;
+}
+function reveal(){
+  var el=document.getElementById('contacts'); el.innerHTML='<div class="locked">Skip-tracing…</div>';
+  api('/api/skiptrace',{method:'POST',body:{id:CUR.id}}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+   .then(function(res){
+     if(!res.ok){ el.innerHTML='<div class="locked"><b>'+esc(res.j.error||'Skip-trace failed')+'</b></div>'; return; }
+     CUR.phones=res.j.mobiles; CUR.emails=res.j.emails;
+     el.innerHTML=(res.j.mobiles&&res.j.mobiles.length)?phoneHtml(res.j.mobiles,res.j.emails):'<div class="locked">No mobile numbers found for this owner.</div>';
+     if(res.j.usage){ME.usage=res.j.usage;renderHeader();}
+   }).catch(function(){el.innerHTML='<div class="locked">Network error</div>';});
+}
+
+/* ---------- analyzer (no MAO) ---------- */
+function runAnalyze(){
+  if(!document.getElementById('an_arv'))return;
+  var b={arv:val('an_arv'),rehab:val('an_rehab'),offer:val('an_offer'),mortgage_balance:val('an_mb'),market_value:CUR.market_value};
+  api('/api/analyze',{method:'POST',body:b}).then(function(r){return r.json();}).then(function(j){
+    var a=j.analysis;
+    document.getElementById('o_profit').textContent=a.est_profit!==null?money(a.est_profit):'—';
+    document.getElementById('o_roi').textContent=a.roi_pct!==null?a.roi_pct+'%':'—';
+    var v=document.getElementById('o_verdict');
+    v.textContent=a.verdict;
+    v.className='verdict '+(a.est_profit===null?'neutral':(a.est_profit>0?'good':'bad'));
+  });
+}
+function val(id){var e=document.getElementById(id);return e?e.value:'';}
+
+/* ---------- address lookup ---------- */
+function runLookup(){
+  var a=document.getElementById('lookupAddr').value.trim(); if(!a)return;
+  var out=document.getElementById('lookupOut'); out.innerHTML='<div class="loadrow">Looking up…</div>';
+  api('/api/lookup',{method:'POST',body:{address:a}}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+   .then(function(res){
+     if(!res.ok){ out.innerHTML='<div class="verdict bad">'+esc(res.j.error||'Lookup failed')+'</div>'; return; }
+     var d=res.j.data||{}; var p=d.data||d;
+     var pi=p.propertyInfo||{}; var addr=(pi.address&&(pi.address.label||pi.address.formattedAddress))||a;
+     var val=(p.estimatedValue||p.avm||pi.marketValue);
+     var pu='/api/photo?address='+encodeURIComponent(a);
+     out.innerHTML='<div class="infocard"><img class="hero" src="'+pu+'" alt="" onerror="this.style.display=\'none\'"><div class="inner">'+
+       line('Address',addr)+
+       line('Owner',(p.ownerInfo&&(p.ownerInfo.owner1FullName||p.ownerInfo.owner1LastName))||'—')+
+       line('Est. value',money(val))+
+       line('Est. equity',money(p.equity))+
+       line('Beds / Baths',((pi.bedrooms)||'—')+' / '+((pi.bathrooms)||'—'))+
+       '<div style="font-size:11.5px;color:var(--sub);margin-top:8px">Source: '+esc(res.j.source)+' · counts toward your monthly lookups</div>'+
+       '</div></div>';
+     if(res.j.usage){ME.usage=res.j.usage;renderHeader();}
+   }).catch(function(){out.innerHTML='<div class="verdict bad">Network error</div>';});
+}
+
+/* ---------- account ---------- */
+function renderAccount(){
+  var u=ME.usage;
+  function meter(label,used,limit){
+    var pctv=limit?Math.min(100,Math.round(used/limit*100)):0;
+    return '<div class="meter"><div class="lab"><span>'+label+'</span><span>'+used+' / '+limit+'</span></div>'+
+      '<div class="bar"><div class="fill" style="width:'+pctv+'%"></div></div></div>';
+  }
+  var isPro=ME.plan==='pro';
+  var html='<div class="acct-plan"><span class="big">'+(ME.full_name||ME.email)+'</span>'+
+      '<span class="plan-pill '+ME.plan+'">'+(isPro?'Pro':'Free')+'</span></div>'+
+    '<div style="color:var(--sub);font-size:13px;margin-bottom:14px">'+esc(ME.email)+'</div>'+
+    '<div class="infocard"><div class="inner">'+
+      meter('Property lookups',u.lookups.used,u.lookups.limit)+
+      (isPro?meter('Skip-traces',u.skiptraces.used,u.skiptraces.limit):'')+
+    '</div></div>'+
+    '<div style="color:var(--sub);font-size:12.5px;margin:14px 2px 4px">Markets with live inventory</div>'+
+    '<div class="chiprow" style="padding-left:0">'+ME.markets.map(function(m){return '<span class="chip">'+m+'</span>';}).join('')+'</div>';
+  if(isPro){ html+='<button class="btn-ghost" onclick="doExport()">⬇ Export current search (CSV)</button>'; }
+  else { html+='<button class="btn-gold" onclick="location.href=\'/#pricing\'">Upgrade to Pro — unlock contacts, skip-trace &amp; export</button>'; }
+  html+='<button class="btn-ghost" onclick="doLogout()">Log out</button>';
+  document.getElementById('acctBody').innerHTML=html;
+}
+function doExport(){
+  if(ME.plan!=='pro'){ toast('CSV export is a Pro feature'); return; }
+  var qs=new URLSearchParams(); qs.set('state',STATE);
+  var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('city',c);
+  var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);
+  var e=document.getElementById('fEquity').value; if(e)qs.set('min_equity',e);
+  window.location.href='/api/export?'+qs.toString();
+  toast('Exporting CSV…');
+}
+
+/* ---------- boot ---------- */
+api('/api/me').then(function(r){ if(r.ok)return r.json(); throw 0; })
+ .then(function(j){ ME=j.user; enterApp(); })
+ .catch(function(){ /* stay on auth screen */ });
+</script>
+</body>
+</html>

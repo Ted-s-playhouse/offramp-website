@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scout Features — everything Scout can do inside OffRamp REI</title>
+<meta name="description" content="The full feature list for OffRamp Scout, your AI deal partner: property & lien lookups, skip-tracing, deal calculators, list building, learning from links, memory, maps, and the data integrations that power it all.">
+<link rel="icon" href="/brand/logo_badge_monogram.png">
+<meta property="og:title" content="Scout Features — the full list">
+<meta property="og:description" content="Everything Scout can do today, plus what's ready to turn on next.">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --green:#1B4332; --green2:#2D6A4F; --moss:#40916C; --mint:#b7e4c7;
+    --paper:#F6F5F1; --ink:#15221B; --muted:#5c6b63; --line:#e3e0d8;
+    --gold:#B8894A; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:var(--green2);text-decoration:none;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
+
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(27,67,50,.98);backdrop-filter:blur(6px);}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;letter-spacing:-.01em;}
+  .brand .mark{width:38px;height:38px;border-radius:8px;object-fit:contain;}
+  .brand .rei{color:var(--mint);}
+  .topbar a.login{color:#e8f3ec;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,.28);
+        padding:8px 15px;border-radius:999px;}
+  .topbar a.login:hover{background:rgba(255,255,255,.12);}
+  .topbar a.login.active{background:rgba(183,228,199,.16);border-color:transparent;color:#fff;}
+
+  header.hero{background:linear-gradient(160deg,var(--green) 0%,var(--green2) 100%);color:#fff;
+        padding:56px 0 60px;position:relative;overflow:hidden;}
+  header.hero:after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
+        background:radial-gradient(circle,rgba(183,228,199,.18),transparent 70%);}
+  .kicker{text-transform:uppercase;letter-spacing:.18em;font-size:12px;font-weight:700;color:var(--mint);margin:0 0 14px;}
+  .hero h1{font-size:40px;line-height:1.1;margin:0 0 16px;font-weight:800;letter-spacing:-.02em;position:relative;z-index:2;}
+  .hero h1 em{font-style:normal;color:var(--mint);}
+  .hero .sub{font-size:18px;color:#e3efe7;max-width:640px;margin:0 0 24px;position:relative;z-index:2;}
+  .hero .sub b{color:#fff;}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:10px;position:relative;z-index:2;}
+  .lg{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);
+        color:#eaf5ee;padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:600;}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .dot.live{background:#5fd08b;} .dot.beta{background:var(--gold);} .dot.ready{background:#8fb6ff;}
+
+  /* TOC */
+  section.toc{padding:26px 0 6px;}
+  .tocwrap{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;}
+  .tocwrap a{background:#fff;border:1px solid var(--line);color:var(--green);font-size:13.5px;font-weight:700;
+        padding:8px 15px;border-radius:999px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .tocwrap a:hover{border-color:var(--moss);}
+
+  /* category */
+  section.cat{padding:34px 0 6px;}
+  .cathead{display:flex;align-items:center;gap:12px;margin:0 0 6px;}
+  .cathead .cico{width:44px;height:44px;border-radius:12px;background:#eaf3ee;color:var(--green);display:flex;
+        align-items:center;justify-content:center;font-size:22px;flex:none;}
+  .cathead h2{margin:0;font-size:24px;font-weight:800;color:var(--green);letter-spacing:-.01em;}
+  .catsub{color:var(--muted);font-size:15px;margin:0 0 20px;padding-left:56px;}
+
+  .fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  .fcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;
+        box-shadow:0 1px 2px rgba(0,0,0,.03);display:flex;flex-direction:column;}
+  .fcard .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 7px;}
+  .fcard h3{margin:0;font-size:16.5px;font-weight:800;color:var(--ink);}
+  .badge{flex:none;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+        padding:4px 9px;border-radius:999px;white-space:nowrap;}
+  .badge.live{background:#e5f5ec;color:#1f7a3f;border:1px solid #b7e0c6;}
+  .badge.beta{background:#faf1de;color:#8a5a1a;border:1px solid #e7d3a6;}
+  .badge.ready{background:#eaf0fb;color:#37589c;border:1px solid #c6d5f2;}
+  .fcard p{margin:0 0 10px;font-size:14px;color:var(--muted);}
+  .fcard .just{display:inline-block;font-size:12.5px;color:var(--green);background:#eef6f1;border:1px solid #d6e8dd;
+        border-radius:9px;padding:5px 11px;font-style:italic;margin-top:auto;}
+  .fcard .just b{font-style:normal;color:var(--green2);}
+  .fcard .pw{font-size:12px;color:var(--muted);margin-top:10px;}
+  .fcard .pw b{color:var(--ink);font-weight:700;}
+
+  /* integrations table */
+  section.integ{padding:40px 0 10px;}
+  .itable{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .irow{display:grid;grid-template-columns:200px 1fr;gap:16px;padding:14px 20px;border-bottom:1px solid var(--line);font-size:14px;}
+  .irow:last-child{border-bottom:none;}
+  .irow .nm{font-weight:800;color:var(--green);}
+  .irow .ds{color:var(--muted);}
+  .irow .ds b{color:var(--ink);}
+
+  /* honesty box */
+  .honestbox{max-width:900px;margin:30px auto 0;background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--moss);
+        border-radius:14px;padding:20px 22px;}
+  .honestbox h3{margin:0 0 8px;font-size:15px;color:var(--green);font-weight:800;}
+  .honestbox p{margin:0 0 8px;font-size:13.5px;color:var(--muted);line-height:1.6;}
+  .honestbox p:last-child{margin-bottom:0;}
+
+  section.band{background:linear-gradient(160deg,var(--green),var(--green2));color:#fff;padding:52px 0;text-align:center;margin-top:44px;}
+  .band h2{margin:0 0 10px;font-size:26px;font-weight:800;letter-spacing:-.01em;}
+  .band p{margin:0 0 22px;color:#dcebe1;font-size:16px;}
+  .band a.btn{display:inline-block;background:var(--gold);color:#231a0c;font-weight:800;padding:14px 30px;border-radius:12px;font-size:16px;}
+  .band a.btn:hover{filter:brightness(1.06);}
+
+  .footmark{width:220px;height:auto;display:block;margin:0 auto 16px;}
+  footer{padding:34px 0 60px;color:var(--muted);font-size:13px;text-align:center;}
+  footer a{color:var(--muted);text-decoration:underline;}
+
+  @media(max-width:820px){
+    .fgrid{grid-template-columns:1fr;}
+    .hero h1{font-size:32px;}
+    .irow{grid-template-columns:1fr;gap:4px;}
+    .catsub{padding-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <a class="brand" href="/"><img class="mark" src="/brand/mark_ramp.png" alt="OffRamp REI logo">OffRamp <span class="rei">REI</span></a>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <a class="login" href="/#pricing" style="border-color:transparent;">Pricing</a>
+    <a class="login" href="/scout/" style="border-color:transparent;">Meet Scout</a>
+    <a class="login active" href="/scout/features/">Features</a>
+    <a class="login" href="/app/">Log in</a>
+  </div>
+</div></div>
+
+<header class="hero"><div class="wrap">
+  <p class="kicker">Scout · full feature list</p>
+  <h1>Everything Scout can <em>do</em></h1>
+  <p class="sub">Scout carries the investor toolkit from cortextOS into your chat. Here's the complete, honest list — what's live for you to use today, what's in beta, and what's built and one flip from turning on. <b>Talk to Scout in plain English; it runs these behind the scenes.</b></p>
+  <div class="legend">
+    <span class="lg"><span class="dot live"></span> Live today — use it now</span>
+    <span class="lg"><span class="dot beta"></span> In beta — partially live</span>
+    <span class="lg"><span class="dot ready"></span> Ready to turn on — built, not yet wired</span>
+  </div>
+</div></header>
+
+<section class="toc"><div class="wrap"><div class="tocwrap">
+  <a href="#proprietary">Proprietary data &amp; scoring</a>
+  <a href="#property">Property &amp; ownership</a>
+  <a href="#distress">Distress &amp; leads</a>
+  <a href="#skip">Skip-tracing</a>
+  <a href="#calc">Deal calculators</a>
+  <a href="#lists">List building</a>
+  <a href="#learn">Knowledge &amp; memory</a>
+  <a href="#maps">Maps &amp; imagery</a>
+  <a href="#app">Web app &amp; account</a>
+</div></div></section>
+
+<!-- 0 PROPRIETARY -->
+<section class="cat" id="proprietary"><div class="wrap">
+  <div class="cathead"><div class="cico">🏆</div><h2>Proprietary data &amp; lead scoring</h2></div>
+  <p class="catsub">The edge that's ours, not rented — reconciled data and scoring models you won't find in a stock list.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Reconciled property data</h3><span class="badge live">Live</span></div>
+      <p>Every lookup is one verified record, reconciled across county records, trustee postings, and licensed data — including the USDA/HUD and junior liens other tools silently drop. A Carfax for the house, not a raw list.</p>
+      <span class="just"><b>Just say:</b> “Give me the verified equity on 123 Main.”</span></div>
+    <div class="fcard"><div class="top"><h3>Motivated-seller scoring</h3><span class="badge live">Live</span></div>
+      <p>Our own model ranks owners by how likely they are to sell — blending equity, distress stage, auction timing, and life-events (pre-foreclosure, auction, probate, bankruptcy, deceased-owner) into a single 0–100 motivation score, so you work the hottest leads first.</p>
+      <span class="just"><b>Just say:</b> “Build me a motivated-seller list in Utah, sorted by score.”</span></div>
+    <div class="fcard"><div class="top"><h3>Data that compounds</h3><span class="badge live">Live</span></div>
+      <p>Every property and owner is verified once and cached, so the verified property dataset gets cleaner, deeper, and de-duplicated as the network grows — an edge that builds over time instead of resetting with every new list.</p>
+      <span class="just"><b>Built in</b> · you get the benefit automatically</span></div>
+  </div>
+</div></section>
+
+<!-- 1 PROPERTY -->
+<section class="cat" id="property"><div class="wrap">
+  <div class="cathead"><div class="cico">🏠</div><h2>Property &amp; ownership data</h2></div>
+  <p class="catsub">One address in, a reconciled picture out — owner, debt, and real equity.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Property &amp; lien lookup</h3><span class="badge live">Live</span></div>
+      <p>Owner of record, recorded mortgages &amp; liens (lender, balance, position, rate), estimated value, and true equity — in dollars and percent — for any address.</p>
+      <span class="just"><b>Just say:</b> “Who owns 123 Main St and how much equity is in it?”</span>
+      <p class="pw"><b>Licensed property &amp; records data</b> · pulled once, then cached free</p></div>
+    <div class="fcard"><div class="top"><h3>Full property report</h3><span class="badge live">Live</span></div>
+      <p>Deeper detail on demand — value, beds/baths, sqft, last sale, comparable sales, and foreclosure status — the same depth pros pay four tools to assemble.</p>
+      <span class="just"><b>Just say:</b> “Pull the full report on 123 Main.”</span>
+      <p class="pw"><b>Licensed property data</b> · metered by plan</p></div>
+    <div class="fcard"><div class="top"><h3>Instant equity math</h3><span class="badge live">Live</span></div>
+      <p>Give Scout the value, what's owed, and a rehab number and it returns the equity and the offer ceiling — no spreadsheet.</p>
+      <span class="just"><b>Just say:</b> “What's my equity if it's worth 400k and owes 250k?”</span>
+      <p class="pw">Local math · no data cost</p></div>
+  </div>
+</div></section>
+
+<!-- 2 DISTRESS -->
+<section class="cat" id="distress"><div class="wrap">
+  <div class="cathead"><div class="cico">🏛️</div><h2>Distress &amp; lead sources</h2></div>
+  <p class="catsub">The life-events that create motivated sellers — tracked from the first filing to sale day.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Pre-foreclosure &amp; auction feed</h3><span class="badge live">Live</span></div>
+      <p>Notices of default and upcoming trustee/sheriff auctions with the posted opening bid — a national feed refreshed daily. Browse free in the app.</p>
+      <span class="just"><b>In the app:</b> filter by state, city, status &amp; min equity</span>
+      <p class="pw"><b>National foreclosure &amp; auction records</b> · daily</p></div>
+    <div class="fcard"><div class="top"><h3>Probate / deceased-owner</h3><span class="badge beta">Beta</span></div>
+      <p>Daily obituaries matched to property to surface deceased-owner and estate-sale leads before they hit the MLS. Feeding the pipeline now; chat lookups coming.</p>
+      <span class="just"><b>Coming:</b> “Show me probate leads in my county.”</span>
+      <p class="pw"><b>Public obituary records</b>, matched to property</p></div>
+    <div class="fcard"><div class="top"><h3>Bankruptcy filings</h3><span class="badge ready">Ready</span></div>
+      <p>Chapter 7 &amp; 13 filings surface owners restructuring debt who often need to sell or settle a property fast.</p>
+      <span class="just"><b>Ready to turn on</b> · PACER-sourced</span>
+      <p class="pw">Data path built; not yet wired to Scout</p></div>
+    <div class="fcard"><div class="top"><h3>Divorce &amp; other distress</h3><span class="badge ready">Ready</span></div>
+      <p>Court and public-record signals — divorce, tax liens, code cases — that push a home toward a sale long before foreclosure.</p>
+      <span class="just"><b>Ready to turn on</b> · public-record sourced</span>
+      <p class="pw">Region-specific record sources</p></div>
+  </div>
+</div></section>
+
+<!-- 3 SKIP -->
+<section class="cat" id="skip"><div class="wrap">
+  <div class="cathead"><div class="cico">☎️</div><h2>Skip-tracing &amp; contacts</h2></div>
+  <p class="catsub">Reach the owner — because the first number rarely answers.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Skip-trace an owner</h3><span class="badge live">Live</span></div>
+      <p>Verified mobile phone(s), email, and DNC status for an owner — plus heirs and relatives when you need a backup number. Mobile/wireless numbers only.</p>
+      <span class="just"><b>Just say:</b> “Skip-trace the owner of 123 Main and give me a cell.”</span>
+      <p class="pw"><b>Licensed contact data</b> · cached once traced</p></div>
+    <div class="fcard"><div class="top"><h3>Carrier &amp; line-type check</h3><span class="badge ready">Ready</span></div>
+      <p>Confirm a number is a live mobile line (not a landline or VoIP) before you dial or text — cleaner lists, fewer wasted attempts.</p>
+      <span class="just"><b>Ready to turn on</b> · Twilio Lookup</span>
+      <p class="pw">Integration catalogued, not yet wired</p></div>
+    <div class="fcard"><div class="top"><h3>Second skip-trace source</h3><span class="badge ready">Ready</span></div>
+      <p>An alternate skip-trace vendor to cross-check or fill gaps when the primary comes back thin.</p>
+      <span class="just"><b>Ready to turn on</b> · Tracerfy</span>
+      <p class="pw">Integration catalogued, not yet wired</p></div>
+  </div>
+</div></section>
+
+<!-- 4 CALC -->
+<section class="cat" id="calc"><div class="wrap">
+  <div class="cathead"><div class="cico">🧮</div><h2>Deal calculators</h2></div>
+  <p class="catsub">Every exit, underwritten in seconds — Scout tells you the max you can pay.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Fix &amp; flip</h3><span class="badge live">Live</span></div>
+      <p>Profit, ROI, and the 70%-rule max allowable offer from ARV, rehab, and costs.</p>
+      <span class="just"><b>Just say:</b> “Run a flip at 380k ARV, 55k rehab.”</span></div>
+    <div class="fcard"><div class="top"><h3>BRRRR</h3><span class="badge live">Live</span></div>
+      <p>Cash-left-in, cash-on-cash return, and whether the refinance lets you recycle your capital.</p>
+      <span class="just"><b>Just say:</b> “BRRRR this at 300k ARV, 60k rehab, 7% rate.”</span></div>
+    <div class="fcard"><div class="top"><h3>Buy &amp; hold / rental</h3><span class="badge live">Live</span></div>
+      <p>NOI, cap rate, DSCR, and cash-on-cash so you know if it cash-flows before you offer.</p>
+      <span class="just"><b>Just say:</b> “Does it cash-flow at 2,100 rent and 250k price?”</span></div>
+    <div class="fcard"><div class="top"><h3>Wholesale assignment</h3><span class="badge live">Live</span></div>
+      <p>Buyer-max, your spread, and the assignment fee so you know the number to lock the contract at.</p>
+      <span class="just"><b>Just say:</b> “What's my wholesale max at 220k ARV, 30k rehab?”</span></div>
+  </div>
+</div></section>
+
+<!-- 5 LISTS -->
+<section class="cat" id="lists"><div class="wrap">
+  <div class="cathead"><div class="cico">🎯</div><h2>List building &amp; farming</h2></div>
+  <p class="catsub">Describe your buy-box; Scout assembles the targets.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Buy-box list builder</h3><span class="badge live">Live</span></div>
+      <p>Tell Scout your market, distress type, and equity threshold and it builds a scored motivated-seller list off the live distress feed — sorted hottest-first.</p>
+      <span class="just"><b>Just say:</b> “Build a list of 40%+ equity pre-foreclosures in Utah County.”</span>
+      <p class="pw">Runs on the reconciled distress feed</p></div>
+    <div class="fcard"><div class="top"><h3>Saved &amp; automated lists</h3><span class="badge ready">Ready</span></div>
+      <p>Save a buy-box and have Scout re-run it on a schedule, pushing you new matches as they appear.</p>
+      <span class="just"><b>Ready to turn on</b> · builds on the list engine</span>
+      <p class="pw">Depends on list-builder source wiring</p></div>
+  </div>
+</div></section>
+
+<!-- 6 LEARN -->
+<section class="cat" id="learn"><div class="wrap">
+  <div class="cathead"><div class="cico">🧠</div><h2>Knowledge &amp; memory</h2></div>
+  <p class="catsub">Scout learns your business and reasons from a shared RE playbook.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Teach it with a link</h3><span class="badge live">Live</span></div>
+      <p>Paste a YouTube video or an article and Scout reads it, distills the tactics and numbers, and files them into your memory to recall later. Public/authorized content only.</p>
+      <span class="just"><b>Just say:</b> paste any link → “Saved to your memory ✅”</span></div>
+    <div class="fcard"><div class="top"><h3>Private deal memory</h3><span class="badge live">Live</span></div>
+      <p>Scout remembers the properties, owners, and numbers you've worked — walled off from every other member — so you can pick up any thread without re-explaining.</p>
+      <span class="just"><b>Just say:</b> “What was the equity on that Kalispell deal?”</span></div>
+    <div class="fcard"><div class="top"><h3>Shared RE knowledge base</h3><span class="badge live">Live</span></div>
+      <p>Scout reasons from a shared library of underwriting rules, foreclosure workflows, and a deal glossary — so its answers are grounded, not generic.</p>
+      <span class="just"><b>Just say:</b> “Explain the 70% rule / what's a DSCR?”</span></div>
+    <div class="fcard"><div class="top"><h3>Ask what it can do</h3><span class="badge live">Live</span></div>
+      <p>Not sure how to phrase something? Ask Scout directly in the chat and it walks you through its menu on demand.</p>
+      <span class="just"><b>Just say:</b> “What can you do?”</span></div>
+  </div>
+</div></section>
+
+<!-- 7 MAPS -->
+<section class="cat" id="maps"><div class="wrap">
+  <div class="cathead"><div class="cico">🗺️</div><h2>Maps &amp; imagery</h2></div>
+  <p class="catsub">Eyeball condition before you drive out.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Satellite &amp; street view</h3><span class="badge live">Live</span></div>
+      <p>Pull an aerial and a street-view image of any property so you can read the roof, the lot, and the block without leaving the chat.</p>
+      <span class="just"><b>Just say:</b> “Show me a street view of 123 Main.”</span>
+      <p class="pw"><b>Aerial &amp; street-level imagery</b></p></div>
+  </div>
+</div></section>
+
+<!-- 8 APP -->
+<section class="cat" id="app"><div class="wrap">
+  <div class="cathead"><div class="cico">💻</div><h2>Web app &amp; account</h2></div>
+  <p class="catsub">The self-serve side of OffRamp — the same data, on a map, in a browser.</p>
+  <div class="fgrid">
+    <div class="fcard"><div class="top"><h3>Search &amp; map the feed</h3><span class="badge live">Live</span></div>
+      <p>Filter the national distress feed by state, city, status, and minimum equity — and open any property's full report.</p>
+      <span class="just"><b>In the app</b> · free tier included</span></div>
+    <div class="fcard"><div class="top"><h3>Free &amp; Pro plans</h3><span class="badge live">Live</span></div>
+      <p>100 free lookups a month, no card. Pro unlocks unlimited lookups, skip-tracing, and field tools — metered fairly per use.</p>
+      <span class="just"><b>In the app</b> · sign in with Google</span></div>
+    <div class="fcard"><div class="top"><h3>CSV export</h3><span class="badge live">Live</span></div>
+      <p>Export your filtered results to CSV to work them in your own tools <span style="color:var(--moss);font-weight:600;">(Pro)</span>.</p>
+      <span class="just"><b>In the app</b> · Pro, up to 2,000 rows</span></div>
+    <div class="fcard"><div class="top"><h3>Pick your AI model</h3><span class="badge ready">Ready</span></div>
+      <p>Run Scout on the model you prefer — Claude by default, with other leading models (Kimi K2 and more) selectable per account.</p>
+      <span class="just"><b>Ready to turn on</b> · per-account model choice</span>
+      <p class="pw">Claude stays the reliable fallback</p></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <h2>That's the toolbox. Go run a deal.</h2>
+  <p>Start free, then let Scout do the digging while you work the deals.</p>
+  <a class="btn" href="/#signupForm">Start free — 100 lookups</a>
+</div></section>
+
+<footer><div class="wrap">
+  <img class="footmark" src="/brand/logo_ramp_wordmark.png" alt="OffRamp REI">
+  © <span id="yr"></span> OffRamp REI · <a href="/scout/">Meet Scout</a> · <a href="/scout/features/">Features</a> · <a href="/learn">Learn</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/app/">Log in</a>
+</div></footer>
+
+<script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</body>
+</html>

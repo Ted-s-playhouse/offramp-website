@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>List Stacking + Matching — Mini-Spec</title>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--edge:#30363d;--tx:#e6edf3;--dim:#8b949e;
+        --ok:#2ea043;--warn:#d29922;--no:#f85149;--accent:#58a6ff;--gold:#e3b341;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:18px 14px 60px;}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:16px;margin:24px 0 10px;color:var(--accent);border-bottom:1px solid var(--edge);padding-bottom:6px}
+  h3{font-size:14.5px;margin:14px 0 4px;color:var(--gold)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 18px}
+  .card{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:13px 15px;margin:10px 0}
+  .card b{color:var(--tx)}
+  ul{margin:6px 0;padding-left:20px}
+  li{font-size:13.5px;margin:4px 0}
+  code{background:#0d1117;border:1px solid var(--edge);border-radius:5px;padding:0 5px;font-size:12.5px}
+  .mock{background:#0d1117;border:1px solid var(--edge);border-radius:10px;padding:10px;margin:10px 0;
+        font:12px/1.5 ui-monospace,Menlo,monospace;color:#c9d1d9;overflow-x:auto;white-space:pre}
+  .in{color:#7ee787;font-weight:700}
+  .out{color:#ff7b72;font-weight:700}
+  .q{background:rgba(88,166,255,.08);border:1px solid #1f4c7a;border-radius:10px;padding:10px 13px;margin:8px 0;font-size:13.5px}
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-right:3px}
+  .b1{background:rgba(248,81,73,.2);color:#ff7b72}
+  .b2{background:rgba(210,153,34,.2);color:#e3b341}
+  .b3{background:rgba(46,160,67,.2);color:#7ee787}
+</style>
+</head>
+<body>
+
+<h1>List Stacking + Matching</h1>
+<p class="sub">Mini-spec (approve the shape before I code) &middot; Priority #1 &middot; 2026-08-23</p>
+
+<div class="card">
+  <b>What we're building:</b> the ability to pull several lead lists together, collapse duplicates so each real property appears once, and score every property by how many lists it lands on — so the hottest, most-motivated sellers float to the top automatically. Two features, one build, because stacking can't work until matching does.
+</div>
+
+<h2>1. The user experience</h2>
+<div class="card">
+A new <b>Lists</b> area on the desktop command center:
+<ul>
+  <li>Pick 2+ lists to stack (checkboxes): Foreclosure, Probate, Tax-delinquent, + any CSV you import</li>
+  <li>The grid rebuilds with a <b>Stack Score</b> column = # of lists that property is on</li>
+  <li>Each row shows source badges so you see WHY it's hot at a glance</li>
+  <li>Sort by Stack Score (default), filter "show me 2+ / 3+ lists" = your morning call pile</li>
+</ul>
+<div class="mock">OWNER            ADDRESS          STACK  SOURCES
+Gary Ranch       740 Locust Ln     <span class="in">3</span>    <span class="badge b1">FCL</span><span class="badge b2">PROB</span><span class="badge b3">TAX</span>
+R. Holm          61 E Bryce Way    <span class="in">2</span>    <span class="badge b1">FCL</span><span class="badge b3">TAX</span>
+K. Graham        5808 Brown Rd     <span class="out">1</span>    <span class="badge b1">FCL</span></div>
+</div>
+
+<h2>2. Under the hood — matching (the hard part)</h2>
+<div class="card">
+Stacking is trivial once we can say "these two rows are the same house." That's matching. Plan:
+<h3>Canonical property key</h3>
+<ul>
+  <li><b>Strongest:</b> <code>APN + county + state</code> — the legal parcel id. When present, this is the match key (ties into the APN dedup work already started).</li>
+  <li><b>Fallback:</b> normalized <code>street + zip</code> — lowercase, strip punctuation, standardize suffixes (St/Street, Ave/Avenue), fold unit/apt, expand directionals (N/North).</li>
+  <li>Each incoming row resolves to a <b>canonical property</b> row (new <code>properties</code> table, or a <code>canonical_key</code> column on existing rows). One property = one map pin (kills the dup problem).</li>
+</ul>
+<h3>List membership</h3>
+<ul>
+  <li>A <code>list_membership</code> table: <code>(property_id, list_type, source, added_at)</code>.</li>
+  <li><b>Stack Score</b> = count of DISTINCT list_type per property. Cheap to compute, indexable.</li>
+</ul>
+</div>
+
+<h2>3. Sources for v1</h2>
+<div class="card">
+<ul>
+  <li><span class="badge b1">FCL</span> <b>Foreclosure</b> — our existing <code>hit_list</code> (already live)</li>
+  <li><span class="badge b2">PROB</span> <b>Probate</b> — DealMachine pull (+ our existing deceased/obit flags)</li>
+  <li><span class="badge b3">TAX</span> <b>Tax-delinquent</b> — DealMachine pull</li>
+  <li>📄 <b>CSV import</b> — drop in any bought list (tired-landlord, absentee, etc.); we normalize + match it in</li>
+</ul>
+</div>
+
+<h2>4. Scope — v1 IN vs OUT</h2>
+<div class="card">
+<b>IN:</b>
+<ul>
+  <li>Matching/dedup engine + canonical property key</li>
+  <li>list_membership + Stack Score</li>
+  <li>Lists UI: select, score column, source badges, sort, "N+ lists" filter</li>
+  <li>CSV import with column-mapping + normalize/match</li>
+  <li>Map reads canonical properties (dedup fix flows through free)</li>
+</ul>
+<b>OUT (later):</b>
+<ul>
+  <li>Fuzzy/AI name matching for owners (v1 matches on PROPERTY, not person)</li>
+  <li>Auto-refresh schedules (that's the Marketing Automation phase, your #2)</li>
+  <li>Credit-metering the DealMachine pulls (OffRamp productization phase)</li>
+</ul>
+</div>
+
+<h2>5. Build steps</h2>
+<div class="card">
+<ul>
+  <li>1. Address-normalization + APN match function (server-side), with a dry-run report on current data so you see the dedup count before we commit</li>
+  <li>2. <code>properties</code> canonical layer + backfill existing hit_list/contacts into it</li>
+  <li>3. <code>list_membership</code> table + Stack Score view</li>
+  <li>4. Lists UI on desktop (select / score / badges / filter / sort)</li>
+  <li>5. CSV import flow</li>
+  <li>6. Point the map at canonical properties</li>
+</ul>
+Frequent commits; I'll show you the dry-run dedup numbers at step 1 before anything changes live data.
+</div>
+
+<h2>Open questions before I code</h2>
+<div class="q"><b>1. Sources:</b> confirm the 4 above (FCL + Probate + Tax-delinquent + CSV) is the right v1 set.</div>
+<div class="q"><b>2. Canonical layer:</b> ok to add a new <code>properties</code> table as the dedup backbone (cleanest), vs. bolting a <code>canonical_key</code> onto existing tables (faster but messier)? My rec: new table.</div>
+<div class="q"><b>3. Match tie-breaks:</b> when APN is missing and only address matches, should I auto-merge, or hold "likely-same" pairs for a quick review queue? My rec: auto-merge on high-confidence, queue the rest.</div>
+
+<p class="sub" style="margin-top:20px">Say go (or tweak) and step 1 is the address-normalizer + a dry-run dedup report on your real data — zero risk, just shows you how many dupes collapse.</p>
+
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foreclosure, Explained — OffRamp REI Learning Center</title>
+<meta name="description" content="A plain-English guide to foreclosure: how it works, judicial vs. non-judicial states, per-state timelines, the marketing laws that govern buying from distressed owners, and the trustees who run the sales.">
+<link rel="icon" href="/brand/logo_badge_monogram.png">
+<meta property="og:title" content="Foreclosure, Explained — OffRamp REI Learning Center">
+<meta property="og:description" content="How foreclosure works, state by state — timelines, redemption, auction deposits, and the marketing laws you have to follow when you reach out to distressed owners.">
+<meta property="og:image" content="/brand/fb_cover_a.png">
+<meta property="og:type" content="article">
+<style>
+  :root{
+    --green:#1B4332; --green2:#2D6A4F; --moss:#40916C; --mint:#b7e4c7;
+    --paper:#F6F5F1; --ink:#15221B; --muted:#5c6b63; --line:#e3e0d8;
+    --gold:#B8894A; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:var(--green2);text-decoration:none;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
+
+  /* Top bar */
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(27,67,50,.98);backdrop-filter:blur(6px);}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;letter-spacing:-.01em;}
+  .brand .mark{width:38px;height:38px;border-radius:8px;object-fit:contain;}
+  .brand .mark-old{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--moss),var(--mint));
+        display:flex;align-items:center;justify-content:center;color:var(--green);font-weight:900;font-size:16px;}
+  .brand .rei{color:var(--mint);}
+  .navlinks{display:flex;align-items:center;gap:8px;}
+  .topbar a.nav{color:#cfe6d8;font-weight:600;font-size:14px;padding:8px 12px;border-radius:999px;}
+  .topbar a.nav:hover{background:rgba(255,255,255,.10);color:#fff;}
+  .topbar a.login{color:#e8f3ec;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,.28);
+        padding:8px 15px;border-radius:999px;}
+  .topbar a.login:hover{background:rgba(255,255,255,.12);}
+
+  /* Hero */
+  header.hero{background:linear-gradient(160deg,var(--green) 0%,var(--green2) 100%);color:#fff;
+        padding:54px 0 60px;position:relative;overflow:hidden;}
+  header.hero:after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
+        background:radial-gradient(circle,rgba(183,228,199,.18),transparent 70%);}
+  .hero .inner{position:relative;z-index:2;max-width:720px;}
+  .kicker{text-transform:uppercase;letter-spacing:.18em;font-size:12px;font-weight:700;color:var(--mint);margin:0 0 16px;}
+  .hero h1{font-size:40px;line-height:1.1;margin:0 0 16px;font-weight:800;letter-spacing:-.02em;}
+  .hero h1 em{font-style:normal;color:var(--mint);}
+  .hero .sub{font-size:18px;color:#e3efe7;max-width:600px;margin:0;}
+
+  /* Section shells */
+  section{padding:52px 0;}
+  section.alt{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+  h2.sh{font-size:28px;font-weight:800;color:var(--green);margin:0 0 8px;letter-spacing:-.01em;}
+  p.ssub{color:var(--muted);font-size:16px;max-width:680px;margin:0 0 30px;}
+  h3.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-weight:800;color:var(--moss);margin:0 0 6px;}
+
+  /* Anchor nav chips */
+  .jump{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0;}
+  .jump a{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;
+        padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;}
+  .jump a:hover{background:rgba(255,255,255,.22);}
+
+  /* Stat row */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:0 0 8px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;}
+  .stat .big{font-size:26px;font-weight:900;color:var(--green);letter-spacing:-.02em;line-height:1.1;}
+  .stat .lbl{font-size:13px;color:var(--muted);margin-top:4px;}
+
+  /* Two-col explainer */
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 22px;}
+  .box h3{margin:0 0 8px;font-size:19px;font-weight:800;color:var(--ink);}
+  .box p{margin:0 0 10px;font-size:14.5px;color:var(--muted);}
+  .box ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:14.5px;}
+  .box ul li{margin:0 0 6px;}
+  .tag{display:inline-block;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+        padding:4px 10px;border-radius:999px;margin:0 0 12px;}
+  .tag.j{background:#eef4fb;color:#22527e;}
+  .tag.nj{background:#eaf3ee;color:var(--green);}
+
+  /* State cards */
+  .states{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  .scard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;
+        box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .scard .top{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;}
+  .scard h3{margin:0;font-size:19px;font-weight:800;color:var(--green);}
+  .scard .pillmini{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+        padding:4px 9px;border-radius:999px;}
+  .pillmini.nj{background:#eaf3ee;color:var(--green);}
+  .pillmini.j{background:#eef4fb;color:#22527e;}
+  .pillmini.both{background:#f6efe2;color:#8a6524;}
+  .scard dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14px;}
+  .scard dt{color:var(--muted);font-weight:600;}
+  .scard dd{margin:0;color:var(--ink);}
+  .scard .note{margin:12px 0 0;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;}
+  .tline{display:block;margin:12px 0 0;text-decoration:none;border-top:1px solid var(--line);padding-top:12px;}
+  .tline img{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block;}
+  .tline .tcap{display:flex;align-items:center;gap:6px;margin:8px 0 0;font-size:12px;font-weight:700;
+        color:var(--green);letter-spacing:.02em;}
+  .tline .tcap svg{width:13px;height:13px;flex:none;}
+  .tline:hover img{border-color:var(--green);}
+
+  /* All-50 grid */
+  .allwrap{margin-top:40px;}
+  .filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 18px;}
+  .fbtn{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:13px;
+        padding:8px 15px;border-radius:999px;cursor:pointer;font-family:inherit;transition:.12s;}
+  .fbtn:hover{border-color:var(--moss);}
+  .fbtn.on{background:var(--green);color:#fff;border-color:var(--green);}
+  .fcount{margin-left:auto;font-size:13px;color:var(--muted);}
+  .allgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .flip{background:transparent;perspective:1100px;height:238px;cursor:pointer;}
+  .flip-inner{position:relative;width:100%;height:100%;transition:transform .55s cubic-bezier(.4,.1,.2,1);
+        transform-style:preserve-3d;}
+  .flip.flipped .flip-inner{transform:rotateY(180deg);}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+        border:1px solid var(--line);border-radius:13px;padding:14px 15px;background:var(--card);
+        box-shadow:0 1px 2px rgba(0,0,0,.03);overflow:hidden;}
+  .face.back{transform:rotateY(180deg);background:#f6faf7;overflow-y:auto;}
+  .mtop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;}
+  .mname{font-size:15.5px;font-weight:800;color:var(--green);}
+  .mbadge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+        padding:3px 8px;border-radius:999px;white-space:nowrap;}
+  .mbadge.nj{background:#eaf3ee;color:var(--green);}
+  .mbadge.j{background:#eef4fb;color:#22527e;}
+  .mbadge.both{background:#f6efe2;color:#8a6524;}
+  .mrow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin:0 0 4px;}
+  .mrow .k{color:var(--muted);font-weight:600;}
+  .mrow .v{color:var(--ink);text-align:right;}
+  .fliphint{position:absolute;bottom:8px;left:15px;font-size:9.5px;color:var(--moss);font-weight:800;
+        letter-spacing:.05em;text-transform:uppercase;}
+  .bk{margin:0 0 9px;}
+  .bk .lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--moss);margin:0 0 1px;}
+  .bk .val{font-size:11.5px;line-height:1.35;color:var(--ink);word-break:break-word;}
+  .bk .val.stat{color:var(--green2);font-weight:700;}
+  .bk .val a{color:var(--green2);text-decoration:underline;}
+
+  /* Law list */
+  .laws{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .lcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;}
+  .lcard h3{margin:0 0 6px;font-size:16px;font-weight:800;color:var(--ink);}
+  .lcard p{margin:0;font-size:14px;color:var(--muted);}
+  .lcard .state{font-size:12px;font-weight:800;color:var(--moss);text-transform:uppercase;letter-spacing:.06em;}
+
+  /* Attorney/trustee rows */
+  .firms{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .firm{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px;}
+  .firm h3{margin:0 0 4px;font-size:16px;font-weight:800;color:var(--ink);}
+  .firm .cov{font-size:12.5px;color:var(--moss);font-weight:700;margin:0 0 8px;}
+  .firm p{margin:0;font-size:13.5px;color:var(--muted);}
+
+  /* Callout / disclaimer */
+  .callout{background:#f6efe2;border:1px solid #e6d6b8;border-radius:14px;padding:18px 20px;margin:26px 0 0;
+        font-size:13.5px;color:#6b5323;}
+  .callout b{color:#5a4417;}
+
+  /* CTA band */
+  section.band{background:linear-gradient(160deg,var(--green),var(--green2));color:#fff;text-align:center;}
+  .band h2{margin:0 0 10px;font-size:28px;font-weight:800;letter-spacing:-.01em;color:#fff;}
+  .band p{margin:0 0 24px;color:#dcebe1;font-size:16px;}
+  .band a.btn{display:inline-block;background:var(--gold);color:#231a0c;font-weight:800;padding:14px 30px;
+        border-radius:12px;font-size:16px;}
+  .band a.btn:hover{filter:brightness(1.06);}
+
+  .footmark{width:230px;height:auto;display:block;margin:0 auto 16px;}
+  footer{padding:34px 0 60px;color:var(--muted);font-size:13px;text-align:center;}
+  footer a{color:var(--muted);text-decoration:underline;}
+
+  @media(max-width:1000px){ .allgrid{grid-template-columns:repeat(3,1fr);} }
+  @media(max-width:820px){
+    .stats,.two,.states,.laws,.firms{grid-template-columns:1fr;}
+    .allgrid{grid-template-columns:repeat(2,1fr);}
+    .hero h1{font-size:30px;}
+    .navlinks a.nav{display:none;}
+  }
+  @media(max-width:460px){ .allgrid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <a href="/" class="brand"><img class="mark" src="/brand/mark_ramp.png" alt="OffRamp REI logo">OffRamp <span class="rei">REI</span></a>
+  <div class="navlinks">
+    <a class="nav" href="/">The Tool</a>
+    <a class="login" href="https://crm.revivebuyers.com/sign-in">Log in</a>
+  </div>
+</div></div>
+
+<header class="hero"><div class="wrap"><div class="inner">
+  <p class="kicker">Learning Center</p>
+  <h1>Foreclosure, <em>explained.</em></h1>
+  <p class="sub">A plain-English guide to how foreclosure actually works — the national picture, how the process differs state by state, the marketing laws you have to follow when you reach out to a distressed owner, and who runs the sales. This is the education. <a href="/" style="color:#fff;text-decoration:underline;">The tool lives here.</a></p>
+  <div class="jump">
+    <a href="#national">National picture</a>
+    <a href="#process">Judicial vs. non-judicial</a>
+    <a href="#states">Foreclosure by state</a>
+    <a href="#marketing">Marketing laws</a>
+    <a href="#trustees">Who runs the sales</a>
+  </div>
+</div></div></header>
+
+<!-- NATIONAL -->
+<section id="national"><div class="wrap">
+  <h3 class="eyebrow">The 30,000-foot view</h3>
+  <h2 class="sh">The national foreclosure picture</h2>
+  <p class="ssub">Foreclosure activity has been climbing after years of pandemic-era moratoriums and forbearance. Here's where the U.S. stood at the mid-point of 2026, per ATTOM's U.S. Foreclosure Market Report — the industry-standard, publicly published source.</p>
+  <div class="stats">
+    <div class="stat"><div class="big">227,548</div><div class="lbl">Properties with a foreclosure filing, H1 2026 — up 21% year over year</div></div>
+    <div class="stat"><div class="big">1 in 632</div><div class="lbl">Homes with a filing (a 0.16% national foreclosure rate)</div></div>
+    <div class="stat"><div class="big">164,566</div><div class="lbl">Foreclosure starts (new cases opened), up 18%</div></div>
+    <div class="stat"><div class="big">27,983</div><div class="lbl">Bank repossessions / REO, up 33%</div></div>
+  </div>
+  <div class="two" style="margin-top:18px;">
+    <div class="box">
+      <h3>Where it's heating up fastest</h3>
+      <p>Biggest year-over-year jumps in filings:</p>
+      <ul>
+        <li><b>Idaho</b> +59%</li>
+        <li><b>Colorado</b> +57%</li>
+        <li><b>Georgia</b> +52%</li>
+        <li><b>North Carolina</b> +47%</li>
+        <li><b>Mississippi</b> +45%</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Where the rates are highest</h3>
+      <p>Largest share of homes in foreclosure:</p>
+      <ul>
+        <li><b>Florida</b> 0.27% (1 in 373)</li>
+        <li><b>South Carolina</b> 0.26%</li>
+        <li><b>Indiana</b> 0.25%</li>
+        <li><b>Delaware</b> 0.25%</li>
+        <li><b>Illinois</b> 0.23%</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>Why it matters:</b> A rising foreclosure market means more equity is at risk of being lost at auction — and more owners who need a real option before sale day. The opportunity and the responsibility rise together.</div>
+</div></section>
+
+<!-- PROCESS -->
+<section id="process" class="alt"><div class="wrap">
+  <h3 class="eyebrow">The two roads</h3>
+  <h2 class="sh">Judicial vs. non-judicial foreclosure</h2>
+  <p class="ssub">Every state runs foreclosure one of two ways — through a courtroom, or through a trustee. Which one your state uses drives the entire timeline, the paperwork, and how much runway a homeowner has.</p>
+  <div class="two">
+    <div class="box">
+      <span class="tag j">Judicial</span>
+      <h3>The lender sues</h3>
+      <p>The lender files a lawsuit and a judge signs off on the sale. It's slower — often 6–12 months or much longer if contested — and usually ends in a sheriff's sale. Many judicial states also give the owner a <b>post-sale redemption period</b> to buy the home back.</p>
+      <ul>
+        <li>Court sets the sale date — no fixed calendar</li>
+        <li>More documented, more contestable</li>
+        <li>Common in states like NY, FL, IL, and for probate/deceased-borrower cases</li>
+      </ul>
+    </div>
+    <div class="box">
+      <span class="tag nj">Non-judicial</span>
+      <h3>The trustee sells</h3>
+      <p>No courtroom. A trustee named in the deed of trust sells the property under a "power of sale" clause after a required notice period. Much faster — typically 2–6 months from the notice of default to the auction on the courthouse steps.</p>
+      <ul>
+        <li>Fixed statutory notice + sale-date schedule</li>
+        <li>Usually little or no post-sale redemption</li>
+        <li>The norm across the Mountain West — UT, ID, MT, AZ, NV</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>The equity clock:</b> In fast non-judicial states, an owner can go from the first notice to losing the house — and all their equity — in a matter of weeks. That's why reaching them <em>before</em> the sale is the whole game.</div>
+</div></section>
+
+<!-- STATES -->
+<section id="states"><div class="wrap">
+  <h3 class="eyebrow">State by state</h3>
+  <h2 class="sh">Foreclosure by state</h2>
+  <p class="ssub">The core rules for the markets we cover. Timelines are typical ranges, not guarantees — every case turns on the specific notice, the lender, and the county. Always verify the current dates on the recorded Notice of Default / Notice of Trustee's Sale.</p>
+  <div class="states">
+
+    <div class="scard">
+      <div class="top"><h3>Utah</h3><span class="pillmini nj">Non-judicial</span></div>
+      <dl>
+        <dt>Process</dt><dd>Trustee's sale under a deed of trust (judicial route exists but is rare)</dd>
+        <dt>Typical timeline</dt><dd>~90+ days from Notice of Default to sale</dd>
+        <dt>Post-sale redemption</dt><dd>None on a non-judicial trustee sale</dd>
+        <dt>Auction deposit</dt><dd>Commonly ~$10k–$20k to bid; balance due fast</dd>
+      </dl>
+      <p class="note">A 3-month reinstatement window runs from the recorded Notice of Default — a key cure period to work with the owner.</p>
+      <a class="tline" href="/brand/timelines/timeline-UT.jpg" target="_blank" rel="noopener">
+        <img src="/brand/timelines/timeline-UT.jpg" alt="Utah pre-foreclosure timeline — 90-day reinstatement period" loading="lazy">
+        <span class="tcap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 3h6v6M21 3l-9 9M10 5H4v15h15v-6"/></svg>Tap to open the full Utah timeline</span>
+      </a>
+    </div>
+
+    <div class="scard">
+      <div class="top"><h3>Idaho</h3><span class="pillmini nj">Non-judicial</span></div>
+      <dl>
+        <dt>Process</dt><dd>Trustee's sale; deceased-borrower cases can force the judicial route</dd>
+        <dt>Typical timeline</dt><dd>~110–120+ days (notice of sale ~120 days out)</dd>
+        <dt>Post-sale redemption</dt><dd>None on a non-judicial trustee sale</dd>
+        <dt>Auction deposit</dt><dd>Full cash / certified funds expected at sale</dd>
+      </dl>
+      <p class="note">One of the fastest-heating markets in the country (+59% YoY). The 120-day notice gives a real cure/negotiation runway.</p>
+      <a class="tline" href="/brand/timelines/timeline-ID.jpg" target="_blank" rel="noopener">
+        <img src="/brand/timelines/timeline-ID.jpg" alt="Idaho pre-foreclosure timeline — 115-day reinstatement period" loading="lazy">
+        <span class="tcap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 3h6v6M21 3l-9 9M10 5H4v15h15v-6"/></svg>Tap to open the full Idaho timeline</span>
+      </a>
+    </div>
+
+    <div class="scard">
+      <div class="top"><h3>Montana</h3><span class="pillmini nj">Non-judicial</span></div>
+      <dl>
+        <dt>Process</dt><dd>Trustee's sale under the Small Tract Financing Act (parcels within the acreage limit)</dd>
+        <dt>Typical timeline</dt><dd>~120+ days from notice to sale</dd>
+        <dt>Post-sale redemption</dt><dd>None under the Small Tract Financing Act</dd>
+        <dt>Auction deposit</dt><dd>Full cash / certified funds expected at sale</dd>
+      </dl>
+      <p class="note">Larger acreage or non-STFA loans can be judicial, which adds a redemption period — check the deed of trust.</p>
+    </div>
+
+    <div class="scard">
+      <div class="top"><h3>Arizona</h3><span class="pillmini nj">Non-judicial</span></div>
+      <dl>
+        <dt>Process</dt><dd>Trustee's sale under a deed of trust</dd>
+        <dt>Typical timeline</dt><dd>~90+ days (minimum 90-day notice before sale)</dd>
+        <dt>Post-sale redemption</dt><dd>None on a non-judicial trustee sale</dd>
+        <dt>Auction deposit</dt><dd>Commonly a ~$10k deposit to bid; balance next business day</dd>
+      </dl>
+      <p class="note">The 90-day statutory notice is the reinstatement window — the owner can cure up until shortly before the sale.</p>
+    </div>
+
+    <div class="scard">
+      <div class="top"><h3>Nevada</h3><span class="pillmini nj">Non-judicial</span></div>
+      <dl>
+        <dt>Process</dt><dd>Trustee's sale; strong homeowner-protection notice requirements</dd>
+        <dt>Typical timeline</dt><dd>~4+ months, longer with mediation elections</dd>
+        <dt>Post-sale redemption</dt><dd>None on a non-judicial trustee sale</dd>
+        <dt>Auction deposit</dt><dd>Full cash / certified funds at sale</dd>
+      </dl>
+      <p class="note">Nevada has some of the strictest notice + mediation rules in the West — respect every required disclosure.</p>
+    </div>
+
+    <div class="scard">
+      <div class="top"><h3>Colorado</h3><span class="pillmini both">Public Trustee</span></div>
+      <dl>
+        <dt>Process</dt><dd>Unique Public Trustee system with court "Rule 120" order authorizing sale</dd>
+        <dt>Typical timeline</dt><dd>~4–6 months</dd>
+        <dt>Post-sale redemption</dt><dd>Junior lienholders may redeem; owner cure right before sale</dd>
+        <dt>Auction deposit</dt><dd>Certified funds; county-specific rules</dd>
+      </dl>
+      <p class="note">Fastest-rising rate among big markets (+57% YoY). Colorado also has a strong <b>Foreclosure Protection Act</b> — see marketing laws below.</p>
+    </div>
+
+    <div class="scard">
+      <div class="top"><h3>Washington</h3><span class="pillmini nj">Non-judicial</span></div>
+      <dl>
+        <dt>Process</dt><dd>Trustee's sale; mandatory pre-foreclosure Notice of Default + mediation</dd>
+        <dt>Typical timeline</dt><dd>~120–190 days with the mediation program</dd>
+        <dt>Post-sale redemption</dt><dd>None on a non-judicial trustee sale</dd>
+        <dt>Auction deposit</dt><dd>Full cash / certified funds at sale</dd>
+      </dl>
+      <p class="note"><b>Heavily regulated for investors:</b> WA's Distressed Property Law (RCW 61.34) and equity-skimming rules are among the strictest in the U.S. — read the marketing section carefully.</p>
+    </div>
+
+  </div>
+
+  <div class="allwrap">
+    <h3 class="eyebrow" style="margin-bottom:6px;">Every state</h3>
+    <h2 class="sh" style="font-size:23px;">All 50 states + D.C.</h2>
+    <p class="ssub" style="margin-bottom:16px;">The primary foreclosure method, a typical timeline, and whether the owner gets a post-sale redemption period. Filter by process type below.</p>
+    <div class="callout" style="margin:0 0 20px;"><b>For informational purposes only — not legal advice.</b> Timelines are typical ranges and many states allow both judicial and non-judicial routes depending on the loan and property. Foreclosure law changes often. Always verify the current statute and the recorded notice, and consult a licensed attorney in the relevant state before acting.</div>
+    <div class="filterbar">
+      <button class="fbtn on" data-f="all">All states</button>
+      <button class="fbtn" data-f="nj">Non-judicial</button>
+      <button class="fbtn" data-f="j">Judicial</button>
+      <span class="fcount" id="fcount"></span>
+    </div>
+    <div class="allgrid" id="allgrid"></div>
+  </div>
+</div></section>
+
+<!-- MARKETING LAWS -->
+<section id="marketing" class="alt"><div class="wrap">
+  <h3 class="eyebrow">Do it the right way</h3>
+  <h2 class="sh">The laws that govern marketing to distressed owners</h2>
+  <p class="ssub">Reaching out to someone in foreclosure is regulated in most states. A whole category of law — "foreclosure consultant" and "equity purchaser" statutes — exists specifically to protect distressed homeowners from being taken advantage of. If you contact, consult, or buy from an owner in default, these can apply to you. Know them before you send a single letter.</p>
+  <div class="laws">
+    <div class="lcard">
+      <div class="state">Foreclosure Consultant laws</div>
+      <h3>If you offer to "help stop the foreclosure"</h3>
+      <p>Many states (CA, CO, MN, MD, NY, WA and others) regulate anyone who, for compensation, offers to help an owner stop or postpone a foreclosure. Typical rules: a <b>written contract</b>, mandatory statutory notices, a <b>right to cancel</b> (often 3–5 days), and a ban on collecting fees up front.</p>
+    </div>
+    <div class="lcard">
+      <div class="state">Equity Purchaser laws</div>
+      <h3>If you buy the home from an owner in default</h3>
+      <p>"Equity purchaser" / "distressed home purchaser" acts govern buying a residence that's already in foreclosure. They commonly require specific written disclosures (your name/address, the full legal description, the terms), a <b>homeowner right of rescission</b> measured from recording, and bans on unconscionable terms or deed-for-lease "sale-leaseback" traps.</p>
+    </div>
+    <div class="lcard">
+      <div class="state">Washington · RCW 61.34</div>
+      <h3>Among the strictest</h3>
+      <p>Washington's Distressed Property / equity-skimming law is broad and aggressive. "Foreclosure rescue" and finance-back schemes that let a seller stay in the home are effectively <b>prohibited</b> — this is the classic "foreclosure bailout is illegal in WA" rule. Tread very carefully.</p>
+    </div>
+    <div class="lcard">
+      <div class="state">Colorado · Foreclosure Protection Act</div>
+      <h3>Consultant + equity-purchaser combined</h3>
+      <p>Colorado's Act regulates both foreclosure consultants and equity purchasers, with required contract language, cancellation rights, and conduct standards. A leading example of a state that layers both regimes together.</p>
+    </div>
+    <div class="lcard">
+      <div class="state">Missouri · SB 973 (2026)</div>
+      <h3>New wholesaler-disclosure law</h3>
+      <p>Effective August 28, 2026, Missouri requires "we buy houses" wholesalers to <b>disclose to sellers that they're a wholesaler</b> and to encourage sellers to seek legal, tax, and real-estate advice before signing — part of a growing national trend toward wholesaler transparency.</p>
+    </div>
+    <div class="lcard">
+      <div class="state">Everywhere</div>
+      <h3>The universal rules still apply</h3>
+      <p>On top of the specialty statutes: federal telemarketing / DNC rules, TCPA on texts and autodialed calls, truth-in-advertising, and state real-estate licensing lines. "Skip-traced and legal to call" are two different questions — honor DNC status and consent.</p>
+    </div>
+  </div>
+  <div class="callout"><b>This is general education, not legal advice.</b> Foreclosure-consultant, equity-purchaser, wholesaler, and telemarketing laws vary by state and change often — Missouri's 2026 law is proof. Before you run a campaign in any state, confirm the current statute and <b>talk to a licensed attorney in that state.</b> OffRamp REI gives you the data; it does not replace legal counsel.</div>
+</div></section>
+
+<!-- TRUSTEES -->
+<section id="trustees"><div class="wrap">
+  <h3 class="eyebrow">Follow the paperwork</h3>
+  <h2 class="sh">Who runs the sales</h2>
+  <p class="ssub">In non-judicial states the sale is run by a <b>trustee</b> — usually a specialized law firm named on the recorded Notice of Trustee's Sale. Knowing the big regional players tells you where to find the official sale lists, opening bids, and postponements. These are commonly-seen foreclosure trustees across the Mountain West; always confirm the trustee named on the specific recorded notice.</p>
+  <div class="firms">
+    <div class="firm">
+      <h3>Halliday, Watkins &amp; Mann, P.C.</h3>
+      <p class="cov">UT · ID · MT · WY · CO · and 15+ more states</p>
+      <p>One of the largest multi-state foreclosure trustees in our footprint. Handles trustee sales, bankruptcy, evictions, and REO closings — a primary source for Mountain West sale lists.</p>
+    </div>
+    <div class="firm">
+      <h3>Aldridge Pite / Pite entities</h3>
+      <p class="cov">ID · UT · multi-state</p>
+      <p>A large national mortgage-default and foreclosure trustee frequently named on Western trustee sales.</p>
+    </div>
+    <div class="firm">
+      <h3>Orange Title / regional title-based trustees</h3>
+      <p class="cov">UT</p>
+      <p>In Utah, title and trustee companies also run sales and publish opening bids — a key ground-truth source for the posted bid.</p>
+    </div>
+    <div class="firm">
+      <h3>Your county recorder + trustee's own list</h3>
+      <p class="cov">Every state</p>
+      <p>The real source of truth is the recorded notice and the trustee's published sale list — that's where the actual sale date and opening bid live. OffRamp verifies against these directly.</p>
+    </div>
+  </div>
+  <div class="callout"><b>How to use this:</b> When a lead shows up, find the trustee on the recorded Notice of Trustee's Sale, pull their published sale list, and confirm the date + opening bid there. That posted bid is the total debt — the fastest read on whether real equity exists. OffRamp does this verification for you on every lead.</div>
+</div></section>
+
+<!-- CTA -->
+<section class="band"><div class="wrap">
+  <h2>Know the rules. Now find the deals.</h2>
+  <p>You understand the process — OffRamp puts the verified, skip-traced leads in front of you.</p>
+  <a class="btn" href="/#signupForm">See live deals in your market →</a>
+</div></section>
+
+<footer><div class="wrap">
+  <img class="footmark" src="/brand/logo_ramp_wordmark.png" alt="OffRamp REI">
+  Educational information only — not legal advice. Verify current law with a licensed attorney in your state.<br>
+  © <span id="yr"></span> OffRamp REI · A group that buys pre-foreclosure, auction &amp; probate properties · <a href="/">Home</a> · <a href="https://crm.revivebuyers.com/sign-in">Log in</a>
+</div></footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+// [method, timeline, redemption, primary statute, foreclosing document, public-notice URL]
+var STATES = {
+  "Alabama":["nj","~1–3 mo","Up to 1 yr (180 days homestead)","Ala. Code §35-10-1 et seq.","Notice of Foreclosure Sale","https://www.alabamapublicnotices.com"],
+  "Alaska":["nj","~3–4 mo","None (non-judicial)","Alaska Stat. §34.20.070 et seq.","Notice of Default & Election to Sell","https://marketplace.adn.com"],
+  "Arizona":["nj","~90+ days","None","A.R.S. §33-801 et seq.","Notice of Trustee's Sale","https://www.arizonapublicnotices.com"],
+  "Arkansas":["nj","~4 mo","None (non-judicial)","Ark. Code §18-50-101 et seq.","Trustee's / Mortgagee's Notice of Default","https://classifieds.arkansasonline.com/marketplace-littlerock/category/legal%20notices/foreclosures"],
+  "California":["nj","~120+ days","None (non-jud); 1 yr judicial","Cal. Civ. Code §2924 et seq.","Notice of Trustee's Sale","https://www.capublicnotice.com/"],
+  "Colorado":["nj","~4–6 mo","Junior liens only","C.R.S. §38-38-101 et seq.","Notice of Election and Demand","https://www.publicnoticecolorado.com/"],
+  "Connecticut":["j","~5–8 mo","Set by court (law days)","Conn. Gen. Stat. §49-1 et seq.","Legal Notice of Foreclosure","https://connecticutpublicnotices.com/"],
+  "Delaware":["j","~7–9 mo","None","10 Del. C. §5061 et seq.","Notice of Sale","https://www.delawareonline.com/public-notices"],
+  "Florida":["j","~8–12 mo","Until sale certificate filed","Fla. Stat. §702 et seq.","Notice of Foreclosure Sale","https://floridapublicnotices.com/"],
+  "Georgia":["nj","~2 mo","None","O.C.G.A. §44-14-160 et seq.","Notice of Sale Under Power","https://www.georgiapublicnotice.com/"],
+  "Hawaii":["both","~9–12 mo","None","Haw. Rev. Stat. §667 et seq.","Notice of Foreclosure Sale","https://statelegals.staradvertiser.com/"],
+  "Idaho":["nj","~150 days","None","Idaho Code §45-1502 et seq.","Notice of Trustee's Sale","https://www.idahopublicnotices.com/"],
+  "Illinois":["j","~7–12 mo","7 mo (from service)","735 ILCS 5/15-1101 et seq.","Notice of Sale","https://www.publicnoticeillinois.com/"],
+  "Indiana":["j","~5–9 mo","None (3-mo pre-sale wait)","Ind. Code §32-29-7 et seq.","Notice of Sheriff's Sale","https://www.publicnoticeindiana.com/"],
+  "Iowa":["j","~5–6 mo","Up to 1 yr (waivable)","Iowa Code §654 / §655A","Notice of Sheriff's Levy & Sale","https://www.iowapublicnotices.com/"],
+  "Kansas":["j","~4–6 mo","3–12 months","K.S.A. §60-2410 et seq.","Notice of Sale","https://kansaspublicnotices.com/"],
+  "Kentucky":["j","~6–12 mo","1 yr if sold below ⅔ value","KRS §426 et seq.","Notice of Default and Sale","https://kypublicnotice.com/"],
+  "Louisiana":["j","~3–6 mo","None","La. C.C.P. art. 3721 et seq.","Sheriff's Sale","https://louisianapublicnotice.com/"],
+  "Maine":["j","~8–10 mo","90 days","14 M.R.S. §6321 et seq.","Notice of Public Sale","https://www.mainenotices.com/"],
+  "Maryland":["nj","~3–6 mo","None (until ratified)","Md. Rule 14-201; RP §7-105","Substitute Trustee's Sale","https://www.mddcpublicnotices.com/"],
+  "Massachusetts":["nj","~4–8 mo","None","Mass. Gen. Laws ch. 244 §11 et seq.","Notice of Mortgagee's Sale","https://www.masspublicnotices.org/"],
+  "Michigan":["nj","~2–4 mo","6 months (1 yr some)","MCL §600.3201 et seq.","Notice of Foreclosure Sale","http://legalnews.com/"],
+  "Minnesota":["nj","~2–4 mo","6 mo (12 mo ag/large)","Minn. Stat. §580 et seq.","Notice of Mortgage Foreclosure Sale","https://www.mnpublicnotice.com/"],
+  "Mississippi":["nj","~2 mo","None","Miss. Code §89-1-55 et seq.","Trustee's Notice of Sale","https://www.mspublicnotices.org/"],
+  "Missouri":["nj","~2 mo","1 yr (if lender buys, w/ notice)","Mo. Rev. Stat. §443.290 et seq.","Notice of Trustee's Sale","https://www.mopublicnotices.com/"],
+  "Montana":["nj","~150 days","None (Small Tract)","Mont. Code §71-1-301 et seq. (STFA)","Notice of Trustee's Sale","https://www.montanapublicnotices.com/mna/legals/"],
+  "Nebraska":["nj","~5–6 mo","None (non-jud option)","Neb. Rev. Stat. §76-1001 et seq.","Notice of Trustee's Sale","https://www.nepublicnotices.com/"],
+  "Nevada":["nj","~4+ mo","None","Nev. Rev. Stat. §107.080 et seq.","Notice of Trustee's Sale","https://www.nevadapublicnotice.com/"],
+  "New Hampshire":["nj","~2–3 mo","None","N.H. Rev. Stat. §479:25 et seq.","Notice of Foreclosure Sale","https://www.unionleader.com/classifieds/legals"],
+  "New Jersey":["j","~9–12+ mo","10 days (limited)","N.J.S.A. §2A:50-1 et seq.","Sheriff's Sale","https://www.njpublicnotices.com/"],
+  "New Mexico":["j","~4–6 mo","9 mo (shortenable to 1 mo)","N.M. Stat. §39-5 / §48-10","Notice of Sale","https://www.newmexicopublicnotices.com/"],
+  "New York":["j","~12–15+ mo","None","N.Y. RPAPL §1301 et seq.","Notice of Sale in Foreclosure","https://newyorkpublicnotices.com/"],
+  "North Carolina":["nj","~4 mo","None (10-day upset bid)","N.C. Gen. Stat. §45-21 et seq.","Notice of Foreclosure Sale","https://www.ncnotices.com/"],
+  "North Dakota":["j","~4–6 mo","60 days – 1 yr","N.D. Cent. Code §32-19 et seq.","Notice of Real Estate Sale","http://www.ndpublicnotices.com/"],
+  "Ohio":["j","~5–7 mo","Until sale confirmed","Ohio Rev. Code §2329 / §2323","Sheriff's Sale of Real Estate","https://www.publicnoticesohio.com/"],
+  "Oklahoma":["j","~4–7 mo","None (waivable)","46 O.S. §40 et seq.","Notice of Sheriff's Sale","https://opa.eclipping.org/opa/legals/"],
+  "Oregon":["both","~5–6 mo","None (non-jud); 180 days jud","Or. Rev. Stat. §86.705 et seq.","Trustee's Notice of Sale / Sheriff's Sale","https://www.publicnoticeoregon.com/"],
+  "Pennsylvania":["j","~5–9 mo","None (cure pre-sale)","42 Pa. C.S. §8103; Act 6/91","Sheriff's Sale","https://www.publicnoticepa.com/"],
+  "Rhode Island":["nj","~2–3 mo","None","R.I. Gen. Laws §34-27 et seq.","Notice of Mortgagee's Sale","https://www.providencejournal.com/public-notices"],
+  "South Carolina":["j","~5–8 mo","None (30-day upset bid)","S.C. Code §29-3-630 et seq.","Master's Sale","https://www.scpublicnotices.com/"],
+  "South Dakota":["nj","~3–6 mo","180 days – 1 yr","S.D. Codified Laws §21-48 et seq.","Notice of Real Estate Sale on Foreclosure","https://www.sdpublicnotices.com/"],
+  "Tennessee":["nj","~2 mo","Up to 2 yr (usually waived)","Tenn. Code §35-5-101 et seq.","Substitute Trustee's Notice of Sale","https://www.tnpublicnotice.com/"],
+  "Texas":["nj","~2 mo","None","Tex. Prop. Code §51.002 et seq.","Notice of Substitute Trustee's Sale","https://www.texaspublicnotices.com/"],
+  "Utah":["nj","~90+ days","None","Utah Code §57-1-19 et seq. (§57-1-24 NOD)","Notice of Trustee's Sale","https://www.utahlegals.com/"],
+  "Vermont":["j","~7–10 mo","6 months","12 V.S.A. §4931 et seq.","Mortgagee's Notice of Sale","https://www.burlingtonfreepress.com/public-notices"],
+  "Virginia":["nj","~2 mo","None","Va. Code §55.1-320 et seq.","Trustee's Sale","https://www.publicnoticevirginia.com/"],
+  "Washington":["nj","~4–6 mo","None (non-judicial)","Wash. Rev. Code §61.24 et seq.","Notice of Trustee's Sale","https://www.wapublicnotices.com/"],
+  "West Virginia":["nj","~2 mo","None","W. Va. Code §38-1-3 et seq.","Notice of Trustee's Sale","https://wvlegals.com/"],
+  "Wisconsin":["j","~9–12 mo","6–12 mo (waivable)","Wis. Stat. §846.01 et seq.","Notice of Sheriff Sale","https://www.jsonline.com/public-notices"],
+  "Wyoming":["nj","~2–3 mo","3 mo (1 yr agricultural)","Wyo. Stat. §34-4-101 et seq.","Notice of Foreclosure Sale","https://www.wyopublicnotices.com/"],
+  "District of Columbia":["j","~4–6 mo","None","D.C. Code §42-815 et seq.","Judicial Sale of Real Estate","http://classified.washingtontimes.com/"]
+};
+var LBL={nj:"Non-judicial",j:"Judicial",both:"Both"};
+var grid=document.getElementById('allgrid'), fcount=document.getElementById('fcount');
+function host(u){try{return u.replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];}catch(e){return u;}}
+function render(f){
+  var names=Object.keys(STATES).sort(), html="", n=0;
+  for(var i=0;i<names.length;i++){
+    var s=names[i], d=STATES[s], m=d[0];
+    if(f!=="all" && m!==f) continue;
+    n++;
+    html+='<div class="flip" onclick="this.classList.toggle(\'flipped\')"><div class="flip-inner">'
+      +'<div class="face front"><div class="mtop"><span class="mname">'+s+'</span>'
+        +'<span class="mbadge '+m+'">'+LBL[m]+'</span></div>'
+        +'<div class="mrow"><span class="k">Timeline</span><span class="v">'+d[1]+'</span></div>'
+        +'<div class="mrow"><span class="k">Post-sale redemption</span><span class="v">'+d[2]+'</span></div>'
+        +'<div class="mrow"><span class="k">You\'re looking for</span><span class="v">'+d[4]+'</span></div>'
+        +'<span class="fliphint">Tap for statute + notices ↻</span></div>'
+      +'<div class="face back"><div class="mtop"><span class="mname">'+s+'</span>'
+        +'<span class="mbadge '+m+'">'+LBL[m]+'</span></div>'
+        +'<div class="bk"><div class="lbl">Primary statute</div><div class="val stat">'+d[3]+'</div></div>'
+        +'<div class="bk"><div class="lbl">Foreclosing document</div><div class="val">'+d[4]+'</div></div>'
+        +'<div class="bk"><div class="lbl">Free public-notice source</div><div class="val"><a href="'+d[5]+'" target="_blank" rel="noopener" onclick="event.stopPropagation();">'+host(d[5])+'</a></div></div>'
+        +'<span class="fliphint">Tap to flip back ↺</span></div>'
+      +'</div></div>';
+  }
+  grid.innerHTML=html;
+  fcount.textContent=n+" of 51 shown";
+}
+var btns=document.querySelectorAll('.fbtn');
+for(var b=0;b<btns.length;b++){
+  btns[b].addEventListener('click',function(){
+    for(var k=0;k<btns.length;k++) btns[k].classList.remove('on');
+    this.classList.add('on'); render(this.getAttribute('data-f'));
+  });
+}
+render("all");
+</script>
+</body>
+</html>

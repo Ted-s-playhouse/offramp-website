@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>OffRamp REI — v1 Wireframes (Desktop War Room + Mobile Field/DFD)</title>
+<style>
+  :root{
+    --green:#1b4332;--green2:#2d6a4f;--moss:#40916c;--gold:#c8992e;--ink:#1a201c;
+    --muted:#6b756f;--line:#d8e0da;--paper:#f2f8f4;--card:#fbfdfb;--wire:#c3cec7;
+    --pin:#c05442;--pinhot:#a8321f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:#eef3ef;line-height:1.5;}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px;}
+  header.top{background:var(--green);color:#fff;padding:20px 0;}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  header.top h1{font-size:19px;margin:0;font-weight:800;}
+  header.top .sub{font-size:13px;color:#cfe3d7;margin-top:2px;}
+  .tabs{display:flex;gap:8px;}
+  .tabs button{font:inherit;font-weight:700;font-size:14px;padding:9px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.35);
+    background:transparent;color:#fff;cursor:pointer;}
+  .tabs button.on{background:var(--gold);color:#231a0c;border-color:var(--gold);}
+  .note{background:#fff;border-left:4px solid var(--gold);padding:12px 16px;margin:20px 0;border-radius:8px;font-size:13.5px;color:var(--muted);}
+  .note b{color:var(--ink);}
+  section.view{display:none;padding:26px 0 60px;}
+  section.view.on{display:block;}
+  h2.vh{font-size:22px;margin:8px 0 4px;color:var(--green);}
+  p.vsub{font-size:14px;color:var(--muted);margin:0 0 22px;max-width:760px;}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:0 0 18px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;}
+
+  /* generic wireframe boxes */
+  .wf{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(20,50,35,.07);}
+  .anno{font-size:11px;color:var(--gold);font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+  .stub{color:var(--wire);}
+
+  /* ---------- DESKTOP WAR ROOM ---------- */
+  .dt-appbar{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--paper);}
+  .dt-appbar .logo{font-weight:800;color:var(--green);font-size:15px;}
+  .dt-appbar .search{flex:1;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--muted);font-size:13px;}
+  .meter{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 12px;}
+  .meter .bar{width:70px;height:6px;background:var(--line);border-radius:999px;overflow:hidden;}
+  .meter .bar i{display:block;height:100%;width:38%;background:var(--moss);}
+  .btn{font-size:13px;font-weight:700;border-radius:10px;padding:8px 14px;border:1px solid var(--line);background:#fff;color:var(--green);cursor:default;}
+  .btn.pri{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-color:transparent;}
+  .btn.gold{background:var(--gold);color:#231a0c;border-color:transparent;}
+
+  .dt-body{display:grid;grid-template-columns:236px 1fr 320px;min-height:560px;}
+  .dt-rail{border-right:1px solid var(--line);padding:16px 14px;background:#fcfefc;}
+  .dt-rail h4{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:18px 0 8px;}
+  .dt-rail h4:first-child{margin-top:0;}
+  .chip{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;margin:0 6px 6px 0;color:var(--ink);background:#fff;}
+  .chip.on{background:var(--green);color:#fff;border-color:var(--green);}
+  .slider{height:6px;background:var(--line);border-radius:999px;margin:12px 4px;position:relative;}
+  .slider:before{content:"";position:absolute;left:20%;right:15%;top:0;bottom:0;background:var(--moss);border-radius:999px;}
+  .slider:after{content:"";position:absolute;left:calc(65% - 7px);top:-4px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--moss);}
+
+  .dt-map{position:relative;background:
+     linear-gradient(0deg,rgba(64,145,108,.06),rgba(64,145,108,.06)),
+     repeating-linear-gradient(0deg,#eef3ef 0 39px,#e3ebe6 39px 40px),
+     repeating-linear-gradient(90deg,#eef3ef 0 39px,#e3ebe6 39px 40px);
+     border-right:1px solid var(--line);}
+  .pin{position:absolute;transform:translate(-50%,-100%);width:26px;height:26px;border-radius:50% 50% 50% 0;
+     background:var(--pin);rotate:-45deg;border:2px solid #fff;box-shadow:0 4px 8px rgba(0,0,0,.2);}
+  .pin.hot{background:var(--pinhot);width:32px;height:32px;}
+  .pin b{rotate:45deg;display:block;color:#fff;font-size:10px;text-align:center;line-height:22px;font-weight:800;}
+  .map-tools{position:absolute;top:12px;left:12px;display:flex;gap:6px;}
+  .map-tools .btn{font-size:12px;padding:6px 10px;}
+  .map-legend{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);
+     border-radius:10px;padding:8px 10px;font-size:11px;color:var(--muted);}
+
+  .dt-detail{padding:16px 16px;overflow:auto;}
+  .dt-detail .addr{font-weight:800;color:var(--green);font-size:15px;}
+  .dt-detail .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:#fbecea;color:var(--pinhot);margin:6px 6px 0 0;}
+  .dt-detail .badge.date{background:#fdf4e0;color:#8a6a17;}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px dashed var(--line);}
+  .kv .k{color:var(--muted);}
+  .kv .v{font-weight:700;}
+  .analyzer{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0;}
+  .analyzer h5{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--moss);}
+  .analyzer .big{font-size:24px;font-weight:800;color:var(--green);}
+  .contact{background:#fff;border:1px dashed var(--moss);border-radius:12px;padding:12px;margin:12px 0;}
+  .contact .locked{filter:blur(4px);user-select:none;color:var(--muted);}
+  .detail-actions{display:flex;gap:8px;margin-top:12px;}
+
+  .dt-results{border-top:1px solid var(--line);padding:14px 18px;background:#fcfefc;}
+  .dt-results .rhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  table.res{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.res th{text-align:left;color:var(--muted);font-weight:700;padding:7px 8px;border-bottom:1px solid var(--line);}
+  table.res td{padding:8px;border-bottom:1px solid var(--line);}
+  table.res tr:hover td{background:var(--paper);}
+
+  /* ---------- MOBILE FIELD / DFD ---------- */
+  .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center;}
+  .phone{width:300px;flex:0 0 auto;}
+  .phone .frame{border:10px solid #1a201c;border-radius:38px;overflow:hidden;background:#fff;box-shadow:0 20px 50px rgba(20,50,35,.18);}
+  .phone .screen{height:600px;position:relative;overflow:hidden;background:#fff;}
+  .phone .caption{text-align:center;font-size:12.5px;color:var(--muted);margin-top:10px;}
+  .phone .caption b{color:var(--green);}
+  .statusbar{height:26px;background:var(--green);display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:#fff;font-size:10px;}
+  .m-map{position:absolute;inset:26px 0 0 0;background:
+     repeating-linear-gradient(0deg,#eef3ef 0 33px,#e3ebe6 33px 34px),
+     repeating-linear-gradient(90deg,#eef3ef 0 33px,#e3ebe6 33px 34px);}
+  .m-loc{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;
+     background:#2b7de9;border:3px solid #fff;box-shadow:0 0 0 8px rgba(43,125,233,.2);}
+  .m-search{position:absolute;top:36px;left:12px;right:12px;background:#fff;border:1px solid var(--line);border-radius:12px;
+     padding:9px 12px;font-size:12px;color:var(--muted);box-shadow:0 6px 16px rgba(0,0,0,.08);}
+  .m-sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;padding:14px 16px 18px;
+     box-shadow:0 -8px 24px rgba(0,0,0,.12);}
+  .m-sheet .grip{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 10px;}
+  .m-sheet .addr{font-weight:800;color:var(--green);font-size:14px;}
+  .m-badge{display:inline-block;font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:#fbecea;color:var(--pinhot);margin:6px 4px 0 0;}
+  .m-badge.eq{background:#e7f3ec;color:var(--green2);}
+  .m-kv{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;}
+  .m-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+  .m-btn{font-size:12.5px;font-weight:700;text-align:center;border-radius:10px;padding:11px;background:var(--paper);border:1px solid var(--line);color:var(--green);}
+  .m-btn.pri{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-color:transparent;}
+  .m-btn.gold{background:var(--gold);color:#231a0c;border-color:transparent;grid-column:1 / -1;}
+  .m-tabbar{position:absolute;left:0;right:0;bottom:0;height:52px;background:#fff;border-top:1px solid var(--line);
+     display:flex;justify-content:space-around;align-items:center;font-size:10px;color:var(--muted);}
+  .m-tabbar .t{text-align:center;}
+  .m-tabbar .t.on{color:var(--green);font-weight:800;}
+  .m-tabbar .t .i{font-size:17px;display:block;}
+  /* route screen */
+  .m-head{position:absolute;top:26px;left:0;right:0;padding:12px 16px;border-bottom:1px solid var(--line);font-weight:800;color:var(--green);font-size:14px;background:#fff;}
+  .m-list{position:absolute;top:74px;left:0;right:0;bottom:52px;overflow:auto;padding:8px 12px;}
+  .m-row{display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid var(--line);}
+  .m-row .n{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .m-row .rx{flex:1;}
+  .m-row .rx .a{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .m-row .rx .s{font-size:11px;color:var(--muted);}
+  /* push alert */
+  .m-push{position:absolute;top:40px;left:12px;right:12px;background:#fff;border-radius:14px;padding:12px 14px;
+     box-shadow:0 10px 30px rgba(0,0,0,.18);border:1px solid var(--line);}
+  .m-push .h{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;}
+  .m-push .b{font-size:13px;font-weight:700;color:var(--ink);margin-top:5px;}
+  .m-push .bd{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  .callouts{margin-top:26px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .callouts .c{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--muted);}
+  .callouts .c b{color:var(--ink);}
+  @media(max-width:860px){.dt-body{grid-template-columns:1fr;}.callouts{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div>
+    <h1>OffRamp REI — v1 Wireframes</h1>
+    <div class="sub">Two faces of one engine · lookup + data + export tool (not a mini-CRM) · AZ &amp; CO at launch</div>
+  </div>
+  <div class="tabs">
+    <button class="on" id="tabDesk" onclick="show('desk')">🖥️ Desktop “War Room”</button>
+    <button id="tabField" onclick="show('field')">📱 Mobile “Field / DFD”</button>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <div class="note">Low-fidelity, clickable layout for scope sign-off — <b>not final visual design</b>. Every element maps to the locked v1 spec: unlimited lookups, metered skip-trace (250/mo included), Deal Analyzer (ARV/value max — no offer suggestor), CSV export (Pro-only), saved-search push alerts, driving-for-dollars. Cash-buyer finder &amp; letter generator are <b>Phase 2</b> and deliberately absent.</div>
+</div>
+
+<!-- ============ DESKTOP WAR ROOM ============ -->
+<section class="view on" id="view-desk"><div class="wrap">
+  <h2 class="vh">Desktop “War Room” — plan the attack from the office</h2>
+  <p class="vsub">Big map + filter rail + property drawer + exportable results table. This is where a Pro user farms an area, stacks distress signals, runs the numbers, and pulls a CSV to work.</p>
+  <div class="legend">
+    <span><i class="swatch" style="background:var(--pinhot)"></i> Auction &lt; 30 days (hot)</span>
+    <span><i class="swatch" style="background:var(--pin)"></i> Pre-foreclosure / NOD</span>
+    <span><i class="swatch" style="background:var(--gold)"></i> Founding / Pro-gated</span>
+  </div>
+
+  <div class="wf">
+    <!-- app bar -->
+    <div class="dt-appbar">
+      <div class="logo">OffRamp <span style="color:var(--gold)">REI</span></div>
+      <div class="search">🔎 Search address, owner, or APN…</div>
+      <div class="meter" title="Property lookups are unlimited on Pro">Lookups <b style="margin-left:4px">∞</b></div>
+      <div class="meter" title="Skip-traces are metered — 250/mo included">Skip-traces <span class="bar"><i></i></span> <b>95 / 250</b></div>
+      <div class="btn">💾 Saved searches</div>
+      <div class="btn gold">📤 Export CSV</div>
+    </div>
+
+    <!-- 3-col body -->
+    <div class="dt-body">
+      <!-- filter rail -->
+      <aside class="dt-rail">
+        <div class="anno">Filter rail</div>
+        <h4>Market</h4>
+        <span class="chip on">Arizona</span><span class="chip on">Colorado</span>
+        <span class="chip stub">+ more soon</span>
+        <h4>Distress signal</h4>
+        <span class="chip on">Pre-foreclosure</span><span class="chip on">Auction</span>
+        <span class="chip">Probate</span><span class="chip">Divorce</span>
+        <span class="chip">Bankruptcy</span><span class="chip">Death</span>
+        <h4>Equity %</h4>
+        <div class="slider"></div>
+        <div style="font-size:11px;color:var(--muted)">30%+ equity</div>
+        <h4>Days to auction</h4>
+        <div class="slider"></div>
+        <div style="font-size:11px;color:var(--muted)">≤ 45 days</div>
+        <h4>Area</h4>
+        <span class="chip">✏️ Draw area</span><span class="chip">📍 Radius</span>
+      </aside>
+
+      <!-- map -->
+      <div class="dt-map">
+        <div class="map-tools"><span class="btn">✏️ Draw</span><span class="btn">⬛ Heatmap</span><span class="btn">＋ / －</span></div>
+        <div class="pin hot" style="left:38%;top:34%"><b>12d</b></div>
+        <div class="pin" style="left:57%;top:52%"><b></b></div>
+        <div class="pin" style="left:46%;top:66%"><b></b></div>
+        <div class="pin hot" style="left:68%;top:40%"><b>8d</b></div>
+        <div class="pin" style="left:26%;top:58%"><b></b></div>
+        <div class="map-legend">Pins = distressed properties · number = days to auction · click a pin → drawer →</div>
+      </div>
+
+      <!-- detail drawer -->
+      <aside class="dt-detail">
+        <div class="anno">Property drawer</div>
+        <div class="addr">1427 W Cactus Rd, Glendale, AZ 85304</div>
+        <div>
+          <span class="badge">Pre-foreclosure · NOD</span>
+          <span class="badge date">Auction in 12 days</span>
+        </div>
+        <div style="margin-top:10px">
+          <div class="kv"><span class="k">Est. value</span><span class="v">$412,000</span></div>
+          <div class="kv"><span class="k">Loan balance</span><span class="v">$196,400</span></div>
+          <div class="kv"><span class="k">Est. equity</span><span class="v" style="color:var(--green2)">$215,600 (52%)</span></div>
+          <div class="kv"><span class="k">Beds / baths · sqft</span><span class="v">4 / 2 · 1,940</span></div>
+          <div class="kv"><span class="k">Owner-occupied</span><span class="v">No</span></div>
+        </div>
+
+        <div class="analyzer">
+          <h5>🧮 Deal Analyzer</h5>
+          <div style="font-size:12px;color:var(--muted)">ARV (max comp)</div>
+          <div class="big">$438,000</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px">Equity at ARV: <b style="color:var(--green2)">$241,600</b></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">Value/ARV estimate only — no suggested-offer calculator (by design).</div>
+        </div>
+
+        <div class="contact">
+          <div class="anno" style="color:var(--moss)">Skip-traced contact · uses 1 credit</div>
+          <div class="kv"><span class="k">Owner</span><span class="v">R. Delgado</span></div>
+          <div class="kv"><span class="k">Mobile</span><span class="v locked">(602) 555-0148</span></div>
+          <div class="kv"><span class="k">Email</span><span class="v locked">rd•••@•••.com</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">+ heirs &amp; relatives · DNC status</div>
+          <button class="btn pri" style="width:100%;margin-top:10px">Reveal contact — 95 / 250 used</button>
+        </div>
+
+        <div class="detail-actions">
+          <span class="btn">⭐ Save</span>
+          <span class="btn">➕ Add to route</span>
+          <span class="btn gold">📤 Export</span>
+        </div>
+      </aside>
+    </div>
+
+    <!-- results table -->
+    <div class="dt-results">
+      <div class="rhead">
+        <div class="anno">Results · 1,284 matches</div>
+        <div><span class="btn">⭐ Save this search + alert me</span> <span class="btn gold">📤 Export CSV (Pro · ≤2,000 rows)</span></div>
+      </div>
+      <table class="res">
+        <thead><tr><th>Address</th><th>City/State</th><th>Signal</th><th>Auction</th><th>Value</th><th>Equity</th><th>Contact</th></tr></thead>
+        <tbody>
+          <tr><td>1427 W Cactus Rd</td><td>Glendale, AZ</td><td>Pre-foreclosure</td><td>12 days</td><td>$412k</td><td>52%</td><td>☎️ Reveal</td></tr>
+          <tr><td>884 S Emerson St</td><td>Denver, CO</td><td>Auction</td><td>8 days</td><td>$505k</td><td>41%</td><td>✓ Traced</td></tr>
+          <tr><td>210 E Palo Verde</td><td>Mesa, AZ</td><td>Probate</td><td>—</td><td>$338k</td><td>63%</td><td>☎️ Reveal</td></tr>
+          <tr><td>17 Buckthorn Way</td><td>Aurora, CO</td><td>Pre-foreclosure</td><td>31 days</td><td>$447k</td><td>28%</td><td>☎️ Reveal</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callouts">
+    <div class="c"><b>Unlimited lookups, metered skips.</b> The two meters in the app bar make the model obvious: browse/analyze all day free-flowing; the only thing that draws down is revealing a skip-traced owner (250/mo included, then overage).</div>
+    <div class="c"><b>Stack signals, then export.</b> Filter rail combines market + distress type + equity + days-to-auction + draw-area. The result set exports to CSV (Pro-only) so the user can work the list or push to their own CRM.</div>
+    <div class="c"><b>Deal Analyzer, not a deal-maker.</b> Shows ARV/value + equity math only. No suggested-offer number — that judgment stays with the investor (and routes serious deals to AHR’s office).</div>
+    <div class="c"><b>Saved-search alerts.</b> “Save this search + alert me” is the retention hook — new pre-auction leads matching the filter fire a push notification (see mobile view).</div>
+  </div>
+</div></section>
+
+<!-- ============ MOBILE FIELD / DFD ============ -->
+<section class="view" id="view-field"><div class="wrap">
+  <h2 class="vh">Mobile “Field / DFD” — work the street, driving for dollars</h2>
+  <p class="vsub">Map-first, GPS-anchored. Park in front of a distressed house, tap the pin, see equity + distress instantly, reveal the owner, and drop it on a route. Same data engine, thumb-first layout.</p>
+
+  <div class="phones">
+
+    <!-- Screen 1: map + property bottom sheet -->
+    <div class="phone">
+      <div class="frame"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span>OffRamp REI ▪ AZ</span><span>▮▮▮ 100%</span></div>
+        <div class="m-map"><div class="m-loc"></div>
+          <div class="pin hot" style="left:50%;top:34%"><b></b></div>
+          <div class="pin" style="left:30%;top:48%"><b></b></div>
+          <div class="pin" style="left:70%;top:56%"><b></b></div>
+        </div>
+        <div class="m-search">🔎 Homes near me · <b style="color:var(--green)">Distress on</b></div>
+        <div class="m-sheet">
+          <div class="grip"></div>
+          <div class="anno">Tap-a-pin card</div>
+          <div class="addr">1427 W Cactus Rd</div>
+          <div><span class="m-badge">Pre-foreclosure</span><span class="m-badge eq">52% equity</span></div>
+          <div style="margin-top:8px">
+            <div class="m-kv"><span style="color:var(--muted)">Est. value</span><b>$412k</b></div>
+            <div class="m-kv"><span style="color:var(--muted)">Auction</span><b>in 12 days</b></div>
+            <div class="m-kv"><span style="color:var(--muted)">Owner</span><b>R. Delgado</b></div>
+          </div>
+          <div class="m-actions">
+            <div class="m-btn">⭐ Save</div>
+            <div class="m-btn">🧮 Analyze</div>
+            <div class="m-btn gold">☎️ Reveal owner · 95/250 skips</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="caption"><b>1 · Park &amp; tap.</b> GPS drops you on the map; tap any distressed pin for instant equity + distress, one-tap skip-trace.</div>
+    </div>
+
+    <!-- Screen 2: DFD route builder -->
+    <div class="phone">
+      <div class="frame"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span>OffRamp REI</span><span>▮▮▮ 100%</span></div>
+        <div class="m-head">🚗 Today’s route · 5 stops</div>
+        <div class="m-list">
+          <div class="m-row"><div class="n">1</div><div class="rx"><div class="a">1427 W Cactus Rd</div><div class="s">Pre-foreclosure · 52% · ☎️ traced</div></div><div style="color:var(--moss)">✓</div></div>
+          <div class="m-row"><div class="n">2</div><div class="rx"><div class="a">3390 N 51st Ave</div><div class="s">Auction 8d · 41% · reveal</div></div><div class="stub">›</div></div>
+          <div class="m-row"><div class="n">3</div><div class="rx"><div class="a">210 E Palo Verde</div><div class="s">Probate · 63% · reveal</div></div><div class="stub">›</div></div>
+          <div class="m-row"><div class="n">4</div><div class="rx"><div class="a">88 W Aster Dr</div><div class="s">Pre-foreclosure · 47% · ☎️ traced</div></div><div class="stub">›</div></div>
+          <div class="m-row"><div class="n">5</div><div class="rx"><div class="a">1502 W Frier Dr</div><div class="s">Vacant · 58% · reveal</div></div><div class="stub">›</div></div>
+          <div style="margin:14px 4px;"><div class="m-btn pri" style="padding:12px">🧭 Navigate route</div></div>
+        </div>
+        <div class="m-tabbar">
+          <div class="t on"><span class="i">🗺️</span>Map</div>
+          <div class="t"><span class="i">🚗</span>Route</div>
+          <div class="t"><span class="i">⭐</span>Saved</div>
+          <div class="t"><span class="i">🔔</span>Alerts</div>
+        </div>
+      </div></div>
+      <div class="caption"><b>2 · Build the route.</b> Saved pins become an optimized driving-for-dollars route — “park, tap, save, navigate.”</div>
+    </div>
+
+    <!-- Screen 3: push alert -->
+    <div class="phone">
+      <div class="frame"><div class="screen">
+        <div class="statusbar"><span>9:41</span><span></span><span>▮▮▮ 100%</span></div>
+        <div class="m-map" style="filter:brightness(.6)"></div>
+        <div class="m-push">
+          <div class="h"><span>🔔 OffRamp REI</span><span>now</span></div>
+          <div class="b">3 new pre-auction leads in your saved area</div>
+          <div class="bd">“Glendale 85304 · 30%+ equity” — tap to open the map and reveal owners.</div>
+        </div>
+        <div class="m-tabbar">
+          <div class="t"><span class="i">🗺️</span>Map</div>
+          <div class="t"><span class="i">🚗</span>Route</div>
+          <div class="t"><span class="i">⭐</span>Saved</div>
+          <div class="t on"><span class="i">🔔</span>Alerts</div>
+        </div>
+      </div></div>
+      <div class="caption"><b>3 · Get pinged.</b> Saved-search push alert on new pre-auction leads — the reason to keep the app installed after the discount window.</div>
+    </div>
+
+  </div>
+
+  <div class="callouts">
+    <div class="c"><b>Field ≠ office.</b> Mobile is intentionally lean: map, tap-card, route, alerts. No results table or bulk CSV — that’s the desktop war room’s job. Same engine, different face.</div>
+    <div class="c"><b>Skip meter travels with you.</b> The “95/250 skips” count shows on the reveal button in the field, so a user always knows where they stand before spending a credit.</div>
+    <div class="c"><b>DFD is the hook.</b> Ted’s key selling point — pre-auction/distressed + driving-for-dollars — is the entire mobile spine: locate, qualify, contact, route.</div>
+    <div class="c"><b>Push = retention.</b> Alerts turn a one-time lookup tool into a daily habit, which is what earns the renewal after the founding discount tapers.</div>
+  </div>
+</div></section>
+
+<script>
+  function show(v){
+    document.getElementById('view-desk').classList.toggle('on', v==='desk');
+    document.getElementById('view-field').classList.toggle('on', v==='field');
+    document.getElementById('tabDesk').classList.toggle('on', v==='desk');
+    document.getElementById('tabField').classList.toggle('on', v==='field');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+</script>
+</body>
+</html>

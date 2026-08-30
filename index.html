@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OffRamp REI — Find the foreclosure deals everyone else misses</title>
+<meta name="description" content="OffRamp REI gives real-estate investors the pre-foreclosure, auction, and probate data — plus the free tools to find and close deals before the sale.">
+<link rel="icon" href="brand/logo_badge_monogram.png">
+<meta property="og:title" content="OffRamp REI — Find the foreclosure deals everyone else misses">
+<meta property="og:description" content="County-verified pre-foreclosure, auction, and probate leads — with debt, equity, and skip-traced contacts already done.">
+<meta property="og:image" content="brand/fb_cover_a.png">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --green:#1B4332; --green2:#2D6A4F; --moss:#40916C; --mint:#b7e4c7;
+    --paper:#F6F5F1; --ink:#15221B; --muted:#5c6b63; --line:#e3e0d8;
+    --gold:#B8894A; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:var(--green2);text-decoration:none;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
+
+  /* Top bar */
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(27,67,50,.98);backdrop-filter:blur(6px);}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;letter-spacing:-.01em;}
+  .brand .mark{width:38px;height:38px;border-radius:8px;object-fit:contain;}
+  .brand .rei{color:var(--mint);}
+  .topbar a.login{color:#e8f3ec;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,.28);
+        padding:8px 15px;border-radius:999px;}
+  .topbar a.login:hover{background:rgba(255,255,255,.12);}
+
+  /* Hero */
+  header.hero{background:linear-gradient(160deg,var(--green) 0%,var(--green2) 100%);color:#fff;
+        padding:64px 0 72px;position:relative;overflow:hidden;}
+  header.hero:after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
+        background:radial-gradient(circle,rgba(183,228,199,.18),transparent 70%);}
+  .hero .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:44px;align-items:start;position:relative;z-index:2;}
+  .kicker{text-transform:uppercase;letter-spacing:.18em;font-size:12px;font-weight:700;color:var(--mint);margin:0 0 16px;}
+  .hero h1{font-size:42px;line-height:1.1;margin:0 0 18px;font-weight:800;letter-spacing:-.02em;}
+  .hero h1 em{font-style:normal;color:var(--mint);}
+  .hero .sub{font-size:18px;color:#e3efe7;max-width:560px;margin:0 0 26px;}
+  .hero .sub b{color:#fff;}
+  .metabar{display:flex;flex-wrap:wrap;gap:10px;}
+  .pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;
+        padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;}
+
+  /* Signup card */
+  .signup{background:var(--card);border-radius:18px;padding:26px 24px;box-shadow:0 24px 60px rgba(11,31,22,.28);color:var(--ink);}
+  .signup h2{margin:0 0 4px;font-size:21px;font-weight:800;color:var(--green);}
+  .signup .lead{margin:0 0 18px;font-size:14px;color:var(--muted);}
+  .field{margin:0 0 13px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--ink);margin:0 0 5px;letter-spacing:.01em;}
+  .field input,.field select{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:11px;
+        font-size:15px;color:var(--ink);background:#fff;font-family:inherit;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--moss);box-shadow:0 0 0 3px rgba(64,145,108,.15);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  button.cta{width:100%;margin-top:6px;padding:14px;border:none;border-radius:12px;cursor:pointer;
+        background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;font-size:16px;font-weight:800;
+        letter-spacing:.01em;transition:filter .15s;}
+  button.cta:hover{filter:brightness(1.08);}
+  button.cta:disabled{opacity:.6;cursor:default;}
+  .fineprint{margin:12px 0 0;font-size:11.5px;color:var(--muted);text-align:center;}
+  .formmsg{margin:12px 0 0;font-size:14px;font-weight:600;text-align:center;display:none;padding:10px;border-radius:10px;}
+  .formmsg.ok{display:block;background:#eaf3ee;color:var(--green);border:1px solid var(--moss);}
+  .formmsg.err{display:block;background:#fbeaea;color:#8C1C13;border:1px solid #d99;}
+
+  /* Simple explainer */
+  section.simple{padding:66px 0 68px;background:linear-gradient(180deg,#f2f8f4,#e9f2ec);border-top:1px solid var(--line);}
+  .simple .tag{display:block;text-align:center;text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800;color:var(--moss);margin:0 0 8px;}
+  .simple .steps{max-width:760px;margin:34px auto 0;display:grid;gap:16px;}
+  .simplerow{display:flex;gap:18px;align-items:flex-start;background:#fff;border:1px solid var(--line);
+        border-radius:16px;padding:22px 22px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .simplerow .num{flex:none;width:44px;height:44px;border-radius:50%;
+        background:linear-gradient(135deg,var(--green),var(--moss));color:#fff;display:flex;align-items:center;
+        justify-content:center;font-size:19px;font-weight:800;box-shadow:0 4px 12px rgba(27,67,50,.22);}
+  .simplerow h3{margin:2px 0 5px;font-size:19px;font-weight:800;color:var(--green);}
+  .simplerow p{margin:0;font-size:16px;color:#3c4e46;line-height:1.55;}
+  .simplerow p b{color:var(--ink);}
+  .simple .close{text-align:center;margin:30px auto 0;font-size:17px;color:var(--ink);font-weight:600;max-width:640px;}
+  .simple .close a{color:var(--gold);font-weight:800;white-space:nowrap;}
+
+  /* Value section */
+  section.value{padding:66px 0 60px;background:#fff;border-top:1px solid var(--line);}
+  h2.sh{text-align:center;font-size:29px;font-weight:800;color:var(--green);margin:0 0 6px;letter-spacing:-.01em;}
+  p.ssub{text-align:center;color:var(--muted);font-size:16px;max-width:640px;margin:0 auto 40px;}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 22px;
+        box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .vcard .ico{width:44px;height:44px;border-radius:12px;background:#eaf3ee;color:var(--green);display:flex;
+        align-items:center;justify-content:center;font-size:22px;margin:0 0 14px;}
+  .vcard h3{margin:0 0 8px;font-size:18px;font-weight:800;color:var(--ink);}
+  .vcard p{margin:0;font-size:14.5px;color:var(--muted);}
+
+  /* How it works */
+  section.how{padding:64px 0 68px;}
+  .how .sh{text-align:center;font-size:29px;font-weight:800;color:var(--green);margin:0 0 6px;letter-spacing:-.01em;}
+  .how .ssub{text-align:center;color:var(--muted);font-size:16px;max-width:640px;margin:0 auto 40px;}
+  .steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:s;}
+  .step{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 24px;position:relative;
+        box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .step .n{counter-increment:s;width:40px;height:40px;border-radius:50%;
+        background:linear-gradient(135deg,var(--green),var(--moss));color:#fff;
+        display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;margin:0 0 15px;
+        box-shadow:0 4px 12px rgba(27,67,50,.22);}
+  .step .n:before{content:counter(s);}
+  .step h3{margin:0 0 7px;font-size:17.5px;color:var(--green);font-weight:800;}
+  .step p{margin:0;font-size:14.5px;color:var(--muted);}
+
+  /* Bottom CTA band */
+  section.band{background:linear-gradient(160deg,var(--green),var(--green2));color:#fff;padding:56px 0;text-align:center;}
+  .band h2{margin:0 0 10px;font-size:28px;font-weight:800;letter-spacing:-.01em;}
+  .band p{margin:0 0 24px;color:#dcebe1;font-size:16px;}
+  .band a.btn{display:inline-block;background:var(--gold);color:#231a0c;font-weight:800;padding:14px 30px;
+        border-radius:12px;font-size:16px;}
+  .band a.btn:hover{filter:brightness(1.06);}
+
+  /* Product showcase */
+  section.showcase{padding:14px 0 6px;}
+  .shot{border-radius:18px;overflow:hidden;border:1px solid var(--line);
+        box-shadow:0 24px 60px rgba(11,31,22,.18);background:#fff;}
+  .shot img{display:block;width:100%;height:auto;}
+  .shotcap{text-align:center;color:var(--muted);font-size:14px;margin:16px auto 0;max-width:660px;}
+
+  /* Situations grid */
+  section.situations{padding:66px 0 68px;background:#fff;border-top:1px solid var(--line);}
+  .pillimg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto 34px;border-radius:16px;}
+  .sitgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px;}
+  .sit{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 22px;
+        box-shadow:0 1px 2px rgba(0,0,0,.03);transition:transform .15s,box-shadow .15s;}
+  .sit:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(11,31,22,.09);}
+  .sit .ico{width:46px;height:46px;border-radius:12px;background:#eaf3ee;color:var(--green);display:flex;
+        align-items:center;justify-content:center;font-size:22px;margin:0 0 14px;}
+  .sit h3{margin:0 0 6px;font-size:17.5px;font-weight:800;color:var(--ink);}
+  .sit p{margin:0;font-size:14px;color:var(--muted);}
+
+  /* Coverage strip */
+  section.coverage{background:var(--green);color:#fff;padding:22px 0;}
+  .coverage .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 34px;text-align:center;}
+  .coverage .item{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:#eaf5ee;}
+  .coverage .item b{color:#fff;}
+  .coverage .item .big{font-size:22px;font-weight:800;color:var(--mint);}
+
+  /* Report anatomy */
+  section.report{padding:66px 0 62px;background:#fff;border-top:1px solid var(--line);}
+  .rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px;}
+  .ritem{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 20px;}
+  .ritem .ico{font-size:22px;margin:0 0 10px;}
+  .ritem h3{margin:0 0 6px;font-size:16.5px;font-weight:800;color:var(--green);}
+  .ritem p{margin:0;font-size:14px;color:var(--muted);}
+  .ritem .fld{display:block;margin-top:8px;font-size:12.5px;color:var(--moss);font-weight:600;}
+
+  /* Sample report mock */
+  section.sample{padding:60px 0 64px;background:linear-gradient(180deg,#f2f8f4,#e9f2ec);border-top:1px solid var(--line);}
+  .repcard{max-width:820px;margin:34px auto 0;background:#fff;border:1px solid var(--line);border-radius:18px;
+        overflow:hidden;box-shadow:0 24px 60px rgba(11,31,22,.16);}
+  .rephead{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;padding:20px 24px;
+        display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .rephead .addr{font-size:18px;font-weight:800;}
+  .rephead .addr span{display:block;font-size:13px;font-weight:500;color:#cfe6d8;margin-top:2px;}
+  .repbadge{background:#8C1C13;color:#fff;font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;letter-spacing:.03em;}
+  .repbadge.count{background:var(--gold);color:#231a0c;}
+  .repbody{padding:22px 24px;}
+  .repstats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 20px;}
+  .rstat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center;}
+  .rstat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;}
+  .rstat .val{font-size:20px;font-weight:800;color:var(--green);margin-top:3px;}
+  .rstat .val.equity{color:#1f7a3f;}
+  .repcols{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  .repcols h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--green);font-weight:800;}
+  .repcols .line{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .repcols .line span:first-child{color:var(--muted);}
+  .repcols .line span:last-child{font-weight:700;color:var(--ink);}
+  .repnote{margin:18px 24px 22px;font-size:12.5px;color:var(--muted);text-align:center;}
+
+  /* Pricing */
+  section.pricing{padding:66px 0 66px;background:#fff;border-top:1px solid var(--line);}
+  .plans{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:820px;margin:38px auto 0;}
+  .plan{border:1px solid var(--line);border-radius:18px;padding:30px 28px;background:var(--card);position:relative;}
+  .plan.pro{border:2px solid var(--moss);box-shadow:0 18px 44px rgba(27,67,50,.14);}
+  .plan .tagbadge{position:absolute;top:-13px;right:24px;background:var(--gold);color:#231a0c;font-size:11px;font-weight:800;
+        padding:5px 13px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase;}
+  .plan h3{margin:0 0 4px;font-size:20px;font-weight:800;color:var(--green);}
+  .plan .price{font-size:38px;font-weight:800;color:var(--ink);margin:6px 0 2px;letter-spacing:-.02em;}
+  .plan .price small{font-size:15px;font-weight:600;color:var(--muted);}
+  .plan .subline{font-size:13.5px;color:var(--muted);margin:0 0 18px;}
+  .plan ul{list-style:none;padding:0;margin:0 0 22px;}
+  .plan ul li{font-size:14.5px;color:var(--ink);padding:7px 0 7px 26px;position:relative;}
+  .plan ul li:before{content:"✓";position:absolute;left:0;color:var(--moss);font-weight:800;}
+  .plan ul li.off{color:var(--muted);}
+  .plan ul li.off:before{content:"—";color:var(--line);}
+  .plan a.pick{display:block;text-align:center;padding:13px;border-radius:12px;font-weight:800;font-size:15px;}
+  .plan.free a.pick{background:var(--paper);border:1px solid var(--line);color:var(--green);}
+  .plan.pro a.pick{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;}
+  .plan a.pick:hover{filter:brightness(1.05);}
+  .pricenote{text-align:center;font-size:13px;color:var(--muted);max-width:640px;margin:26px auto 0;}
+  /* Founding banner + spots counter */
+  .founding{max-width:820px;margin:26px auto 0;background:linear-gradient(135deg,#231a0c,#3a2c12);border:1px solid var(--gold);
+        border-radius:16px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+  .founding .ftext{color:#f6efdf;font-size:14.5px;line-height:1.5;}
+  .founding .ftext b{color:var(--gold);}
+  .founding .fcount{text-align:center;flex:0 0 auto;}
+  .founding .fcount .num{font-size:30px;font-weight:800;color:var(--gold);line-height:1;letter-spacing:-.02em;}
+  .founding .fcount .lbl{font-size:11px;font-weight:700;color:#d8c9a4;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;}
+  .founding .fbar{width:100%;height:7px;background:rgba(255,255,255,.12);border-radius:999px;margin-top:12px;overflow:hidden;flex-basis:100%;}
+  .founding .fbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#e8c766);border-radius:999px;}
+  /* Billing toggle */
+  .btoggle{display:flex;align-items:center;justify-content:center;gap:12px;margin:22px auto 0;font-size:14px;font-weight:700;color:var(--muted);}
+  .btoggle .opt.on{color:var(--green);}
+  .btoggle .save{background:var(--paper);border:1px solid var(--moss);color:var(--moss);font-size:11px;font-weight:800;
+        padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;}
+  .switch{position:relative;width:52px;height:28px;flex:0 0 auto;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .track{position:absolute;inset:0;background:var(--green);border-radius:999px;transition:.2s;cursor:pointer;}
+  .switch .track:before{content:"";position:absolute;height:22px;width:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  .switch input:checked + .track:before{transform:translateX(24px);}
+  .plan .oldprice{font-size:16px;color:var(--muted);text-decoration:line-through;font-weight:600;margin-right:6px;}
+
+  /* FAQ */
+  section.faq{padding:60px 0 66px;background:linear-gradient(180deg,#f2f8f4,#e9f2ec);border-top:1px solid var(--line);}
+  .faqlist{max-width:760px;margin:34px auto 0;display:grid;gap:12px;}
+  details.q{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;}
+  details.q summary{cursor:pointer;list-style:none;padding:18px 22px;font-size:16px;font-weight:700;color:var(--green);
+        display:flex;justify-content:space-between;align-items:center;}
+  details.q summary::-webkit-details-marker{display:none;}
+  details.q summary:after{content:"+";font-size:22px;color:var(--moss);font-weight:400;}
+  details.q[open] summary:after{content:"–";}
+  details.q .a{padding:0 22px 18px;font-size:14.5px;color:var(--muted);line-height:1.6;}
+  details.q .a b{color:var(--ink);}
+
+  /* Footer brand mark */
+  .footmark{width:230px;height:auto;display:block;margin:0 auto 16px;}
+
+  footer{padding:34px 0 60px;color:var(--muted);font-size:13px;text-align:center;}
+  footer a{color:var(--muted);text-decoration:underline;}
+
+  @media(max-width:900px){
+    .hero .grid{grid-template-columns:1fr;gap:30px;}
+    .cards,.steps3,.rgrid{grid-template-columns:1fr;}
+    .sitgrid{grid-template-columns:1fr 1fr;}
+    .rgrid{grid-template-columns:1fr 1fr;}
+    .plans{grid-template-columns:1fr;max-width:440px;}
+    .repstats{grid-template-columns:1fr 1fr;}
+    .hero h1{font-size:34px;}
+  }
+  @media(max-width:600px){
+    .sitgrid,.rgrid{grid-template-columns:1fr;}
+    .repcols{grid-template-columns:1fr;gap:14px;}
+    section.value,section.how,section.situations,section.band,section.report,section.sample,section.pricing,section.faq{padding-top:48px;padding-bottom:48px;}
+    section.showcase{padding:8px 0 0;}
+    .hero{padding:40px 0 44px;}
+    .hero h1{font-size:29px;}
+    h2.sh,.how .sh{font-size:24px;}
+    p.ssub,.how .ssub{font-size:15px;margin-bottom:30px;}
+    .band h2{font-size:24px;}
+    .signup{padding:22px 20px;}
+    .value,.situations{border-top:none;}
+    .plan .price{font-size:32px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <div class="brand"><img class="mark" src="brand/mark_ramp.png" alt="OffRamp REI logo">OffRamp <span class="rei">REI</span></div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <a class="login" href="#pricing" style="border-color:transparent;">Pricing</a>
+    <a class="login" href="/learn" style="border-color:transparent;">Learn</a>
+    <a class="login" href="/scout/" style="border-color:transparent;">Meet Scout</a>
+    <a class="login" href="/app/">Log in</a>
+  </div>
+</div></div>
+
+<header class="hero"><div class="wrap"><div class="grid">
+  <div>
+    <p class="kicker">Pre-Foreclosure · Auction · Probate</p>
+    <h1>Find the deals <em>before</em> the sale — not after.</h1>
+    <p class="sub">OffRamp REI puts county-verified pre-foreclosure, trustee-auction, and probate leads in one place — with the debt, equity, and skip-traced contacts already done. <b>Stop paying for stale lists. Start knocking on real equity.</b></p>
+    <div class="metabar">
+      <span class="pill">✓ Verified debt &amp; equity</span>
+      <span class="pill">✓ Skip-traced owners + heirs</span>
+      <span class="pill">✓ Daily auction updates</span>
+    </div>
+  </div>
+
+  <form class="signup" id="signupForm" novalidate>
+    <h2>Start free</h2>
+    <p class="lead"><b>100 property lookups a month — no card required.</b> See real equity and foreclosure status before you pay a dime.</p>
+    <div class="row2">
+      <div class="field"><label for="first">First name</label><input id="first" name="first" autocomplete="given-name" required></div>
+      <div class="field"><label for="last">Last name</label><input id="last" name="last" autocomplete="family-name" required></div>
+    </div>
+    <div class="field"><label for="email">Work email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+    <div class="field"><label for="phone">Mobile</label><input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567"></div>
+    <div class="field"><label for="market">Primary market</label>
+      <select id="market" name="market">
+        <option value="">Select a state…</option>
+        <option>Arizona (live)</option><option>Colorado (live)</option>
+        <option>Utah (coming soon)</option><option>Idaho (coming soon)</option>
+        <option>Montana (coming soon)</option><option>Nevada (coming soon)</option>
+        <option>Other — notify me</option>
+      </select>
+    </div>
+    <input type="text" name="company" id="company" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:0;height:0;opacity:0;">
+    <button type="submit" class="cta" id="submitBtn">Start free — 100 lookups →</button>
+    <div class="formmsg" id="formMsg"></div>
+    <p class="fineprint">No card for the free tier. Upgrade for skip-traced contacts &amp; unlimited lookups — founding rate <b>$49/mo</b> for the first 100 members (then $149/mo). We never sell your data.</p>
+  </form>
+</div></div></header>
+
+<section class="showcase"><div class="wrap">
+  <div class="shot"><img src="brand/hero_deal_map.png" alt="OffRamp REI deal map — verified equity, auction date, and skip-traced owner contact on every pin"></div>
+  <p class="shotcap">Every upcoming auction, NOD, and probate on one map — with verified equity, the sale date, and skip-traced owner contact on every pin.</p>
+</div></section>
+
+<section class="coverage"><div class="wrap">
+  <div class="item"><span class="big">AZ &amp; CO</span> <b>live now</b> — more states rolling out</div>
+  <div class="item"><span class="big">150M+</span> <b>properties</b> in the data engine</div>
+  <div class="item"><span class="big">Daily</span> <b>foreclosure &amp; auction refresh</b></div>
+</div></section>
+
+<section class="report"><div class="wrap">
+  <h2 class="sh">What every lookup returns</h2>
+  <p class="ssub">Type an address, get one reconciled report — the same depth the pros pay four tools to assemble. It's a Carfax for the house.</p>
+  <div class="rgrid">
+    <div class="ritem"><div class="ico">👤</div><h3>Owner &amp; mailing</h3><p>Verified legal owner, mailing address, owner-occupied vs. absentee, and length of ownership.</p><span class="fld">Owner name · Mailing addr · Absentee flag</span></div>
+    <div class="ritem"><div class="ico">💰</div><h3>Equity &amp; value</h3><p>Estimated value, total open loan balance, and true equity — reconciled against county records, not a guess.</p><span class="fld">AVM · Loan balance · Equity $ &amp; %</span></div>
+    <div class="ritem"><div class="ico">🏦</div><h3>Mortgage &amp; liens</h3><p>Every recorded mortgage, lender, position, rate, and open lien — including USDA/HUD government loans other tools drop.</p><span class="fld">Lender · Position · Rate · Recorded liens</span></div>
+    <div class="ritem"><div class="ico">🏛️</div><h3>Foreclosure status</h3><p>Pre-foreclosure/NOD, active trustee-auction, sale date, and the posted opening bid — with a days-to-auction countdown.</p><span class="fld">NOD · Auction date · Opening bid</span></div>
+    <div class="ritem"><div class="ico">📜</div><h3>Estate / probate flag</h3><p>Deceased-owner and probate signals so you spot the heir-sale before it hits the MLS.</p><span class="fld">Probate · Deceased · Heir signal</span></div>
+    <div class="ritem"><div class="ico">☎️</div><h3>Skip-traced contact</h3><p>Mobile phones, emails, DNC status, plus heirs and neighbors — because the first number rarely answers.</p><span class="fld">Cell · Email · DNC · Relatives</span></div>
+    <div class="ritem"><div class="ico">📐</div><h3>Property &amp; comps</h3><p>Beds/baths, sqft, lot, year built, last-sale price/date, and recent comparable sales nearby.</p><span class="fld">Beds/baths · Sqft · Last sale · Comps</span></div>
+    <div class="ritem"><div class="ico">🗺️</div><h3>Map &amp; street view</h3><p>Parcel on the map with satellite and street view so you can eyeball condition before you drive out.</p><span class="fld">Parcel · Satellite · Street view</span></div>
+    <div class="ritem"><div class="ico">🧮</div><h3>Deal Analyzer</h3><p>Instant ARV/value estimate and equity math on every property, so you know the ceiling before you ever pick up the phone.</p><span class="fld">ARV · Equity math · Value ceiling</span></div>
+    <div class="ritem"><div class="ico">📤</div><h3>Save &amp; export</h3><p>Save any report, build a saved list, and export to CSV to work in your own tools <span style="color:var(--moss);font-weight:600;">(Pro)</span>.</p><span class="fld">Save · List · CSV export (Pro)</span></div>
+  </div>
+</div></section>
+
+<section class="simple"><div class="wrap">
+  <span class="tag">The simple version</span>
+  <h2 class="sh">How you make money — and help someone out</h2>
+  <p class="ssub">No jargon. Here's the whole idea in four steps.</p>
+  <div class="steps">
+    <div class="simplerow"><div class="num">1</div><div><h3>A homeowner is about to lose everything</h3><p>They fell behind on their mortgage. In a few weeks the county sells their house at a foreclosure auction — and if it sells, they lose the home <b>and</b> every dollar of equity they built up.</p></div></div>
+    <div class="simplerow"><div class="num">2</div><div><h3>You find them before the auction</h3><p>OffRamp shows you these homes early — with what they owe, what the house is actually worth (the equity), and the owner's phone number.</p></div></div>
+    <div class="simplerow"><div class="num">3</div><div><h3>You solve their problem</h3><p>You offer to buy the house before it goes to auction. They walk away with cash in their pocket instead of nothing — and skip the foreclosure on their credit.</p></div></div>
+    <div class="simplerow"><div class="num">4</div><div><h3>You make money on the difference</h3><p>Because you bought it for less than it's worth, you keep the gap. Resell it for a profit, or hold it as a rental. Everyone wins.</p></div></div>
+  </div>
+  <p class="close">That's the whole game. Want the details — timelines, the legal stuff, state-by-state rules? <a href="/learn">Read the deep dive →</a></p>
+</div></section>
+
+<section class="value"><div class="wrap">
+  <h2 class="sh">Everything you need to reach the owner first</h2>
+  <p class="ssub">Most investors buy a list, then spend a week figuring out who to call and whether there's any equity. OffRamp does that part for you.</p>
+  <div class="cards">
+    <div class="vcard"><div class="ico">🏛️</div><h3>Real, verified debt</h3><p>We pull the trustee's posted opening bid and recorded liens — including the USDA/HUD government loans other data providers miss — so the equity number you see is the number that's actually there.</p></div>
+    <div class="vcard"><div class="ico">☎️</div><h3>Owners + next of kin</h3><p>Every lead comes skip-traced with phone, email, and DNC status — plus heirs and neighbors, because 87% of distressed owners won't answer the first number.</p></div>
+    <div class="vcard"><div class="ico">📍</div><h3>Built for the field</h3><p>Mobile-first call queues, door-knock routes, and one-tap dialing to multiple contacts. Work your day from your phone, not a spreadsheet.</p></div>
+  </div>
+</div></section>
+
+<section class="how"><div class="wrap">
+  <h2 class="sh">How it works</h2>
+  <p class="ssub">From market to closing table in three steps — no stale lists, no guesswork.</p>
+  <div class="steps3">
+    <div class="step"><div class="n"></div><h3>Pick your market</h3><p>Tell us the states and counties you work. We surface every upcoming auction, NOD, and probate in that footprint.</p></div>
+    <div class="step"><div class="n"></div><h3>See real equity</h3><p>Debt and equity are verified against county records and the trustee's bid — no guessing, no false-high leads.</p></div>
+    <div class="step"><div class="n"></div><h3>Reach the seller</h3><p>Call, text, or knock — with the owner, heirs, and reinstatement window already in front of you. Close before the sale.</p></div>
+  </div>
+</div></section>
+
+<section class="sample"><div class="wrap">
+  <h2 class="sh">See a real report</h2>
+  <p class="ssub">This is what one lookup gives you. Every field verified and reconciled — no tab-hopping, no stale list.</p>
+  <div class="repcard">
+    <div class="rephead">
+      <div class="addr">1428 Maple Grove Dr<span>Kalispell, MT 59901 · APN 07-4920-31-2-05-0000</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="repbadge">⏳ AUCTION IN 21 DAYS</span>
+        <span class="repbadge count">PRE-FORECLOSURE</span>
+      </div>
+    </div>
+    <div class="repbody">
+      <div class="repstats">
+        <div class="rstat"><div class="lbl">Est. Value</div><div class="val">$412,000</div></div>
+        <div class="rstat"><div class="lbl">Owed</div><div class="val">$247,300</div></div>
+        <div class="rstat"><div class="lbl">Equity</div><div class="val equity">$164,700</div></div>
+        <div class="rstat"><div class="lbl">Equity %</div><div class="val equity">40%</div></div>
+      </div>
+      <div class="repcols">
+        <div>
+          <h4>Owner &amp; Contact</h4>
+          <div class="line"><span>Owner</span><span>Robert &amp; Linda Hayes</span></div>
+          <div class="line"><span>Occupancy</span><span>Owner-occupied · 14 yrs</span></div>
+          <div class="line"><span>Mobile</span><span>(406) 555-0148 ✓ not DNC</span></div>
+          <div class="line"><span>Email</span><span>r.hayes@â€¦com</span></div>
+          <div class="line"><span>Relatives</span><span>2 heirs on file</span></div>
+        </div>
+        <div>
+          <h4>Debt &amp; Foreclosure</h4>
+          <div class="line"><span>1st Mortgage</span><span>$231,900 · Rocket</span></div>
+          <div class="line"><span>2nd / Lien</span><span>$15,400 HELOC</span></div>
+          <div class="line"><span>NOD Recorded</span><span>May 2, 2026</span></div>
+          <div class="line"><span>Trustee Sale</span><span>Sep 14, 2026</span></div>
+          <div class="line"><span>Opening Bid</span><span>$249,100</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="repnote">Sample report for illustration. Live reports pull current county + trustee data at the moment you search.</p>
+  </div>
+</div></section>
+
+<section class="situations"><div class="wrap">
+  <h2 class="sh">Six ways into every deal</h2>
+  <p class="ssub">Foreclosure is only the start. The same life events that push a home toward auction — divorce, bankruptcy, and death among them — create equity opportunities long before the sale. OffRamp tracks all six from the first filing to sale day, so you're never late to the equity.</p>
+  <img class="pillimg" src="brand/pillar_icons.png" alt="Pre-Foreclosure, Auction, Probate, Divorce, Bankruptcy, and Death">
+  <div class="sitgrid">
+    <div class="sit"><div class="ico">🏛️</div><h3>Pre-Foreclosure</h3><p>Notices of default and trustee-sale filings — the owner still has a cure window and real equity to protect.</p></div>
+    <div class="sit"><div class="ico">🔨</div><h3>Auction</h3><p>Upcoming trustee and sheriff's sales with the posted opening bid — the total debt, and the fastest read on equity.</p></div>
+    <div class="sit"><div class="ico">📜</div><h3>Probate</h3><p>Estates working through the courts, where an heir or personal representative needs to sell before the equity slips away.</p></div>
+    <div class="sit"><div class="ico">💔</div><h3>Divorce</h3><p>Splitting households often means selling the marital home fast — a motivated, time-pressured seller with equity on the line.</p></div>
+    <div class="sit"><div class="ico">⚖️</div><h3>Bankruptcy</h3><p>Chapter 7 and 13 filings surface owners restructuring debt — often needing to sell or settle a property quickly.</p></div>
+    <div class="sit"><div class="ico">🕊️</div><h3>Death</h3><p>A deceased owner leaves heirs facing taxes, upkeep, and a mortgage they didn't plan for — the classic estate-sale opportunity.</p></div>
+  </div>
+  <p class="shotcap" style="margin-top:22px;">Divorce, bankruptcy, and death feed directly into pre-foreclosure and probate — OffRamp tracks the whole chain, so you reach the seller at the first sign, not the last.</p>
+</div></section>
+
+<section class="pricing" id="pricing"><div class="wrap">
+  <h2 class="sh">Simple pricing</h2>
+  <p class="ssub">Start free. Upgrade when you're ready to reach owners and work the whole map.</p>
+
+  <div class="founding">
+    <div class="ftext">🔥 <b>Founding Members</b> — the first 100 subscribers lock <b>$49/mo</b> (save $100/mo) for a full year. When these spots are gone, founding pricing is gone.</div>
+    <div class="fcount"><div class="num" id="spotsLeft">83</div><div class="lbl">of 100 spots left</div></div>
+    <div class="fbar"><i id="spotsBar" style="width:17%"></i></div>
+  </div>
+
+  <div class="btoggle">
+    <span class="opt" id="optMonthly">Monthly</span>
+    <label class="switch"><input type="checkbox" id="billToggle" checked onchange="setBilling(this.checked)"><span class="track"></span></label>
+    <span class="opt on" id="optAnnual">Annual <span class="save">2 months free</span></span>
+  </div>
+
+  <div class="plans">
+    <div class="plan free">
+      <h3>Free</h3>
+      <div class="price">$0<small> / forever</small></div>
+      <p class="subline">Prove the value. No card required.</p>
+      <ul>
+        <li>100 property lookups / month</li>
+        <li>Verified equity, value &amp; loan balance</li>
+        <li>Foreclosure &amp; auction status + sale date</li>
+        <li>Estate / probate flags</li>
+        <li>Map &amp; street view</li>
+        <li class="off">Skip-traced phone &amp; email</li>
+        <li class="off">Driving-for-dollars &amp; saved routes</li>
+        <li class="off">CSV export</li>
+      </ul>
+      <a class="pick" href="#signupForm" onclick="document.getElementById('first').focus();">Start free</a>
+    </div>
+    <div class="plan pro">
+      <span class="tagbadge" id="proBadge">Founding · save $900/yr</span>
+      <h3>Pro <span style="font-size:13px;font-weight:600;color:var(--muted);">· single user</span></h3>
+      <div class="price"><span class="oldprice" id="proOld">$1,490</span><span id="proPrice">$588</span><small id="proUnit"> / year</small></div>
+      <p class="subline" id="proSub">Founding rate — $49/mo billed annually, locked for year one. Card required · cancel anytime.</p>
+      <ul>
+        <li><b>Unlimited</b> property lookups</li>
+        <li>Everything in Free, plus:</li>
+        <li>Skip-traced mobile, email, DNC + heirs — <b>250 skip-traces/mo included</b></li>
+        <li>Deal Analyzer — ARV &amp; equity math on every property</li>
+        <li>Driving-for-dollars: park, tap, save to route</li>
+        <li>Map farming, draw-area filter &amp; saved lists</li>
+        <li>Saved-search push alerts on new pre-auction leads</li>
+        <li><b>CSV export</b> (Pro-only, up to 2,000 rows/export)</li>
+      </ul>
+      <a class="pick" href="#signupForm" onclick="document.getElementById('first').focus();">Start 7-day trial</a>
+    </div>
+  </div>
+  <p class="pricenote">Free is free forever — no card, no expiry. The 7-day Pro trial needs a card. <b>Founding rate ($49/mo) is locked for year one</b>, then renews at standard $1,490/yr; standard monthly is $149/mo. Pro includes 250 skip-traces/month — beyond that it's $0.20 each (or a 500-pack for $79). Skip-traces are consumable data, so used credits aren't refundable; cancel any time and keep access through your paid period.</p>
+</div></section>
+
+<script>
+  function setBilling(annual){
+    var badge=document.getElementById('proBadge'),old=document.getElementById('proOld'),
+        price=document.getElementById('proPrice'),unit=document.getElementById('proUnit'),
+        sub=document.getElementById('proSub'),om=document.getElementById('optMonthly'),oa=document.getElementById('optAnnual');
+    if(annual){
+      badge.textContent='Founding · save $900/yr';
+      old.style.display='inline';old.textContent='$1,490';
+      price.textContent='$588';unit.textContent=' / year';
+      sub.textContent='Founding rate — $49/mo billed annually, locked for year one. Card required · cancel anytime.';
+      oa.classList.add('on');om.classList.remove('on');
+    }else{
+      badge.textContent='Founding · save $100/mo';
+      old.style.display='inline';old.textContent='$149';
+      price.textContent='$49';unit.textContent=' / month';
+      sub.textContent='Founding rate — $49/mo for 12 months, then $149/mo. Card required · cancel anytime.';
+      om.classList.add('on');oa.classList.remove('on');
+    }
+  }
+  // Live spots-left counter (wire to Stripe promo redemptions server-side; static seed for now)
+  (function(){var left=83;var el=document.getElementById('spotsLeft'),bar=document.getElementById('spotsBar');
+    if(el){el.textContent=left;bar.style.width=(100-left)+'%';}})();
+</script>
+
+<section class="band"><div class="wrap">
+  <h2>Ready to work real deals?</h2>
+  <p>100 free lookups to start. Full data and the field tools when you're ready to scale.</p>
+  <a class="btn" href="#signupForm" onclick="document.getElementById('first').focus();">Start free — 100 lookups</a>
+</div></section>
+
+<section class="faq"><div class="wrap">
+  <h2 class="sh">Questions, answered</h2>
+  <p class="ssub">The stuff investors actually ask before they sign up.</p>
+  <div class="faqlist">
+    <details class="q"><summary>What do I get on the free plan?</summary><div class="a">100 full property lookups a month — verified equity, loan balance, foreclosure/auction status, sale date, and estate/probate flags — with no credit card. The one thing gated to Pro is <b>skip-traced owner contact</b> (phone/email) and the field/farming tools, because each contact lookup carries a real data cost.</div></details>
+    <details class="q"><summary>How does the 7-day trial work?</summary><div class="a">Pro starts with a 7-day free trial. You add a card, get full access, and if you don't cancel it rolls into your plan — <b>founding rate $49/mo</b> (or $588/yr) while spots last, otherwise the standard $149/mo. Cancel any time from the self-serve billing portal — no phone call, no email required.</div></details>
+    <details class="q"><summary>What's the founding-member deal?</summary><div class="a">The first 100 Pro subscribers lock <b>$49/mo</b> (or $588 for the year — that's $49/mo, save $900 vs standard annual) for a full 12 months, then renew at standard pricing. When the 100 spots are gone, founding pricing closes for good. The counter at the top of pricing shows how many are left.</div></details>
+    <details class="q"><summary>How do skip-traces work on Pro?</summary><div class="a">Pro includes <b>250 skip-traces a month</b> — that's pulling verified mobile, email, and DNC status on an owner (property lookups themselves are unlimited and don't count). Need more? Overage is $0.20 each, or grab a 500-pack for $79. Skip-traced contact data is consumable, so used credits aren't refundable.</div></details>
+    <details class="q"><summary>What's your refund policy?</summary><div class="a">Property and contact lookups are <b>consumable</b> — each one is a live paid data pull — so charges for used lookups aren't refundable. You can cancel any time and keep access through the end of your paid period. No surprise renewals: we email you before every charge.</div></details>
+    <details class="q"><summary>Where does the data come from — and how current is it?</summary><div class="a">Reports are reconciled from county records, trustee/auction postings, and licensed property + contact data, refreshed daily. Foreclosure and auction status pull live at the moment you search, so a days-to-auction countdown is always current.</div></details>
+    <details class="q"><summary>Is this legal? What can I use the contact data for?</summary><div class="a">Yes — for legitimate real-estate and permissible business purposes. Skip-traced contact information is provided under DPPA/GLBA permissible-use rules; you'll confirm your permissible purpose before contact details are shown, and you're responsible for TCPA/DNC compliance when you reach out. It is <b>not</b> for credit, employment, insurance, or tenant screening.</div></details>
+    <details class="q"><summary>Do you cover my market?</summary><div class="a">We're launching in <b>Arizona and Colorado</b> first — fully live with verified foreclosure, auction, and probate data. More states are rolling out right after; pick "notify me" at signup and we'll tell you the day yours goes live.</div></details>
+    <details class="q"><summary>Is there a mobile app?</summary><div class="a">OffRamp works in any mobile browser today, and native iOS and Android apps — with driving-for-dollars, one-tap "look up the house I'm parked at," and saved routes — are on the way. Sign in with Google or Apple.</div></details>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <img class="footmark" src="brand/logo_ramp_wordmark.png" alt="OffRamp REI">
+  © <span id="yr"></span> OffRamp REI · A group that buys pre-foreclosure, auction &amp; probate properties · <a href="/scout/">Meet Scout</a> · <a href="/learn">Learn</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refund">Refund</a> · <a href="/unsubscribe">Unsubscribe</a> · <a href="/app/">Log in</a>
+</div></footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  const form = document.getElementById('signupForm');
+  const btn  = document.getElementById('submitBtn');
+  const msg  = document.getElementById('formMsg');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.className = 'formmsg';
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (!data.first || !data.last || !data.email) {
+      msg.className = 'formmsg err'; msg.textContent = 'Please fill in your name and email.'; return;
+    }
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      const r = await fetch('/api/signup', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (!r.ok) throw new Error('bad status');
+      msg.className = 'formmsg ok';
+      msg.textContent = "You're in — check your email for next steps.";
+      form.reset();
+    } catch (err) {
+      msg.className = 'formmsg err';
+      msg.textContent = "Couldn't submit right now. Email us at hello@offramprei.com and we'll set you up.";
+    } finally {
+      btn.disabled = false; btn.textContent = 'Create my account →';
+    }
+  });
+</script>
+</body>
+</html>

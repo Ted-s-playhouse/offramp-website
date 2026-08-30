@@ -1,0 +1,12 @@
+# internal scratch / analysis dirs (not part of the site)
+_buildplan-*/
+_crm-baseline-*/
+_datasift-analysis-*/
+_law-school-jd-*/
+_plan-market-*/
+cache/
+*.log
+__pycache__/
+*.pyc
+.env
+.DS_Store
