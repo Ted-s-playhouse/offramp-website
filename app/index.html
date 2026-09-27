@@ -676,7 +676,9 @@ function doExport(){
 /* ---------- boot ---------- */
 api('/api/me').then(function(r){ if(r.ok)return r.json(); throw 0; })
  .then(function(j){ ME=j.user; enterApp(); })
- .catch(function(){ /* stay on auth screen */ });
+ .catch(function(){
+   if(/[?&]signup=1\b/.test(window.location.search)) setTab('signup');
+ });
 </script>
 </body>
 </html>
