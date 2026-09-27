@@ -486,7 +486,10 @@ def build_search_query(qs, limit):
         parts.append(f"property_state=eq.{state}")
     city = (qs.get("city") or [""])[0].strip()
     if city:
-        parts.append(f"property_city=ilike.*{urllib.parse.quote(city)}*")
+        # Match on city name OR county so a search like "Salt Lake County"
+        # (a county, not a city) still finds real results instead of ~0.
+        q = urllib.parse.quote(city)
+        parts.append(f"or=(property_city.ilike.*{q}*,county.ilike.*{q}*)")
     status = (qs.get("status") or [""])[0].strip()
     if status:
         parts.append(f"foreclosure_status=eq.{urllib.parse.quote(status)}")
