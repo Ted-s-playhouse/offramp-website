@@ -100,17 +100,18 @@
       <span class="kicker">Project Docket · Live Tracker</span>
       <h1>OffRamp REI</h1>
     </div>
-    <div class="updated">Last entry<br><b style="color:var(--text)">Sep 27, 2026 · 01:30 UTC</b></div>
+    <div class="updated">Last entry<br><b style="color:var(--text)">Sep 27, 2026 · 02:35 UTC</b></div>
   </div>
 
   <div class="meter-row">
-    <div class="meter"><i style="width:38%"></i></div>
-    <div class="meter-label">Phase 2 of 5 underway</div>
+    <div class="meter"><i style="width:34%"></i></div>
+    <div class="meter-label">Phase 2 of 6 underway</div>
   </div>
 
   <div class="now-band">
     <span class="kicker">On the docket right now</span>
-    <p><b>Waiting on Ted:</b> one real live-mode test transaction through the founding payment link, to prove the checkout → Pro upgrade flow end to end.</p>
+    <p><b>Proven live:</b> a real $149 charge went through end to end tonight — signup, checkout, webhook, and Pro upgrade all confirmed working with real money.</p>
+    <p><b>Blocking:</b> all 4 founding promo codes (FOUNDING12/6/3/FOUNDINGYEAR) come back "invalid" at checkout despite looking correctly configured on Stripe's backend — needs a dashboard look or a support ticket before founding-rate signups can actually work.</p>
     <p><b>Iris is building:</b> wiring the national auction feed into the app's actual browse screen (map + list), and the click-to-enrich flow for addresses outside the 5 AHR states.</p>
   </div>
 
@@ -135,8 +136,10 @@
       <li class="done"><div class="box"></div><span>Live webhook registered (checkout → Pro, cancel → Free, failed payment → past due)</span></li>
       <li class="done"><div class="box"></div><span>App switched from test keys to live keys, redeployed</span></li>
       <li class="done"><div class="box"></div><span>Founding-spots counter now reads the real Stripe redemption count, not a fixed number</span></li>
-      <li class="done"><div class="box"></div><span>Market-coverage claim on the homepage corrected to match real live states</span></li>
-      <li class="owner-ted"><div class="box"></div><span>One real test purchase, end to end, to prove the flow</span><span class="owner">Ted</span></li>
+      <li class="done"><div class="box"></div><span>Market-coverage claim removed from the homepage entirely — now says nationwide, no regional state callouts</span></li>
+      <li class="done"><div class="box"></div><span>"Start free" fixed to create a real account instantly instead of dropping into a waitlist</span></li>
+      <li class="done"><div class="box"></div><span>One real test purchase, end to end, proven with real money — signup → checkout → webhook → Pro upgrade all confirmed</span></li>
+      <li><div class="box"></div><span>Fix the founding promo codes — all 4 return "invalid" at checkout despite being active/valid on Stripe's backend</span></li>
       <li class="owner-ted"><div class="box"></div><span>Send the founding link to the first ~12 contacts</span><span class="owner">Ted</span></li>
     </ul>
   </div>
@@ -195,6 +198,21 @@
     <div class="phase-note">Only after Phase 1–4 prove the model — not a build to start on yet.</div>
   </div>
 
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">PH.6</span><h2>Native iOS &amp; Android app</h2></div>
+      <span class="stamp todo">Not started · roadmap</span>
+    </div>
+    <ul class="tasks">
+      <li><div class="box"></div><span>Apple Developer Program enrollment ($99/yr — approval can take a day or more)</span></li>
+      <li><div class="box"></div><span>Google Play Developer account ($25 one-time)</span></li>
+      <li><div class="box"></div><span>Build the app — decide native rebuild vs. wrapping the existing responsive web app</span></li>
+      <li><div class="box"></div><span>In-app purchase wiring for App Store/Play Store billing (separate from the web Stripe checkout)</span></li>
+      <li><div class="box"></div><span>App Store + Play Store review and submission (24-48hrs+ each, often longer for a first submission)</span></li>
+    </ul>
+    <div class="phase-note">Confirmed with Ted 9/27: this belongs on the roadmap, not the MVP — the responsive website covers real-world testing (UAT with 3-4 people, and later ad-driven signups) without it. Revisit once the web product proves out.</div>
+  </div>
+
   <div class="phase" style="border-left:4px solid var(--gold)">
     <div class="phase-head">
       <div class="phase-title"><span class="phase-num">NOTE</span><h2>Two surfaces, not one</h2></div>
@@ -214,6 +232,9 @@
     <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Business email:</b> using ted@americahomerestoration.com as a stopgap; a real support@offramprei.com forwarding address is one verification click away.</div></div>
     <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Legal:</b> broker licensing likely not required (data tool, not a transaction platform) — worth a real legal check before scaling, not just an assumption.</div></div>
     <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Pricing target:</b> confirmed goal is 100 total subscribers, founding tier ($49) seeded by Ted's own ~12 contacts, standard ($149) after.</div></div>
+    <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Native app:</b> added to the roadmap (Phase 6) per Ted's request — deliberately not part of the current MVP push. Small UAT rounds and the responsive website cover real-world testing until the web product proves out.</div></div>
+    <div class="entry"><div class="date">Sep 27</div><div class="body"><b>App state restriction:</b> every account's browsable map/deal-list "chips" are hard-coded to AZ/UT/ID/MT/WY (server.py MARKETS constant), even though the marketing copy and the underlying national data are now nationwide. Fine for the current 3-4 person UAT round; needs wiring before a wider test group or paid ads, or testers outside those 5 states will see a mismatch.</div></div>
+    <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Two lookup mechanisms, easy to confuse:</b> browsing the pre-loaded Deals list is free/unlimited (already-indexed data); the 100/month free-tier allowance is only for the separate Lookup-tab address search (a live on-demand pull). Worth clarifying in-app copy at some point — Ted hit this exact confusion during UAT tonight.</div></div>
   </div>
 
   <footer>OffRamp REI · maintained by Iris · republished as phases close, not on a schedule</footer>
