@@ -514,7 +514,7 @@ function openDetail(i){
         lineIf('Trustee file #',r.trustee_file_no),
         lineIf('Foreclosing atty',r.foreclosing_attorney),
         r.attorney_phone?lineRaw('Attorney phone','<a href="tel:'+String(r.attorney_phone).replace(/\D/g,'')+'">'+esc(r.attorney_phone)+'</a>'):'',
-        r.notice_url?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
+        (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
       ])+
       section('Mortgage',[
         lineIf('Lender',r.mortgage_lender),
