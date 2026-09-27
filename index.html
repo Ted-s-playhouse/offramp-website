@@ -298,9 +298,10 @@
     <div class="field"><label for="market">Primary market</label>
       <select id="market" name="market">
         <option value="">Select a state…</option>
-        <option>Arizona (live)</option><option>Colorado (live)</option>
-        <option>Utah (coming soon)</option><option>Idaho (coming soon)</option>
-        <option>Montana (coming soon)</option><option>Nevada (coming soon)</option>
+        <option>Arizona (live)</option><option>Utah (live)</option>
+        <option>Idaho (live)</option><option>Montana (live)</option>
+        <option>Wyoming (live)</option><option>Colorado (coming soon)</option>
+        <option>Nevada (coming soon)</option>
         <option>Other — notify me</option>
       </select>
     </div>
@@ -317,7 +318,7 @@
 </div></section>
 
 <section class="coverage"><div class="wrap">
-  <div class="item"><span class="big">AZ &amp; CO</span> <b>live now</b> — more states rolling out</div>
+  <div class="item"><span class="big">AZ / UT / ID / MT / WY</span> <b>live now</b> — more states rolling out</div>
   <div class="item"><span class="big">150M+</span> <b>properties</b> in the data engine</div>
   <div class="item"><span class="big">Daily</span> <b>foreclosure &amp; auction refresh</b></div>
 </div></section>
@@ -434,7 +435,7 @@
 
   <div class="founding">
     <div class="ftext">🔥 <b>Founding Members</b> — the first 100 subscribers lock <b>$49/mo</b> (save $100/mo) for a full year. When these spots are gone, founding pricing is gone.</div>
-    <div class="fcount"><div class="num" id="spotsLeft">83</div><div class="lbl">of 100 spots left</div></div>
+    <div class="fcount"><div class="num" id="spotsLeft">100</div><div class="lbl">of 100 spots left</div></div>
     <div class="fbar"><i id="spotsBar" style="width:17%"></i></div>
   </div>
 
@@ -501,9 +502,13 @@
       om.classList.add('on');oa.classList.remove('on');
     }
   }
-  // Live spots-left counter (wire to Stripe promo redemptions server-side; static seed for now)
-  (function(){var left=83;var el=document.getElementById('spotsLeft'),bar=document.getElementById('spotsBar');
-    if(el){el.textContent=left;bar.style.width=(100-left)+'%';}})();
+  // Live spots-left counter - real count from Stripe promo-code redemptions, not a static number
+  (function(){var el=document.getElementById('spotsLeft'),bar=document.getElementById('spotsBar');
+    fetch('/api/founding-count').then(function(r){return r.json();}).then(function(d){
+      var left=(d && typeof d.spots_left==='number')?d.spots_left:100;
+      if(el){el.textContent=left;bar.style.width=(100-left)+'%';}
+    }).catch(function(){ if(el){el.textContent=100;bar.style.width='0%';} });
+  })();
 </script>
 
 <section class="band"><div class="wrap">

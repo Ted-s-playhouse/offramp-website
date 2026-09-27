@@ -363,6 +363,13 @@ function doAuth(ev){
 }
 function ssoLogin(p){ window.location.href='/api/auth/sso?provider='+p; }
 function doLogout(){ api('/api/auth/logout',{method:'POST'}).then(function(){location.reload();}); }
+function doUpgrade(cycle){
+  fetch('/api/billing/checkout-link',{method:'POST',credentials:'include',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({cycle:cycle||'annual'})})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d.url) location.href=d.url; else toast(d.error||'billing unavailable'); })
+    .catch(function(){ toast('billing unavailable'); });
+}
 
 /* ---------- boot ---------- */
 function enterApp(){
@@ -652,7 +659,7 @@ function renderAccount(){
     '<div style="color:var(--sub);font-size:12.5px;margin:14px 2px 4px">Markets with live inventory</div>'+
     '<div class="chiprow" style="padding-left:0">'+ME.markets.map(function(m){return '<span class="chip">'+m+'</span>';}).join('')+'</div>';
   if(isPro){ html+='<button class="btn-ghost" onclick="doExport()">⬇ Export current search (CSV)</button>'; }
-  else { html+='<button class="btn-gold" onclick="location.href=\'/#pricing\'">Upgrade to Pro — unlock contacts, skip-trace &amp; export</button>'; }
+  else { html+='<button class="btn-gold" onclick="doUpgrade()">Upgrade to Pro — unlock contacts, skip-trace &amp; export</button>'; }
   html+='<button class="btn-ghost" onclick="doLogout()">Log out</button>';
   document.getElementById('acctBody').innerHTML=html;
 }

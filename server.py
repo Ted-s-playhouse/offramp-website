@@ -63,6 +63,17 @@ GOOGLE_KEY = _read(os.path.join(SEC, "google-maps-api-key"))
 GOOGLE_OAUTH_CID = _read(os.path.join(SEC, "google-oauth-revivebuyers-client-id"))
 GOOGLE_OAUTH_SECRET = _read(os.path.join(SEC, "google-oauth-revivebuyers-client-secret"))
 
+# Stripe billing - LIVE MODE (flipped 2026-09-27). Payment Links +
+# product/price/coupon ids were created fresh in the live account; this wires
+# them into the app. Test-mode files (stripe-secret-offramp-test etc.) are
+# kept on disk untouched as a rollback reference, not read anymore.
+STRIPE_SECRET = _read(os.path.join(SEC, "stripe-secret-offramp-live"))
+STRIPE_WEBHOOK_SECRET = _read(os.path.join(SEC, "stripe-webhook-offramp-secret-live"))
+try:
+    STRIPE_IDS = json.load(open(os.path.join(SEC, "stripe-offramp-ids-live.json")))
+except Exception:
+    STRIPE_IDS = {}
+
 # on-disk cache for proxied property imagery (Street View / satellite)
 PHOTO_CACHE = os.path.join(DIR, "cache", "photos")
 try:
@@ -174,6 +185,22 @@ def read_session(token):
         return None
 
 
+def verify_stripe_sig(payload_bytes, sig_header, secret, tolerance=300):
+    """Verify a Stripe webhook signature (Stripe-Signature header scheme)."""
+    if not sig_header or not secret:
+        return False
+    parts = dict(p.split("=", 1) for p in sig_header.split(",") if "=" in p)
+    ts = parts.get("t")
+    v1 = parts.get("v1")
+    if not ts or not v1:
+        return False
+    if abs(time.time() - int(ts)) > tolerance:
+        return False
+    signed = f"{ts}.".encode() + payload_bytes
+    expected = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, v1)
+
+
 def sign_state(payload_dict, ttl=600):
     payload = json.dumps({**payload_dict, "exp": int(time.time()) + ttl}).encode()
     sig = hmac.new(SESSION_SECRET, payload, hashlib.sha256).digest()
@@ -220,6 +247,40 @@ def get_user_by_email(email):
 def get_user_by_id(uid):
     rows = sb("GET", f"/offramp_users?select=*&id=eq.{uid}&limit=1")
     return rows[0] if rows else None
+
+
+def get_user_by_stripe_customer(cid):
+    rows = sb("GET", f"/offramp_users?select=*&stripe_customer_id=eq.{urllib.parse.quote(cid)}&limit=1")
+    return rows[0] if rows else None
+
+
+def stripe_get(path):
+    req = urllib.request.Request(f"https://api.stripe.com/v1/{path}",
+        headers={"Authorization": f"Bearer {STRIPE_SECRET}"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read().decode())
+
+
+_FOUNDING_CACHE = {"spots_left": None, "at": 0}
+
+def founding_spots_left():
+    """Real founding-tier (FOUNDING12, first 100 subscribers) spots remaining,
+    computed from actual Stripe promotion-code redemptions - not a static
+    marketing number. Cached 60s so page loads don't hammer Stripe."""
+    now = time.time()
+    if _FOUNDING_CACHE["spots_left"] is not None and now - _FOUNDING_CACHE["at"] < 60:
+        return _FOUNDING_CACHE["spots_left"]
+    promo_id = STRIPE_IDS.get("promo_m12")
+    left = 100
+    if promo_id:
+        try:
+            p = stripe_get(f"promotion_codes/{promo_id}")
+            left = max(0, 100 - int(p.get("times_redeemed") or 0))
+        except Exception:
+            left = 100  # fail open to the full count, never a fabricated low number
+    _FOUNDING_CACHE["spots_left"] = left
+    _FOUNDING_CACHE["at"] = now
+    return left
 
 
 def ensure_period(user):
@@ -435,6 +496,64 @@ def build_search_query(qs, limit):
     return "/hit_list?" + "&".join(parts)
 
 
+NATIONAL_COLS = ("id,listing_id,state,county,city,zip,street,address,detail_url,"
+                  "primary_photo,status,status_group,auction_window,product_type,"
+                  "asset_type,occupancy,trustee_sale,beds,baths,sqft,lot_size,"
+                  "year_built,est_value")
+
+
+def build_national_query(qs, limit):
+    parts = [f"select={NATIONAL_COLS}", f"limit={limit}",
+             "status_group=eq.ACTIVE", "order=id.desc"]
+    state = (qs.get("state") or [""])[0].upper().strip()
+    if state:
+        parts.append(f"state=eq.{state}")
+    city = (qs.get("city") or [""])[0].strip()
+    if city:
+        parts.append(f"city=ilike.*{urllib.parse.quote(city)}*")
+    county = (qs.get("county") or [""])[0].strip()
+    if county:
+        parts.append(f"county=ilike.*{urllib.parse.quote(county)}*")
+    return "/offramp_national_listings?" + "&".join(parts)
+
+
+def normalize_national_row(r):
+    """Map a raw offramp_national_listings row into the same shape the app's
+    cards/detail views already expect from hit_list (SEARCH_COLS), so the
+    existing UI can render national rows with no separate code path. Owner,
+    equity, and skip-trace fields are null - that's the on-click JIT layer,
+    not part of the free national base data."""
+    return {
+        "id": f"nat:{r.get('listing_id')}",
+        "owner_full": None, "owner_first": None, "owner_last": None,
+        "property_street": r.get("street"), "property_city": r.get("city"),
+        "property_state": r.get("state"), "property_zip": r.get("zip"),
+        "county": r.get("county"), "foreclosure_status": r.get("status"),
+        "lead_status": None,
+        "auction_date": r.get("auction_window"), "auction_time": None,
+        "days_to_auction": None,
+        "market_value": r.get("est_value"), "avm": r.get("est_value"), "arv": None,
+        "equity_dollars": None, "equity_pct": None, "ltv_pct": None,
+        "mortgage_balance": None,
+        "beds": r.get("beds"), "baths": r.get("baths"),
+        "living_area_sqft": r.get("sqft"), "year_built": r.get("year_built"),
+        "occupancy": r.get("occupancy"), "property_type": r.get("structure_type"),
+        "apn": None, "latitude": None, "longitude": None, "temperature": None,
+        "trustee_file_no": None, "nod_case_number": None, "is_judicial": None,
+        "foreclosing_attorney": None, "attorney_phone": None,
+        "trustee_opening_bid": None, "auction_est_value": r.get("est_value"),
+        "notice_url": r.get("detail_url"), "mailing_address": None,
+        "mortgage_lender": None, "mortgage_interest_rate": None,
+        "mortgage_loan_type": None, "mortgage_recording_date": None,
+        "mortgage_maturity_date": None, "reverse_mortgage": None,
+        "mls_active": None, "mls_status": None, "mls_list_price": None,
+        "bankruptcy_flag": None, "bankruptcy_chapter": None, "deceased_flag": None,
+        "skip_traced_at": None, "phones": None, "emails": None,
+        "contacts_locked": True, "source": "auction.com",
+        "primary_photo": r.get("primary_photo"),
+    }
+
+
 def strip_contacts(row):
     """Free tier sees everything EXCEPT owner phones/emails (skip-trace gated)."""
     r = dict(row)
@@ -504,6 +623,9 @@ class Handler(SimpleHTTPRequestHandler):
             if not u:
                 return self._json(401, {"error": "not signed in"})
             return self._json(200, {"user": public_user(u)})
+
+        if route == "/api/founding-count":
+            return self._json(200, {"spots_left": founding_spots_left()})
 
         if route == "/api/auth/sso":
             provider = (qs.get("provider") or ["google"])[0]
@@ -622,6 +744,22 @@ class Handler(SimpleHTTPRequestHandler):
             out = [strip_contacts(r) if locked else r for r in rows]
             return self._json(200, {"count": len(out), "results": out, "plan": u["plan"]})
 
+        if route == "/api/national-search":
+            # National auction.com base layer (free public data, all 50 states).
+            # Owner/equity/skip-trace fields are always null here - those are
+            # the JIT-enrichment layer, added on click, not bulk-pulled.
+            try:
+                limit = min(int((qs.get("limit") or ["100"])[0]), 500)
+            except Exception:
+                limit = 100
+            path = build_national_query(qs, limit)
+            try:
+                rows = sb("GET", path)
+            except urllib.error.HTTPError as e:
+                return self._json(500, {"error": e.read().decode()[:200]})
+            out = [normalize_national_row(r) for r in rows]
+            return self._json(200, {"count": len(out), "results": out, "plan": u["plan"]})
+
         if route == "/api/property":
             pid = (qs.get("id") or [""])[0]
             if not pid:
@@ -668,6 +806,67 @@ class Handler(SimpleHTTPRequestHandler):
     # ---- POST ----
     def do_POST(self):
         route = self.path.split("?")[0]
+
+        # ---------- stripe webhook (raw body, verified BEFORE any JSON parse) ----------
+        if route == "/api/stripe/webhook":
+            n = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(n)
+            sig = self.headers.get("Stripe-Signature", "")
+            if not verify_stripe_sig(raw, sig, STRIPE_WEBHOOK_SECRET):
+                return self._json(400, {"error": "bad signature"})
+            try:
+                event = json.loads(raw.decode())
+            except Exception:
+                return self._json(400, {"error": "bad payload"})
+            etype = event.get("type")
+            obj = (event.get("data") or {}).get("object") or {}
+            try:
+                if etype == "checkout.session.completed":
+                    uid = obj.get("client_reference_id")
+                    cust = obj.get("customer")
+                    sub = obj.get("subscription")
+                    u = get_user_by_id(uid) if uid else None
+                    if u:
+                        sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
+                           body={"plan": "pro", "stripe_customer_id": cust,
+                                 "stripe_subscription_id": sub, "stripe_status": "active"},
+                           headers={"Prefer": "return=minimal"})
+                        notify_telegram(f"OffRamp REI: {u['email']} upgraded to Pro via Stripe checkout")
+                    else:
+                        notify_telegram(f"OffRamp REI Stripe checkout completed but no matching user "
+                                         f"(client_reference_id={uid}, customer={cust}) — needs manual match")
+                elif etype == "customer.subscription.deleted":
+                    cust = obj.get("customer")
+                    u = get_user_by_stripe_customer(cust) if cust else None
+                    if u:
+                        sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
+                           body={"plan": "free", "stripe_status": "canceled"},
+                           headers={"Prefer": "return=minimal"})
+                        notify_telegram(f"OffRamp REI: {u['email']} subscription canceled, moved to Free")
+                elif etype == "invoice.payment_failed":
+                    cust = obj.get("customer")
+                    u = get_user_by_stripe_customer(cust) if cust else None
+                    if u:
+                        sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
+                           body={"stripe_status": "past_due"}, headers={"Prefer": "return=minimal"})
+                        notify_telegram(f"OffRamp REI: payment failed for {u['email']}")
+            except Exception as ex:
+                notify_telegram(f"OffRamp REI Stripe webhook handler error ({etype}): {str(ex)[:200]}")
+            return self._json(200, {"received": True})
+
+        # ---------- billing: build a checkout link for the logged-in user ----------
+        if route == "/api/billing/checkout-link":
+            u = self._current_user()
+            if not u:
+                return self._json(401, {"error": "not signed in"})
+            data = self._body() or {}
+            cycle = (data.get("cycle") or "annual").strip().lower()
+            base = STRIPE_IDS.get("link_annual_url" if cycle == "annual" else "link_monthly_url")
+            if not base:
+                return self._json(500, {"error": "billing not configured"})
+            url = base + ("&" if "?" in base else "?") + urllib.parse.urlencode(
+                {"client_reference_id": u["id"], "prefilled_email": u["email"]})
+            return self._json(200, {"url": url})
 
         # ---------- app auth ----------
         if route == "/api/auth/signup":

@@ -1,0 +1,218 @@
+<title>OffRamp REI Docket</title>
+<style>
+  :root{
+    --bg:#F4F1E7; --surface:#FFFFFF; --surface-2:#ECE7D8;
+    --text:#1C241D; --text-dim:#5B6154; --border:#D9D2BC;
+    --accent:#1F4B3D; --accent-ink:#0F2A20; --gold:#A9762F; --gold-soft:#EFDFC0;
+    --done:#2F6B45; --done-bg:#E1EEE1;
+    --progress:#B07A22; --progress-bg:#F3E6C9;
+    --todo:#7A7F72; --todo-bg:#EAE7DC;
+    --blocked:#A23F30; --blocked-bg:#F3DDD6;
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Public Sans',-apple-system,Segoe UI,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12160F; --surface:#1B2118; --surface-2:#232B1F;
+      --text:#E9E7DB; --text-dim:#A6AC9B; --border:#333B2C;
+      --accent:#6FAE8B; --accent-ink:#BFE3CE; --gold:#D9A85B; --gold-soft:#3A311F;
+      --done:#7ABF8F; --done-bg:#1E3324;
+      --progress:#E0AE5C; --progress-bg:#3A2F17;
+      --todo:#9CA192; --todo-bg:#232B1F;
+      --blocked:#E08674; --blocked-bg:#3A211C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12160F; --surface:#1B2118; --surface-2:#232B1F;
+    --text:#E9E7DB; --text-dim:#A6AC9B; --border:#333B2C;
+    --accent:#6FAE8B; --accent-ink:#BFE3CE; --gold:#D9A85B; --gold-soft:#3A311F;
+    --done:#7ABF8F; --done-bg:#1E3324;
+    --progress:#E0AE5C; --progress-bg:#3A2F17;
+    --todo:#9CA192; --todo-bg:#232B1F;
+    --blocked:#E08674; --blocked-bg:#3A211C;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);margin:0;line-height:1.55;}
+  .wrap{max-width:860px;margin:0 auto;padding:48px 24px 96px;}
+  h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;}
+  a{color:var(--accent);}
+
+  /* masthead */
+  .masthead{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;
+    border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:8px;}
+  .masthead .kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;display:block;}
+  .masthead h1{font-size:clamp(30px,4.5vw,42px);font-weight:700;color:var(--accent-ink);}
+  .masthead .updated{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);text-align:right;}
+
+  .meter-row{display:flex;align-items:center;gap:16px;margin:20px 0 40px;}
+  .meter{flex:1;height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--border);}
+  .meter > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:99px 0 0 99px;}
+  .meter-label{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);white-space:nowrap;}
+
+  .now-band{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold);
+    border-radius:4px;padding:18px 22px;margin-bottom:44px;}
+  .now-band .kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:8px;}
+  .now-band p{margin:0;font-size:15.5px;}
+  .now-band p + p{margin-top:8px;}
+
+  .phase{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:24px 26px 22px;margin-bottom:22px;}
+  .phase-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px;}
+  .phase-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .phase-num{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);}
+  .phase h2{font-size:21px;color:var(--accent-ink);}
+  .stamp{font-family:var(--font-mono);font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    padding:5px 11px;border-radius:3px;border:1.5px solid currentColor;transform:rotate(-2deg);white-space:nowrap;flex-shrink:0;}
+  .stamp.done{color:var(--done);background:var(--done-bg);}
+  .stamp.progress{color:var(--progress);background:var(--progress-bg);}
+  .stamp.todo{color:var(--todo);background:var(--todo-bg);}
+  .stamp.blocked{color:var(--blocked);background:var(--blocked-bg);}
+
+  .tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;}
+  .tasks li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;}
+  .tasks .box{flex-shrink:0;width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border);margin-top:2px;position:relative;}
+  .tasks li.done .box{background:var(--done);border-color:var(--done);}
+  .tasks li.done .box::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(40deg);}
+  .tasks li.done span{color:var(--text-dim);text-decoration:line-through;text-decoration-color:var(--border);}
+  .tasks li.owner-ted .box{border-color:var(--gold);}
+  .owner{font-family:var(--font-mono);font-size:11px;color:var(--gold);border:1px solid var(--gold-soft);background:var(--gold-soft);
+    padding:1px 6px;border-radius:3px;margin-left:6px;white-space:nowrap;}
+
+  .phase-note{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);font-size:13.5px;color:var(--text-dim);}
+
+  .docket{margin-top:52px;}
+  .docket h2{font-size:22px;color:var(--accent-ink);margin-bottom:4px;}
+  .docket .sub{font-size:13.5px;color:var(--text-dim);margin-bottom:18px;}
+  .entry{display:grid;grid-template-columns:100px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--border);}
+  .entry:last-child{border-bottom:none;}
+  .entry .date{font-family:var(--font-mono);font-size:12.5px;color:var(--text-dim);padding-top:2px;}
+  .entry .body b{color:var(--accent-ink);}
+  .entry .body{font-size:14.5px;}
+
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:12px;color:var(--text-dim);}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <span class="kicker">Project Docket · Live Tracker</span>
+      <h1>OffRamp REI</h1>
+    </div>
+    <div class="updated">Last entry<br><b style="color:var(--text)">Sep 27, 2026 · 01:30 UTC</b></div>
+  </div>
+
+  <div class="meter-row">
+    <div class="meter"><i style="width:38%"></i></div>
+    <div class="meter-label">Phase 2 of 5 underway</div>
+  </div>
+
+  <div class="now-band">
+    <span class="kicker">On the docket right now</span>
+    <p><b>Waiting on Ted:</b> one real live-mode test transaction through the founding payment link, to prove the checkout → Pro upgrade flow end to end.</p>
+    <p><b>Iris is building:</b> wiring the national auction feed into the app's actual browse screen (map + list), and the click-to-enrich flow for addresses outside the 5 AHR states.</p>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">PH.0</span><h2>Stripe activation</h2></div>
+      <span class="stamp done">Done</span>
+    </div>
+    <ul class="tasks">
+      <li class="done owner-ted"><div class="box"></div><span>Business + identity verification submitted to Stripe</span><span class="owner">Ted</span></li>
+      <li class="done"><div class="box"></div><span>Account confirmed live: charges, payouts, details all enabled</span></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">PH.1</span><h2>Get the first dozen paying</h2></div>
+      <span class="stamp progress">In progress</span>
+    </div>
+    <ul class="tasks">
+      <li class="done"><div class="box"></div><span>Live product, both prices, 4 founding coupons/promo codes built</span></li>
+      <li class="done"><div class="box"></div><span>Live webhook registered (checkout → Pro, cancel → Free, failed payment → past due)</span></li>
+      <li class="done"><div class="box"></div><span>App switched from test keys to live keys, redeployed</span></li>
+      <li class="done"><div class="box"></div><span>Founding-spots counter now reads the real Stripe redemption count, not a fixed number</span></li>
+      <li class="done"><div class="box"></div><span>Market-coverage claim on the homepage corrected to match real live states</span></li>
+      <li class="owner-ted"><div class="box"></div><span>One real test purchase, end to end, to prove the flow</span><span class="owner">Ted</span></li>
+      <li class="owner-ted"><div class="box"></div><span>Send the founding link to the first ~12 contacts</span><span class="owner">Ted</span></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">PH.2</span><h2>National inventory, not regional</h2></div>
+      <span class="stamp progress">In progress</span>
+    </div>
+    <ul class="tasks">
+      <li class="done"><div class="box"></div><span>National auction.com pull built — 16,320 active listings, all 50 states + DC, near-zero cost</span></li>
+      <li class="done"><div class="box"></div><span>Dedicated national-listings table created and loaded</span></li>
+      <li class="done"><div class="box"></div><span>New search API serving national data, verified live</span></li>
+      <li><div class="box"></div><span>Wire the app's actual map/list screen to browse national data</span></li>
+      <li><div class="box"></div><span>Click-to-enrich (owner, equity, skip-trace) for addresses outside the 5 AHR states</span></li>
+      <li><div class="box"></div><span>Daily refresh job so the feed doesn't go stale</span></li>
+    </ul>
+    <div class="phase-note">Single-source risk: today this all comes from one API. Cheapest mitigation is blending in a second free source (county recorder pulls) later — not blocking, just noted so nobody's surprised if auction.com changes something.</div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">PH.3</span><h2>UI/UX up to snuff</h2></div>
+      <span class="stamp todo">Not started</span>
+    </div>
+    <ul class="tasks">
+      <li><div class="box"></div><span>Audit current screens against the auction.com reference screenshots</span></li>
+      <li><div class="box"></div><span>Map clustering, county-grouped list cards, property detail layout</span></li>
+      <li><div class="box"></div><span>Reuse the CRM's existing map/list components where the visual language already matches</span></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">PH.4</span><h2>Beyond the first dozen</h2></div>
+      <span class="stamp todo">Not started</span>
+    </div>
+    <ul class="tasks">
+      <li><div class="box"></div><span>Free-tier lead magnet as the funnel</span></li>
+      <li><div class="box"></div><span>State/county landing pages off the national feed, built for search traffic</span></li>
+      <li><div class="box"></div><span>Facebook group, aimed at the hobbyist-investor persona</span></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">PH.5</span><h2>Affiliate &amp; white-label</h2></div>
+      <span class="stamp todo">Not started · deliberately later</span>
+    </div>
+    <ul class="tasks">
+      <li><div class="box"></div><span>Referral links with matching Stripe promo codes per partner</span></li>
+      <li><div class="box"></div><span>White-label theming (logo/domain per partner)</span></li>
+    </ul>
+    <div class="phase-note">Only after Phase 1–4 prove the model — not a build to start on yet.</div>
+  </div>
+
+  <div class="phase" style="border-left:4px solid var(--gold)">
+    <div class="phase-head">
+      <div class="phase-title"><span class="phase-num">NOTE</span><h2>Two surfaces, not one</h2></div>
+    </div>
+    <p style="font-size:14.5px;margin:0 0 10px;">"The app" and "the website" are different surfaces with different jobs and different design passes - Phase 3 covers both, separately:</p>
+    <ul class="tasks">
+      <li><div class="box"></div><span><b>The website</b> (offramprei.com, public) - marketing, pricing, the state-by-state legal/rules page, sign-up. Job: convert a visitor into a free or founding account. Static-file site, edits go live on save.</span></li>
+      <li><div class="box"></div><span><b>The app</b> (offramprei.com/app/, logged-in) - the actual deal room: browse, map, lookup, account. Job: keep a subscriber working real deals day to day.</span></li>
+    </ul>
+    <div class="phase-note"><b>On staging:</b> right now offramp-staging.americahomerestoration.com and offramprei.com are the SAME running code on the SAME server process - not a real staging/prod split. Any edit goes live on both instantly. Fine for backend work; risky for a big visual redesign while real paying subscribers are on it. Before the Phase 3 UI pass, worth standing up a genuinely separate staging copy (its own process/port) to preview changes before they hit real customers.</div>
+  </div>
+
+  <div class="docket">
+    <h2>Open items log</h2>
+    <div class="sub">Things flagged, not yet closed.</div>
+    <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Failover:</b> the multi-account Claude rotation that would auto-failover Iris is designed but never provisioned — costs a second Max seat.</div></div>
+    <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Business email:</b> using ted@americahomerestoration.com as a stopgap; a real support@offramprei.com forwarding address is one verification click away.</div></div>
+    <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Legal:</b> broker licensing likely not required (data tool, not a transaction platform) — worth a real legal check before scaling, not just an assumption.</div></div>
+    <div class="entry"><div class="date">Sep 27</div><div class="body"><b>Pricing target:</b> confirmed goal is 100 total subscribers, founding tier ($49) seeded by Ted's own ~12 contacts, standard ($149) after.</div></div>
+  </div>
+
+  <footer>OffRamp REI · maintained by Iris · republished as phases close, not on a schedule</footer>
+</div>
