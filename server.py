@@ -975,7 +975,8 @@ class Handler(SimpleHTTPRequestHandler):
                                         "usage": public_user(u)["usage"]})
 
         # ---------- public lead capture (unchanged) ----------
-        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access"):
+        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access",
+                          "/api/storage-waitlist", "/api/storage-listing"):
             return self._json(404, {"error": "not found"})
         ip = self.headers.get("CF-Connecting-IP") or self.client_address[0]
         if throttled(ip):
@@ -1031,6 +1032,73 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(500, {"error": "could not save"})
             except Exception as e:
                 print(f"[access] db error: {e}")
+                return self._json(500, {"error": "could not save"})
+            return self._json(200, {"ok": True})
+
+        if route == "/api/storage-waitlist":
+            email = (data.get("email") or "").strip().lower()[:160]
+            name = (data.get("name") or "").strip()[:120]
+            note = (data.get("note") or "").strip()[:400]
+            if data.get("company"):
+                return self._json(200, {"ok": True})
+            if not EMAIL_RE.match(email):
+                return self._json(400, {"error": "valid email required"})
+            try:
+                dup = sb("GET", f"/contacts?select=id&email=eq.{urllib.parse.quote(email)}&limit=1")
+                if not dup:
+                    sb("POST", "/contacts", body={
+                        "first_name": name or None, "email": email,
+                        "type": "buyer", "status": "lead", "lead_pool": "active",
+                        "source": "Distressed Self-Storage Data waitlist",
+                        "notes": note or "Early-access waitlist signup.",
+                        "tags": ["storage-waitlist", "early-access"]},
+                       headers={"Prefer": "return=minimal"})
+                    notify_telegram(
+                        "NEW distressed self-storage waitlist signup\n"
+                        f"Email: {email}\nName: {name or 'n/a'}\nNote: {note or 'n/a'}")
+            except urllib.error.HTTPError as e:
+                print(f"[storage-waitlist] db error: {e.read().decode()[:300]}")
+                return self._json(500, {"error": "could not save"})
+            except Exception as e:
+                print(f"[storage-waitlist] db error: {e}")
+                return self._json(500, {"error": "could not save"})
+            return self._json(200, {"ok": True})
+
+        if route == "/api/storage-listing":
+            name = (data.get("name") or "").strip()[:120]
+            email = (data.get("email") or "").strip().lower()[:160]
+            phone = re.sub(r"\D", "", data.get("phone") or "")[-10:]
+            address = (data.get("address") or "").strip()[:200]
+            city = (data.get("city") or "").strip()[:80]
+            state = (data.get("state") or "").strip()[:2].upper()
+            units = (data.get("units") or "").strip()[:40]
+            asking = (data.get("asking") or "").strip()[:60]
+            note = (data.get("note") or "").strip()[:600]
+            if data.get("company"):
+                return self._json(200, {"ok": True})
+            if not name or not EMAIL_RE.match(email) or not address:
+                return self._json(400, {"error": "name, email, and facility address are required"})
+            full_note = (f"Self-submitted storage listing. Units: {units or 'n/a'}. "
+                         f"Asking: {asking or 'n/a'}. Notes: {note or 'n/a'}")
+            try:
+                sb("POST", "/contacts", body={
+                    "first_name": name, "email": email, "phone": phone or None,
+                    "type": "seller", "status": "lead", "lead_pool": "active",
+                    "source": "Distressed Self-Storage Data — list your facility",
+                    "property_address": address or None, "city": city or None,
+                    "state": state or None, "notes": full_note,
+                    "tags": ["storage-seller-lead", "self-submitted"]},
+                   headers={"Prefer": "return=minimal"})
+                notify_telegram(
+                    "NEW self-storage SELLER lead (self-submitted, hot)\n"
+                    f"Name: {name}\nEmail: {email}\nPhone: {phone or 'n/a'}\n"
+                    f"Facility: {address}, {city}, {state}\n"
+                    f"Units: {units or 'n/a'}  Asking: {asking or 'n/a'}\nNote: {note or 'n/a'}")
+            except urllib.error.HTTPError as e:
+                print(f"[storage-listing] db error: {e.read().decode()[:300]}")
+                return self._json(500, {"error": "could not save"})
+            except Exception as e:
+                print(f"[storage-listing] db error: {e}")
                 return self._json(500, {"error": "could not save"})
             return self._json(200, {"ok": True})
 

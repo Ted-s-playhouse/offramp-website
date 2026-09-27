@@ -1,0 +1,437 @@
+<title>Distressed Storage Signal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg:#161310;
+    --bg-raised:#1e1a15;
+    --bg-card:#221d17;
+    --border:#3a3226;
+    --border-soft:#2a251d;
+    --text:#f3ede1;
+    --text-dim:#b3a894;
+    --text-faint:#7c7360;
+    --amber:#ff8a2b;
+    --amber-dim:#7a4419;
+    --amber-glow:rgba(255,138,43,.14);
+    --green:#6cc47e;
+    --red:#e2685a;
+    --font-display:'Big Shoulders Display',sans-serif;
+    --font-body:'IBM Plex Sans',-apple-system,Segoe UI,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--amber)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  ::selection{background:var(--amber-glow);color:var(--text)}
+
+  /* ---- top bar ---- */
+  .topbar{border-bottom:1px solid var(--border-soft);padding:18px 0}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:14px;letter-spacing:.04em;color:var(--text-dim)}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px var(--amber-glow)}
+  .brand b{color:var(--text);font-weight:600}
+  .topbar .tag{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);border:1px solid var(--border);padding:4px 10px;border-radius:100px}
+
+  /* ---- hero ---- */
+  .hero{padding:64px 0 56px}
+  .hero-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:48px;align-items:center}
+  .eyebrow{font-family:var(--font-mono);font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--amber);margin:0 0 16px;display:flex;align-items:center;gap:8px}
+  .eyebrow::before{content:"";width:6px;height:6px;background:var(--amber);border-radius:50%}
+  h1{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:clamp(38px,5.4vw,64px);
+    line-height:.98;
+    letter-spacing:-.01em;
+    margin:0 0 20px;
+    text-wrap:balance;
+  }
+  h1 span{color:var(--amber)}
+  .lede{font-size:17px;color:var(--text-dim);max-width:46ch;margin:0 0 28px}
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:15px;
+    padding:13px 24px;border-radius:8px;border:1px solid transparent;
+    cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn-primary{background:var(--amber);color:#1a1006}
+  .btn-primary:hover{background:#ff9c4d}
+  .btn-ghost{border-color:var(--border);color:var(--text)}
+  .fineprint{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);margin-top:14px}
+
+  /* ---- feed card ---- */
+  .feed-card{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:14px;
+    overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.6);
+  }
+  .feed-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border-soft)}
+  .feed-head span{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
+  .live-pill{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--green)}
+  .live-pill i{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .feed-row{padding:14px 18px;border-bottom:1px solid var(--border-soft);display:flex;flex-direction:column;gap:4px}
+  .feed-row:last-child{border-bottom:none}
+  .feed-top{display:flex;align-items:center;gap:8px}
+  .badge{font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:.04em;padding:2px 7px;border-radius:4px}
+  .badge-lien{background:rgba(255,138,43,.15);color:var(--amber)}
+  .badge-fore{background:rgba(226,104,90,.15);color:var(--red)}
+  .badge-tax{background:rgba(255,138,43,.15);color:var(--amber)}
+  .feed-loc{font-size:13.5px;color:var(--text)}
+  .feed-meta{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint)}
+  .feed-locked{filter:blur(3px);user-select:none}
+  .feed-foot{padding:11px 18px;font-family:var(--font-mono);font-size:11px;color:var(--text-faint);text-align:center;border-top:1px solid var(--border-soft)}
+
+  /* ---- stat strip ---- */
+  .stats{border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);background:var(--bg-raised)}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);padding:30px 0}
+  .stat{text-align:center;padding:0 12px;border-left:1px solid var(--border-soft)}
+  .stat:first-child{border-left:none}
+  .stat b{display:block;font-family:var(--font-display);font-weight:800;font-size:clamp(24px,3vw,34px);font-variant-numeric:tabular-nums;color:var(--text)}
+  .stat span{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);letter-spacing:.03em}
+
+  /* ---- sections ---- */
+  section{padding:64px 0}
+  h2{font-family:var(--font-display);font-weight:800;font-size:clamp(26px,3.4vw,38px);margin:0 0 12px;text-wrap:balance}
+  .section-lede{color:var(--text-dim);max-width:56ch;margin:0 0 36px;font-size:15.5px}
+
+  .signal-list{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border-soft);border:1px solid var(--border-soft);border-radius:12px;overflow:hidden}
+  .signal{background:var(--bg-card);padding:24px}
+  .signal .num{font-family:var(--font-mono);font-size:11.5px;color:var(--amber);letter-spacing:.06em}
+  .signal h3{font-size:17px;margin:8px 0 6px;font-weight:600}
+  .signal p{margin:0;color:var(--text-dim);font-size:14px}
+  .signal .status{display:inline-block;margin-top:12px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+  .status-live{background:rgba(108,196,126,.14);color:var(--green)}
+  .status-soon{background:rgba(179,168,148,.14);color:var(--text-faint)}
+
+  .funnel{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .funnel div{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:12px;padding:22px}
+  .funnel .step{font-family:var(--font-mono);font-size:11px;color:var(--amber);letter-spacing:.06em}
+  .funnel h3{font-size:16px;margin:8px 0 6px}
+  .funnel p{margin:0;font-size:13.5px;color:var(--text-dim)}
+
+  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+  .price-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:28px;display:flex;flex-direction:column}
+  .price-card.featured{border-color:var(--amber-dim);background:linear-gradient(180deg,var(--amber-glow),var(--bg-card) 40%)}
+  .price-tag{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
+  .price-card.featured .price-tag{color:var(--amber)}
+  .price-amt{font-family:var(--font-display);font-weight:800;font-size:44px;margin:8px 0 2px}
+  .price-amt sup{font-family:var(--font-mono);font-size:13px;color:var(--text-faint);font-weight:400}
+  .price-sub{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);margin-bottom:18px}
+  .price-list{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--text-dim)}
+  .price-list li{display:flex;gap:8px}
+  .price-list li::before{content:"—";color:var(--text-faint)}
+
+  /* ---- waitlist ---- */
+  .waitlist{background:var(--bg-raised);border-top:1px solid var(--border-soft)}
+  .wl-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+  form{display:flex;flex-direction:column;gap:12px}
+  label{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint)}
+  input,textarea{
+    background:var(--bg-card);border:1px solid var(--border);color:var(--text);
+    padding:12px 14px;border-radius:8px;font-family:var(--font-body);font-size:14.5px;width:100%;
+  }
+  input:focus,textarea:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber)}
+  textarea{resize:vertical;min-height:70px}
+  .hp{position:absolute;left:-9999px}
+  #wl-msg{font-family:var(--font-mono);font-size:13px;min-height:18px}
+  #wl-msg.ok{color:var(--green)}
+  #wl-msg.err{color:var(--red)}
+
+  footer{padding:32px 0;border-top:1px solid var(--border-soft)}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  footer p{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);margin:0}
+
+  @media (max-width:820px){
+    .hero-grid,.wl-grid{grid-template-columns:1fr}
+    .stat-grid{grid-template-columns:repeat(2,1fr)}
+    .stat:nth-child(3){border-left:none}
+    .signal-list,.funnel,.price-grid{grid-template-columns:1fr}
+  }
+</style>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>DISTRESSED STORAGE <b>SIGNAL</b></div>
+    <div class="tag">EARLY ACCESS · BY AHR</div>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">National self-storage database</p>
+      <h1>Know which storage<br>owners are <span>distressed</span><br>before anyone else.</h1>
+      <p class="lede">Every self-storage facility in the U.S., cross-checked daily against tax liens, foreclosure filings, and ownership records — so you're calling the right owner the week it happens, not months later off a stale list.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#waitlist">Join early access →</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+      <p class="fineprint">Not live yet — early access opens to waitlist members first. No spam, unsubscribe anytime.</p>
+    </div>
+    <div class="feed-card">
+      <div class="feed-head">
+        <span>Sample daily feed — Sept 27</span>
+        <span class="live-pill"><i></i>ILLUSTRATIVE</span>
+      </div>
+      <div class="feed-row">
+        <div class="feed-top"><span class="badge badge-lien">NEW TAX LIEN</span></div>
+        <div class="feed-loc">Mini-warehouse facility · Cobb County, GA</div>
+        <div class="feed-meta feed-locked">Owner: •••••••••  ·  Phone: (•••) •••-••••</div>
+      </div>
+      <div class="feed-row">
+        <div class="feed-top"><span class="badge badge-fore">PRE-FORECLOSURE</span></div>
+        <div class="feed-loc">Self-storage, 340 units · Maricopa County, AZ</div>
+        <div class="feed-meta feed-locked">Owner: •••••••••  ·  Phone: (•••) •••-••••</div>
+      </div>
+      <div class="feed-row">
+        <div class="feed-top"><span class="badge badge-tax">TAX DELINQUENT</span></div>
+        <div class="feed-loc">Storage yard · Salt Lake County, UT</div>
+        <div class="feed-meta feed-locked">Owner: •••••••••  ·  Phone: (•••) •••-••••</div>
+      </div>
+      <div class="feed-foot">Owner contact unlocks on a paid plan</div>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="wrap stat-grid">
+    <div class="stat"><b>82,311</b><span>FACILITIES BEING MAPPED</span></div>
+    <div class="stat"><b>50</b><span>STATES, NOT JUST 5</span></div>
+    <div class="stat"><b>Daily</b><span>SIGNAL REFRESH, NOT A ONE-TIME FILE</span></div>
+    <div class="stat"><b>$99</b><span>PER MONTH, CANCEL ANYTIME</span></div>
+  </div>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <h2>Static lists go stale. This doesn't.</h2>
+    <p class="section-lede">A few sites sell a one-time export of storage facilities for a few hundred dollars. It's accurate the day you buy it, then it rots. This tracks distress signals as they happen.</p>
+    <div class="signal-list">
+      <div class="signal">
+        <div class="num">SIGNAL 01</div>
+        <h3>Tax liens &amp; delinquency</h3>
+        <p>Active liens and delinquent property tax status, pulled from county assessor records nationwide.</p>
+        <span class="status status-live">In the data now</span>
+      </div>
+      <div class="signal">
+        <div class="num">SIGNAL 02</div>
+        <h3>Foreclosure &amp; pre-foreclosure</h3>
+        <p>Recorded default and auction filings on the facility itself, the same signal we track for residential.</p>
+        <span class="status status-live">In the data now</span>
+      </div>
+      <div class="signal">
+        <div class="num">SIGNAL 03</div>
+        <h3>Owner bankruptcy filings</h3>
+        <p>Court records cross-referenced against facility ownership, surfacing distress the parcel data can't show.</p>
+        <span class="status status-soon">Building next</span>
+      </div>
+      <div class="signal">
+        <div class="num">SIGNAL 04</div>
+        <h3>Falling rental rates</h3>
+        <p>Tracking public unit-rate listings over time — a facility quietly cutting rates is bleeding occupancy.</p>
+        <span class="status status-soon">Building next</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>How you'd use it</h2>
+    <div class="funnel">
+      <div>
+        <div class="step">STEP 1</div>
+        <h3>Browse for free</h3>
+        <p>Search any facility in the country by address, city, or county — full property details, no card required.</p>
+      </div>
+      <div>
+        <div class="step">STEP 2</div>
+        <h3>See the signal</h3>
+        <p>If a facility is flagged, you'll see it on the page — the specific distress type, right where you're already looking.</p>
+      </div>
+      <div>
+        <div class="step">STEP 3</div>
+        <h3>Unlock the owner</h3>
+        <p>Subscribe to reveal verified owner name and phone, plus a daily alert feed for the markets you're watching.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Founding pricing</h2>
+    <p class="section-lede">Locked in for early access members. Retail pricing goes up once the full national feed is live.</p>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="price-tag">Monthly</div>
+        <div class="price-amt">$99<sup>/mo</sup></div>
+        <div class="price-sub">Billed monthly, cancel anytime</div>
+        <ul class="price-list">
+          <li>Full national facility database</li>
+          <li>Daily distress-signal alerts</li>
+          <li>Verified owner name &amp; phone</li>
+        </ul>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tag">Annual — founding rate</div>
+        <div class="price-amt">$599<sup>/yr</sup></div>
+        <div class="price-sub">= $49.92/mo · same price as a stale one-time list, live all year</div>
+        <ul class="price-list">
+          <li>Everything in Monthly</li>
+          <li>Price locked for 12 months</li>
+          <li>Priority access to new signal types</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="waitlist" id="waitlist">
+  <div class="wrap wl-grid">
+    <div>
+      <h2>Get founding access</h2>
+      <p class="section-lede">We're finishing the national data build now. Join the list and we'll email you the moment early access opens — founding pricing above is locked in for anyone on this list.</p>
+    </div>
+    <form id="wl-form">
+      <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off">
+      <label for="wl-email">Email</label>
+      <input id="wl-email" name="email" type="email" placeholder="you@company.com" required>
+      <label for="wl-name">Name (optional)</label>
+      <input id="wl-name" name="name" type="text" placeholder="Jane Sauls">
+      <label for="wl-note">What markets are you targeting? (optional)</label>
+      <textarea id="wl-note" name="note" placeholder="e.g. Southeast, 200+ unit facilities"></textarea>
+      <button class="btn btn-primary" type="submit" style="margin-top:6px">Join the waitlist</button>
+      <div id="wl-msg"></div>
+    </form>
+  </div>
+</section>
+
+<section id="sell" style="background:var(--bg-card);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft)">
+  <div class="wrap wl-grid">
+    <div>
+      <h2>Own a facility? Sell it here.</h2>
+      <p class="section-lede">Whether or not our data has flagged your facility, list it directly and we'll route serious buyers your way — no listing fee, no obligation.</p>
+    </div>
+    <form id="sell-form">
+      <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off">
+      <label for="s-name">Your name</label>
+      <input id="s-name" name="name" type="text" required>
+      <label for="s-email">Email</label>
+      <input id="s-email" name="email" type="email" required>
+      <label for="s-phone">Phone (optional)</label>
+      <input id="s-phone" name="phone" type="tel">
+      <label for="s-address">Facility address</label>
+      <input id="s-address" name="address" type="text" placeholder="123 Storage Way" required>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+        <div><label for="s-city">City</label><input id="s-city" name="city" type="text"></div>
+        <div><label for="s-state">State</label><input id="s-state" name="state" type="text" maxlength="2" placeholder="UT"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label for="s-units">Unit count</label><input id="s-units" name="units" type="text" placeholder="e.g. 240"></div>
+        <div><label for="s-asking">Asking price</label><input id="s-asking" name="asking" type="text" placeholder="Not sure yet"></div>
+      </div>
+      <label for="s-note">Anything else? (optional)</label>
+      <textarea id="s-note" name="note"></textarea>
+      <button class="btn btn-primary" type="submit" style="margin-top:6px">Submit listing</button>
+      <div id="sell-msg"></div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>A project from AHR (America Home Restoration) · questions: ted@americahomerestoration.com</p>
+    <p>Distressed Storage Signal — early access</p>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('wl-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var msg = document.getElementById('wl-msg');
+    var btn = e.target.querySelector('button');
+    var payload = {
+      email: document.getElementById('wl-email').value,
+      name: document.getElementById('wl-name').value,
+      note: document.getElementById('wl-note').value,
+      company: e.target.company.value
+    };
+    btn.disabled = true;
+    msg.textContent = '';
+    msg.className = '';
+    try {
+      var res = await fetch('/api/storage-waitlist', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (res.ok && data.ok) {
+        msg.textContent = "You're on the list — we'll email you when access opens.";
+        msg.className = 'ok';
+        e.target.reset();
+      } else {
+        msg.textContent = data.error || 'Something went wrong — try again.';
+        msg.className = 'err';
+      }
+    } catch (err) {
+      msg.textContent = 'Network error — try again in a moment.';
+      msg.className = 'err';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('sell-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var msg = document.getElementById('sell-msg');
+    var btn = e.target.querySelector('button');
+    var payload = {
+      name: document.getElementById('s-name').value,
+      email: document.getElementById('s-email').value,
+      phone: document.getElementById('s-phone').value,
+      address: document.getElementById('s-address').value,
+      city: document.getElementById('s-city').value,
+      state: document.getElementById('s-state').value,
+      units: document.getElementById('s-units').value,
+      asking: document.getElementById('s-asking').value,
+      note: document.getElementById('s-note').value,
+      company: e.target.company.value
+    };
+    btn.disabled = true;
+    msg.textContent = '';
+    msg.className = '';
+    try {
+      var res = await fetch('/api/storage-listing', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (res.ok && data.ok) {
+        msg.textContent = "Got it — we'll be in touch shortly.";
+        msg.className = 'ok';
+        e.target.reset();
+      } else {
+        msg.textContent = data.error || 'Something went wrong — try again.';
+        msg.className = 'err';
+      }
+    } catch (err) {
+      msg.textContent = 'Network error — try again in a moment.';
+      msg.className = 'err';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
