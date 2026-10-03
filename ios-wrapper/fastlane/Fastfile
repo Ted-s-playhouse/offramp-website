@@ -1,0 +1,25 @@
+# OffRamp REI iOS — cloud build (GitHub Actions macOS runner), no local Mac needed.
+# Auth: App Store Connect API key (ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8 secrets).
+# Signing: fastlane match, git storage in Ted-s-playhouse/offramp-certs (MATCH_PASSWORD, MATCH_GIT_TOKEN).
+default_platform(:ios)
+
+platform :ios do
+  desc "Build the Capacitor shell and upload to TestFlight"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_P8"], is_key_content_base64: false, in_house: false)
+    # app record (idempotent)
+    produce(api_key: api_key, app_identifier: "com.offramprei.app", app_name: "OffRamp REI",
+            language: "en-US", sku: "offramprei-ios", skip_itc: false) rescue UI.message("produce: app may already exist")
+    setup_ci
+    match(type: "appstore", api_key: api_key, readonly: false,
+          git_url: "https://x-access-token:#{ENV['MATCH_GIT_TOKEN']}@github.com/Ted-s-playhouse/offramp-certs.git",
+          app_identifier: ["com.offramprei.app"], team_id: ENV["APPLE_TEAM_ID"])
+    increment_build_number(build_number: ENV["GITHUB_RUN_NUMBER"] || Time.now.strftime("%Y%m%d%H%M"), xcodeproj: "ios/App/App.xcodeproj")
+    build_app(workspace: "ios/App/App.xcworkspace", scheme: "App", export_method: "app-store",
+              xcargs: "-allowProvisioningUpdates", output_directory: "build")
+    upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true,
+                         changelog: "OffRamp REI deal room wrapper build #{ENV['GITHUB_RUN_NUMBER']}")
+  end
+end

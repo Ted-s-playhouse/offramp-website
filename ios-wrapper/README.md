@@ -26,3 +26,9 @@ External Link Account Entitlement request in the developer account (reader-app s
 purchase link entitlement; file it when the account exists.
 Item 18 (Small Business Program, 15% commission): App Store Connect → Business → Small Business Program, after enrollment.
 Item 20 (Android) skipped per the Master Task File.
+
+## Cloud build (added 2026-10-03 — Mac is on macOS 15.7 with 26 GB free; Xcode 26 needs macOS 26.6, so the Mac is out of the path)
+`.github/workflows/ios-testflight.yml` builds on a `macos-26` GitHub runner and uploads to TestFlight via `fastlane ios beta`.
+Repo secrets needed (Settings → Secrets → Actions): `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` (full .p8 text), `APPLE_TEAM_ID`,
+`MATCH_PASSWORD` (vault: offramp-ios-match-password), `MATCH_GIT_TOKEN` (a GitHub PAT with repo access to Ted-s-playhouse/offramp-certs).
+First run creates the app record (produce), the distribution cert + profile (match, stored encrypted in offramp-certs), builds, uploads.
