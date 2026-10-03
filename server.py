@@ -126,6 +126,7 @@ PLAN_LIMITS = {
 }
 PAID_PLANS = ("pro", "premium")
 TRIAL_PLAN = "trial"
+TERMS_VERSION = "2026-10-05"   # bump when /terms changes; users re-accept on next entry
 PREMIUM_COLS = ("next_of_kin", "deceased_party", "probate_case_number", "bankruptcy_flag", "bankruptcy_chapter", "bankruptcy_case",
                 "bankruptcy_case_title", "bankruptcy_case_link", "bankruptcy_active_stay",
                 "surplus_amount", "surplus_sale_date", "surplus_purchaser", "surplus_court", "surplus_claim_deadline")
@@ -425,6 +426,7 @@ def public_user(u):
     lim = limits_for(u)
     return {
         "email": u["email"], "full_name": u.get("full_name"), "plan": u["plan"],
+        "terms_accepted": bool(u.get("terms_accepted_at")),
         "plan_key": plan_key(u), "founding": bool(u.get("founding")),
         "paid": is_paid(u), "premium": has_premium(u),
         "trial": u.get("plan") == TRIAL_PLAN, "trial_ends_at": u.get("trial_ends_at"),
@@ -1629,9 +1631,11 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(400, {"error": "valid email and 8+ char password required"})
             if get_user_by_email(email):
                 return self._json(409, {"error": "an account with that email already exists"})
+            if not data.get("terms_accepted"):  # Ted 2026-10-03: every signup reads the Terms + the state notice and checks the box
+                return self._json(400, {"error": "please read the Terms and the state notice and check the box"})
             sb("POST", "/offramp_users", body={
-                "email": email, "password_hash": hash_pw(pw), "full_name": name,
-                "plan": "free"}, headers={"Prefer": "return=minimal"})
+                "email": email, "password_hash": hash_pw(pw), "full_name": name, "plan": "free",
+                "terms_accepted_at": datetime.now(timezone.utc).isoformat(), "terms_version": TERMS_VERSION}, headers={"Prefer": "return=minimal"})
             u = get_user_by_email(email)
             notify_telegram(f"NEW OffRamp APP signup: {email} ({name or 'no name'})")
             funnel("signup", user_id=u["id"], handler=self)
@@ -1811,7 +1815,7 @@ class Handler(SimpleHTTPRequestHandler):
                                         "usage": public_user(u)["usage"]})
 
         # ---------- public lead capture (unchanged) ----------
-        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access", "/api/track",
+        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access", "/api/track", "/api/auth/accept-terms",
                           "/api/storage-waitlist", "/api/storage-listing"):
             return self._json(404, {"error": "not found"})
         ip = self.headers.get("CF-Connecting-IP") or self.client_address[0]
@@ -1835,6 +1839,16 @@ class Handler(SimpleHTTPRequestHandler):
                        body={"tags": tags}, headers={"Prefer": "return=minimal"})
             except Exception as e:
                 print(f"[unsub] error: {e}")
+            return self._json(200, {"ok": True})
+
+        if route == "/api/auth/accept-terms":
+            # SSO signups never saw the signup form: the app shows the notice on first entry and posts here (Ted 2026-10-03)
+            tu = self._current_user()
+            if not tu:
+                return self._json(401, {"error": "not signed in"})
+            sb("PATCH", f"/offramp_users?id=eq.{urllib.parse.quote(str(tu['id']))}",
+               body={"terms_accepted_at": datetime.now(timezone.utc).isoformat(), "terms_version": TERMS_VERSION},
+               headers={"Prefer": "return=minimal"})
             return self._json(200, {"ok": True})
 
         if route == "/api/track":

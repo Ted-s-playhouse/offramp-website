@@ -217,6 +217,8 @@
   .vtile .cases{margin-top:6px;font-size:12.5px}.vtile .cases div{padding:3px 0;border-top:1px dashed var(--border)}
   .vtile .more{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:800;color:var(--accent);background:var(--accentSoft);border:1px solid rgba(27,67,50,.25);padding:6px 11px;border-radius:9px;cursor:pointer}
   .vtile.lockt{cursor:pointer}.vtile.lockt .word{filter:blur(5px)}
+  .statenote{font-size:12.5px;line-height:1.45;color:var(--sub);background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px}
+  .fcheck a{color:var(--accent2);font-weight:700}
   .sigintro{font-size:12px;color:var(--sub);margin:-4px 2px 10px;line-height:1.4}
   .sig{background:var(--card);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
   .sig.ramp{border-left-color:#0f172a}.sig.gavel{border-left-color:#B42318}.sig.gavel.med{border-left-color:#d7a23c}.sig.gavel.low{border-left-color:#cbd5e1}
@@ -375,6 +377,10 @@
       </div>
       <div class="field"><label>Email</label><input id="f_email" type="email" autocomplete="email" required></div>
       <div class="field"><label>Password</label><input id="f_pw" type="password" autocomplete="current-password" required></div>
+      <div id="termsBlock" style="display:none">
+        <div class="statenote" id="stateNotice">OffRamp gives you public record data on properties headed to foreclosure sale. It is information. It is not legal advice and we are not a broker or a foreclosure consultant. Some states restrict how and when you may contact an owner after a notice of default and what you may put in a contract with them. Oregon. Washington. California. Minnesota. Maryland. New York. Illinois. Colorado and others. Know the law in every state you work. You are responsible for your outreach.</div>
+        <label class="fcheck" style="margin-top:8px"><input type="checkbox" id="f_terms"> I have read the <a href="/terms" target="_blank" rel="noopener">Terms</a> and the state notice and I agree.</label>
+      </div>
       <button class="btn-primary" id="authSubmit" type="submit">Log in</button>
     </form>
     <div class="or">or continue with</div>
@@ -551,6 +557,7 @@ function setTab(t){
   document.getElementById('tabLogin').classList.toggle('on',login);
   document.getElementById('tabSignup').classList.toggle('on',!login);
   document.getElementById('nameField').style.display=login?'none':'block';
+  document.getElementById('termsBlock').style.display=login?'none':'block';
   document.getElementById('authSubmit').textContent=login?'Log in':'Create account';
   document.getElementById('f_pw').autocomplete=login?'current-password':'new-password';
   document.getElementById('authForm').dataset.mode=t;
@@ -560,11 +567,23 @@ function doAuth(ev){
   ev.preventDefault();
   var mode=document.getElementById('authForm').dataset.mode||'login';
   var body={email:document.getElementById('f_email').value.trim(),password:document.getElementById('f_pw').value};
-  if(mode==='signup') body.full_name=document.getElementById('f_name').value.trim();
+  if(mode==='signup'){ body.full_name=document.getElementById('f_name').value.trim(); if(!document.getElementById('f_terms').checked){ authErr('Please read the Terms and the state notice and check the box.'); return false; } body.terms_accepted=true; }
   api('/api/auth/'+mode,{method:'POST',body:body}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
    .then(function(res){ if(!res.ok){authErr(res.j.error||'Something went wrong');return;} ME=res.j.user; enterApp(); })
    .catch(function(){authErr('Network error');});
   return false;
+}
+function showTermsGate(){  // SSO users never saw the signup form (Ted 2026-10-03)
+  var el=document.getElementById('upsheet'); if(!el){ el=document.createElement('div'); el.id='upsheet'; document.body.appendChild(el); }
+  el.innerHTML='<div class="upsheet-bg"></div><div class="upsheet"><div class="grab"></div><div class="upt">One thing before you start</div>'+
+    '<div class="statenote">'+document.getElementById('stateNotice').innerHTML+'</div>'+
+    '<label class="fcheck" style="margin-top:10px"><input type="checkbox" id="g_terms"> I have read the <a href="/terms" target="_blank" rel="noopener">Terms</a> and the state notice and I agree.</label>'+
+    '<button class="btn-primary" style="margin-top:12px" onclick="acceptTerms()">Continue</button></div>';
+  el.style.display='block';
+}
+function acceptTerms(){
+  if(!document.getElementById('g_terms').checked){ toast('Please check the box'); return; }
+  api('/api/auth/accept-terms',{method:'POST',body:{}}).then(function(r){ if(r.ok){ ME.terms_accepted=true; closeUpgradeSheet(); enterApp(); } else toast('Could not save'); }).catch(function(){ toast('Network error'); });
 }
 function ssoLogin(p){ window.location.href='/api/auth/sso?provider='+p; }
 function doLogout(){ api('/api/auth/logout',{method:'POST'}).then(function(){location.reload();}); }
@@ -578,6 +597,7 @@ function doUpgrade(plan){
 
 /* ---------- boot ---------- */
 function enterApp(){
+  if(ME&&ME.terms_accepted===false){ showTermsGate(); return; }
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('shell').classList.remove('hidden');
   renderHeader();
