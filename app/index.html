@@ -773,7 +773,7 @@ function renderList(){
         '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
           '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
           '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+'</div></div>'+
-        '<div class="right"><div class="eq'+(equityView(r).unv?' eq-unv':'')+'">'+(equityView(r).unv?'n/a':(equityView(r).pct!=null?equityView(r).pct+'%':'—'))+'</div><div class="eqk">'+(equityView(r).unv?'equity unverified':'equity')+'</div>'+
+        '<div class="right"><div class="eq'+(equityView(r).unv?' eq-unv':'')+'">'+(equityView(r).unv?'n/a':(equityView(r).neg?'Negative':(equityView(r).pct!=null?equityView(r).pct+'%':'—')))+'</div><div class="eqk">'+(equityView(r).unv?'equity unverified':'equity')+'</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
       '</div>'+
       '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div>'+sigBadges(r)+'</div>';
@@ -919,7 +919,7 @@ function equityView(r){  // Ted 2026-10-03 (two screenshots): equity must net EV
   var v=Number(r.avm||r.market_value||0), tot=Number(r.lien_total_amount||0), mb=Number(r.mortgage_balance||0), first=Number(r.lien_first_amount||0);
   var hasLiens=(r.lien_count>0&&tot>0);
   if(r.equity_unverified)return {unv:true,why:'',pct:null,dollars:null,net:false};
-  if(hasLiens&&v>0&&tot>=v)return {unv:true,why:'Recorded liens meet or exceed the value. No equity to count on.',pct:null,dollars:null,net:false};
+  if(hasLiens&&v>0&&tot>=v)return {unv:false,neg:true,why:'',pct:Math.round((v-tot)/v*100),dollars:Math.round(v-tot),net:true};  // Ted 2026-10-03: liens over value = negative equity. Say that. Keep it simple.
   var agree=hasLiens&&mb>0&&first>0&&Math.abs(mb-first)<=first*0.02;
   if(hasLiens&&!agree&&mb>0&&tot>mb*1.15)return {unv:true,why:'Recorded liens exceed the loan balance on file. A blanket or commercial loan may cover more than this property.',pct:null,dollars:null,net:false};
   if(hasLiens&&v>0&&tot>mb){ var d=v-tot; return {unv:false,why:'',pct:Math.round(d/v*100),dollars:Math.round(d),net:true}; }  // net of all liens, not just the first
@@ -1075,7 +1075,7 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
   var terms=[r.mortgage_loan_type,(r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),(r.mortgage_recording_date?'recorded '+fmtDate(r.mortgage_recording_date):''),(r.mortgage_maturity_date?'matures '+fmtDate(r.mortgage_maturity_date):'')].filter(Boolean).join(' · ');
   var pay=agree?estPayment(r):null;
   var rows=[
-    unv?line('Equity','Unverified'):(ev.pct!=null?line('Equity',ev.pct+'%'):''),
+    unv?line('Equity','Unverified'):(ev.neg?line('Equity','Negative'):(ev.pct!=null?line('Equity',ev.pct+'%'):'')),
     lineIf('Value',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     (r.mls_active===true||r.mls_status)?line('Listed',r.mls_list_price?('On MLS · '+money(r.mls_list_price)):'On MLS'):'',
     hasLiens?line('First lien',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):lineIf('Loan balance',mb>0?((r.mortgage_lender?r.mortgage_lender+' · ':'')+money(mb)):''),
@@ -1083,7 +1083,7 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
     (hasLiens&&r.lien_count>1&&r.lien_total_amount)?line('Total debt',money(r.lien_total_amount)):'',
     lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
     r.reverse_mortgage===true?line('Reverse mortgage','Yes'):'',
-    paid?lineIf('Equity $',(ev.dollars!=null&&!unv)?money(ev.dollars):''):lockedRow('Equity $','pro'),
+    paid?lineIf('Equity $',(ev.dollars!=null&&!unv&&!ev.neg)?money(ev.dollars):''):lockedRow('Equity $','pro'),
     paid?(pay?line('Est. payment',money(pay)+' /mo'):''):lockedRow('Est. payment','pro')
   ];
   if(prem){  // Ted 2026-10-03: everybody gets lien + value + listed + deceased basics; Premium keeps the rest
