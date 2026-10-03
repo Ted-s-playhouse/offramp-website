@@ -862,7 +862,7 @@ function openDetail(i){
     '<div class="dbody">'+
       '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
       signalsSection(r)+
-      section('Loan &amp; equity',loanRows(r,paid))+
+      section('Loan &amp; equity',loanRows(r,paid,prem))+
       surplusSection(r)+
       checksSection(r,paid,prem)+
       '<div class="sec">Engage</div>'+
@@ -871,19 +871,20 @@ function openDetail(i){
       section('Foreclosure',[
         lineIf('Status',statusLabel(r)+(trusteeMark(r)?' (trustee verified)':'')),
         lineIf('Sale moved',saleMoved(r)),
-        lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
         lineIf('Sale date',saleDate),
         lineIf('Days to auction',(r.days_to_auction!=null&&r.days_to_auction>=0)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
         lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
-        (paid&&r.trustee_opening_bid==null&&rbF)?lineRaw('Ramp Bid&trade;','<span>'+money(rbF.v)+'<small>OffRamp opening-bid model</small></span>'):'',
+        (paid&&r.trustee_opening_bid==null&&rbF&&SIGNALS_PILOT_STATES[(r.property_state||'').toUpperCase()])?lineRaw('Ramp Bid&trade;','<span>'+money(rbF.v)+'<small>OffRamp opening-bid model</small></span>'):'',
+        lineIf('Foreclosing atty',r.foreclosing_attorney),
+        r.attorney_phone?lineRaw('Attorney phone','<a href="tel:'+String(r.attorney_phone).replace(/\D/g,'')+'">'+esc(r.attorney_phone)+'</a>'):'',
+        (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
+      ].concat(prem?[
+        lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
         lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
         lineIf('Case / NOD #',r.nod_case_number),
         lineIf('Trustee file #',r.trustee_file_no),
-        lineIf('Foreclosing atty',r.foreclosing_attorney),
-        r.attorney_phone?lineRaw('Attorney phone','<a href="tel:'+String(r.attorney_phone).replace(/\D/g,'')+'">'+esc(r.attorney_phone)+'</a>'):'',
-        lineIf('Sale venue',[r.venue_name,r.venue_address].filter(Boolean).join(' · ')),
-        (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
-      ])+
+        lineIf('Sale venue',[r.venue_name,r.venue_address].filter(Boolean).join(' · '))
+      ]:[(r.nod_case_number||r.trustee_file_no||r.venue_name)?lockedRow('Case number & venue','premium'):'']))+
       premiumSection(r)+
       '<div class="sec">Property facts</div><div class="card2" id="facts"><div class="hint">Pulling the county record…</div></div>'+
     '</div>';
@@ -1064,31 +1065,39 @@ function occupancyChip(r){
   return '';
 }
 function estPayment(r){ var P=Number(r.mortgage_balance||0), rate=Number(r.mortgage_interest_rate); if(!(P>0)||!(rate>0))return null; var i=rate/100/12; return Math.round(P*i/(1-Math.pow(1+i,-360))); }
-function loanRows(r,paid){
+function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity % + value. Pro = + equity $, loan balance, est. payment. Premium = every lien, lender, terms, total debt.
   var hasLiens=(r.lien_count!=null&&r.lien_count>0), ev=equityView(r), unv=ev.unv;
   var mb=Number(r.mortgage_balance||0), first=Number(r.lien_first_amount||0);
-  var agree=!hasLiens||(mb>0&&first>0&&Math.abs(mb-first)<=first*0.02);   // the loan on file is the recorded first lien
+  var agree=!hasLiens||(mb>0&&first>0&&Math.abs(mb-first)<=first*0.02);
+  var bal=hasLiens?(first||mb):mb;
   var terms=[r.mortgage_loan_type,(r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),(r.mortgage_recording_date?'recorded '+fmtDate(r.mortgage_recording_date):''),(r.mortgage_maturity_date?'matures '+fmtDate(r.mortgage_maturity_date):'')].filter(Boolean).join(' · ');
   var pay=agree?estPayment(r):null;
-  return [
-    unv?line('Equity','Unverified'):(ev.pct!=null?lineRaw('Equity',ev.pct+'%'+(ev.net?'<small>net of all '+r.lien_count+' recorded liens</small>':'')):''),
+  var rows=[
+    unv?line('Equity','Unverified'):(ev.pct!=null?line('Equity',ev.pct+'%'):''),
     lineIf('Why unverified',whyUnverified(r)),
+    lineIf('Value',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     paid?lineIf('Equity $',(ev.dollars!=null&&!unv)?money(ev.dollars):''):lockedRow('Equity $','pro'),
-    lineIf('Value (AVM)',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
-    hasLiens?lineRaw('First lien',esc(lienText(r,1))+((agree&&terms)?'<small>'+esc(terms)+'</small>':'')):'',
-    (!hasLiens&&paid)?lineIf('Loan balance',mb>0?money(mb):''):(!hasLiens?lockedRow('Loan balance','pro'):''),
-    (!hasLiens)?lineIf('Lender',r.mortgage_lender):'',
-    (!hasLiens&&terms)?line('Loan terms',terms):'',
-    (hasLiens&&!agree&&paid&&mb>0)?lineRaw('Loan on file',money(mb)+'<small>'+esc((r.mortgage_lender?r.mortgage_lender+' · ':'')+terms)+' · does not match the recorded first lien</small>'):'',
-    (paid&&pay)?lineRaw('Est. payment',money(pay)+' /mo<small>principal and interest from amount, rate and term</small>'):'',
-    lineIf('Second lien',lienText(r,2)),
-    lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
-    (hasLiens&&r.lien_total_amount)?line('Total debt on record',money(r.lien_total_amount)):'',
-    lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
-    lineIf('Tax lien',r.tax_lien?'Yes':''),
-    lineIf('Judgment',r.judgment_flag?'Yes':''),
-    r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
+    paid?lineIf('Loan balance',bal>0?money(bal):''):lockedRow('Loan balance','pro'),
+    paid?(pay?line('Est. payment',money(pay)+' /mo'):''):lockedRow('Est. payment','pro')
   ];
+  if(prem){
+    rows=rows.concat([
+      hasLiens?lineRaw('First lien',esc(lienText(r,1))+((agree&&terms)?'<small>'+esc(terms)+'</small>':'')):'',
+      (!hasLiens)?lineIf('Lender',r.mortgage_lender):'',
+      (!hasLiens&&terms)?line('Loan terms',terms):'',
+      (hasLiens&&!agree&&mb>0)?lineRaw('Loan on file',money(mb)+'<small>'+esc((r.mortgage_lender?r.mortgage_lender+' · ':'')+terms)+' · does not match the recorded first lien</small>'):'',
+      lineIf('Second lien',lienText(r,2)),
+      lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
+      (hasLiens&&r.lien_total_amount)?line('Total debt on record',money(r.lien_total_amount)):'',
+      lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
+      lineIf('Tax lien',r.tax_lien?'Yes':''),
+      lineIf('Judgment',r.judgment_flag?'Yes':''),
+      r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
+    ]);
+  } else if(hasLiens||r.lien_count===0){
+    rows.push(lockedRow('Liens on record','premium'));
+  }
+  return rows;
 }
 function lockedTile(title,sub,kind){ return '<div class="vtile none lockt" onclick="openUpgradeSheet(\''+kind+'\')"><div class="ico">🔒</div><div><div class="title">'+title+'</div><div class="word">CLEAR</div><div class="proof">'+sub+' · unlocks on '+(kind==='premium'?'Premium':'Pro')+'</div></div></div>'; }
 function lienTile(r){
@@ -1105,7 +1114,7 @@ function nokTile(r){
 function checksSection(r,paid,prem){
   var h='<div class="sec">Checks</div><div class="vgrid">';
   h+=paid?('<div id="courtrec">'+courtTile(r)+'</div>'):lockedTile('Court records','Bankruptcy and federal cases',' pro'.trim());
-  h+=lienTile(r);
+  h+=prem?lienTile(r):lockedTile('Liens on record','Every recorded lien with lender and amount','premium');
   h+=prem?nokTile(r):lockedTile('Next of kin','Family and relative records','premium');
   return h+'</div>';
 }
@@ -1136,16 +1145,24 @@ function factsRows(r,f){
     f.est_value?line('REAPI est. value',money(f.est_value)):''
   ];
 }
+var FACTS_PRO=['Type','Lot','Zoning','Last sale','Years owned','Owner mailing'], FACTS_FREE=['Type','Lot'];
+function factsTiered(r,f){  // Premium = full county record. Pro = 6 rows. Free = 2 rows. (Ted 2026-10-03: the less the better; all the data goes to Premium)
+  var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium), all=factsRows(r,f).filter(Boolean);
+  if(prem)return all.join('');
+  var keep=paid?FACTS_PRO:FACTS_FREE;
+  var out=all.filter(function(h){ var m=/<span class="k">([^<]+)<\/span>/.exec(h); return m&&keep.indexOf(m[1])>=0; }).join('');
+  return out+lockedRow('Full county record','premium');
+}
 function loadFacts(r){
   var el=document.getElementById('facts'); if(!el)return;
   var basic=[lineIf('Type',r.property_type),lineIf('Occupancy',r.occupancy),lineIf('APN',r.apn),lineIf('Owner mailing',r.mailing_address)].filter(Boolean).join('');
   api('/api/property-facts?id='+encodeURIComponent(r.id)).then(function(x){return x.json();}).then(function(j){
     if(CUR!==r)return; var el2=document.getElementById('facts'); if(!el2)return;
     if(!j.facts){
-      if(j.source==='locked'){ el2.innerHTML=basic+lockedRow('Full county record','pro')+'<div class="hint">Zoning, lot, garage, taxes, flood zone, last sale and years owned unlock on Pro.</div>'; return; }
+      if(j.source==='locked'){ el2.innerHTML=basic+lockedRow('Full county record','premium')+'<div class="hint">Zoning, lot, garage, taxes, flood zone, last sale and years owned are on the full county record.</div>'; return; }
       el2.innerHTML=basic+'<div class="hint">No county record came back for this address.</div>'; return;
     }
-    var f=j.facts, rows=factsRows(r,f).filter(Boolean).join('');
+    var f=j.facts, rows=factsTiered(r,f);
     el2.innerHTML=(rows||basic)+'<div class="hint">County record via REAPI'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
   }).catch(function(){ var el2=document.getElementById('facts'); if(el2&&CUR===r)el2.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; });
 }
