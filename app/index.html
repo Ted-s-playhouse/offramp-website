@@ -790,7 +790,10 @@ function openDetail(i){
   var evalRows=[
     lineIf('Equity',r.equity_unverified?'Unverified':(r.equity_pct!=null?pct(r.equity_pct):'')),
     lineIf('Why unverified',whyUnverified(r)),
-    lineIf('Liens on record',lienLine(r)),
+    lineIf('First lien',lienText(r,1)),
+    lineIf('Second lien',lienText(r,2)),
+    lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
+    lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
     lineIf('Tax lien',r.tax_lien?'Yes':''),
     lineIf('Judgment',r.judgment_flag?'Yes':''),
     paid?lineIf('Equity $',(r.equity_dollars!=null&&!r.equity_unverified)?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
@@ -881,6 +884,9 @@ function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div cla
 function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
 function lineIf(k,v){ return (v===null||v===undefined||v===''||v==='—')?'':line(k,v); }
 function lineRaw(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+function lienText(r,n){ if(r.lien_count==null||r.lien_count<n)return '';
+  if(n===1){ var a=r.lien_first_amount?'$'+Math.round(r.lien_first_amount).toLocaleString():''; var t=r.lien_first_type?' · '+r.lien_first_type:''; return ((r.lien_first_lender||'Lender not on record')+(a?' · '+a:'')+t).trim(); }
+  var b=r.lien_second_amount?'$'+Math.round(r.lien_second_amount).toLocaleString():''; return b||'On record'; }
 function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)return 'None recorded'+(r.free_and_clear?' (REAPI: free and clear)':'');
   var f=r.lien_first_lender?(r.lien_first_position||'First')+': '+r.lien_first_lender+(r.lien_first_amount?' $'+Math.round(r.lien_first_amount).toLocaleString():'')+(r.lien_first_type?' ('+r.lien_first_type+')':''):'';
   var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
