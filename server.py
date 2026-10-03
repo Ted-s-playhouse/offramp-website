@@ -648,7 +648,7 @@ def fetch_photo(address):
 
 
 # ---------------------------- search / rows ----------------------------------
-SEARCH_COLS = ("equity_unverified,equity_verify_note,lien_count,lien_first_position,lien_first_lender,lien_first_amount,lien_first_type,lien_second_amount,lien_total_amount,tax_lien,judgment_flag,free_and_clear,sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
+SEARCH_COLS = ("sale_status_verified,equity_unverified,equity_verify_note,lien_count,lien_first_position,lien_first_lender,lien_first_amount,lien_first_type,lien_second_amount,lien_total_amount,tax_lien,judgment_flag,free_and_clear,sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
                "property_state,property_zip,county,foreclosure_status,lead_status,"
                "auction_date,auction_time,days_to_auction,market_value,avm,arv,"
                "equity_dollars,equity_pct,ltv_pct,mortgage_balance,beds,baths,"

@@ -177,6 +177,7 @@
 .frow{display:flex;gap:8px}.frow select{flex:1}
 .fcheck{display:flex;align-items:center;gap:10px;padding:9px 2px;font-size:14.5px}.fcheck input{width:18px;height:18px}
 .badge.status{background:#1B4332;color:#fff}
+.badge.status.stop{background:#b42318;color:#fff}
 .badge.vmark{background:#e7f3ec;color:#1f6f43;border:1px solid #b7dcc6}
 .badge.status{color:#fff}
   .badge.soon{background:var(--danger);color:#fff}
@@ -685,7 +686,7 @@ function search(){
 }
 function badgeHtml(r){
   var out='';
-  if(statusLabel(r)){ out+='<span class="badge status">'+esc(statusLabel(r))+'</span>'; }  // Ted 2026-10-03: one color, badges are confidence tokens
+  if(statusLabel(r)){ var _sl=statusLabel(r); out+='<span class="badge status'+(_sl==='Cured'?' stop':'')+'">'+esc(_sl)+'</span>'; }  // Ted 2026-10-03: one color, badges are confidence tokens
   out+=trusteeMark(r);
   var d=r.days_to_auction;
   if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
@@ -886,14 +887,16 @@ function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><sp
 function lineIf(k,v){ return (v===null||v===undefined||v===''||v==='—')?'':line(k,v); }
 function lineRaw(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
 function lienText(r,n){ if(r.lien_count==null||r.lien_count<n)return '';
-  if(n===1){ var a=r.lien_first_amount?'$'+Math.round(r.lien_first_amount).toLocaleString():''; var t=r.lien_first_type?' · '+r.lien_first_type:''; return ((r.lien_first_lender||'Lender not on record')+(a?' · '+a:'')+t).trim(); }
+  if(n===1){ var a=r.lien_first_amount?'$'+Math.round(r.lien_first_amount).toLocaleString():''; var t=(r.lien_first_type&&!/^unknown$/i.test(r.lien_first_type))?' · '+r.lien_first_type:''; return ((r.lien_first_lender||'Lender not on record')+(a?' · '+a:'')+t).trim(); }
   var b=r.lien_second_amount?'$'+Math.round(r.lien_second_amount).toLocaleString():''; return b||'On record'; }
 function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)return 'None recorded'+(r.free_and_clear?' (REAPI: free and clear)':'');
-  var f=r.lien_first_lender?(r.lien_first_position||'First')+': '+r.lien_first_lender+(r.lien_first_amount?' $'+Math.round(r.lien_first_amount).toLocaleString():'')+(r.lien_first_type?' ('+r.lien_first_type+')':''):'';
+  var f=r.lien_first_lender?(r.lien_first_position||'First')+': '+r.lien_first_lender+(r.lien_first_amount?' $'+Math.round(r.lien_first_amount).toLocaleString():'')+((r.lien_first_type&&!/^unknown$/i.test(r.lien_first_type))?' ('+r.lien_first_type+')':''):'';
   var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
   return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
+function trusteeLive(r){ var v=r.sale_verified_source||''; return !!(v && !/realestateapi/i.test(v) && /^(active|scheduled|live)$/i.test(r.sale_status_verified||'')); }
 function statusLabel(r){ var st=(r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,'');  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
   if(/^postponed/i.test(st))return 'Postponed';                       // Ted 2026-10-03: plain Postponed tag; dates go to the 'Sale moved' line
+  if(/cured|reinstat|cancel/i.test(st)){ return trusteeLive(r)?'Scheduled':'Cured'; }  // Ted 2026-10-03: a trustee-verified live sale beats stale feed text; a real cure is a red stop sign
   if(r.auction_date&&(!st||/pre.?foreclosure|notice of|^foreclosure$/i.test(st)))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
   return st; }
 function whyUnverified(r){ var n=(r.equity_verify_note||'').toLowerCase(); if(!r.equity_unverified)return '';
