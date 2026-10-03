@@ -91,6 +91,7 @@
   .searchbox{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 12px}
   .searchbox svg{width:18px;height:18px;color:var(--sub);flex:none}
   .searchbox input{flex:1;border:0;outline:none;padding:11px 8px;font-size:15px;background:transparent;color:var(--text)}
+  .empty b{display:block;margin-bottom:6px;color:var(--text)}.empty .chip em{font-style:normal;color:var(--sub);margin-left:4px}
   .browse{padding:2px 0 0}
   .browsehead{display:flex;align-items:center;justify-content:space-between;padding:4px 12px 0;font-size:12px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
   .browsehead select{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);max-width:60%}
@@ -357,6 +358,19 @@
 var ME=null, MAP=null, MARKERS=null, ROWS=[], CUR=null, SCREEN='deals';
 var ACTIONS={}; var SHOW_HIDDEN=false;
 var STATE=null; var COUNTS={hit:{},national:{},total:{}};
+var ADJ={AL:['FL','GA','MS','TN'],AK:['WA','OR','HI'],AZ:['CA','CO','NV','NM','UT'],AR:['LA','MS','MO','OK','TN','TX'],CA:['AZ','NV','OR'],CO:['AZ','KS','NE','NM','OK','UT','WY'],CT:['MA','NY','RI'],DE:['MD','NJ','PA'],DC:['MD','VA'],FL:['AL','GA'],GA:['AL','FL','NC','SC','TN'],HI:['CA','AK'],ID:['MT','NV','OR','UT','WA','WY'],IL:['IN','IA','KY','MI','MO','WI'],IN:['IL','KY','MI','OH'],IA:['IL','MN','MO','NE','SD','WI'],KS:['CO','MO','NE','OK'],KY:['IL','IN','MO','OH','TN','VA','WV'],LA:['AR','MS','TX'],ME:['NH'],MD:['DE','DC','PA','VA','WV'],MA:['CT','NH','NY','RI','VT'],MI:['IN','OH','WI'],MN:['IA','ND','SD','WI'],MS:['AL','AR','LA','TN'],MO:['AR','IL','IA','KS','KY','NE','OK','TN'],MT:['ID','ND','SD','WY'],NE:['CO','IA','KS','MO','SD','WY'],NV:['AZ','CA','ID','OR','UT'],NH:['ME','MA','VT'],NJ:['DE','NY','PA'],NM:['AZ','CO','OK','TX','UT'],NY:['CT','MA','NJ','PA','VT'],NC:['GA','SC','TN','VA'],ND:['MN','MT','SD'],OH:['IN','KY','MI','PA','WV'],OK:['AR','CO','KS','MO','NM','TX'],OR:['CA','ID','NV','WA'],PA:['DE','MD','NJ','NY','OH','WV'],RI:['CT','MA'],SC:['GA','NC'],SD:['IA','MN','MT','NE','ND','WY'],TN:['AL','AR','GA','KY','MS','MO','NC','VA'],TX:['AR','LA','NM','OK'],UT:['AZ','CO','ID','NV','NM','WY'],VT:['MA','NH','NY'],VA:['DC','KY','MD','NC','TN','WV'],WA:['ID','OR','AK'],WV:['KY','MD','OH','PA','VA'],WI:['IL','IA','MI','MN'],WY:['CO','ID','MT','NE','SD','UT']};
+function emptyStateHtml(){
+  var filtered=document.getElementById('fStatus').value||document.getElementById('fEquity').value||document.getElementById('fSearch').value.trim();
+  var name=STATE?(STATE_NAMES[STATE]||STATE):'any state';
+  var tot=COUNTS.total||{};
+  var nearby=(STATE?(ADJ[STATE]||[]):[]).filter(function(k){return tot[k]>0;}).sort(function(a,b){return tot[b]-tot[a];});
+  if(!nearby.length){ nearby=Object.keys(tot).filter(function(k){return k!==STATE&&tot[k]>0;}).sort(function(a,b){return tot[b]-tot[a];}).slice(0,6); }
+  var links=nearby.map(function(k){return '<a class="chip" href="#" onclick="pickState(\''+k+'\');return false;">'+(STATE_NAMES[k]||k)+' <em>'+tot[k]+'</em></a>';}).join('');
+  var head=filtered?('No deals match that search in '+name+' right now.'):('No auctions in '+name+' right now.');
+  var clear=filtered?'<div style="margin:8px 0"><a href="#" onclick="clearFilters();return false;">Clear the search and filters</a></div>':'';
+  return '<div class="empty"><b>'+head+'</b>'+clear+(links?'<div style="margin-top:10px;color:var(--sub);font-size:13px">See nearby states</div><div class="chiprow" style="flex-wrap:wrap;justify-content:center;padding:8px 0">'+links+'</div>':'')+'</div>';
+}
+function clearFilters(){ document.getElementById('fStatus').value=''; document.getElementById('fEquity').value=''; document.getElementById('fSearch').value=''; search(); }
 var STATE_NAMES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
 
 function money(n){ if(n===null||n===undefined||n==='')return '—'; var x=Number(n); if(isNaN(x))return '—'; return '$'+Math.round(x).toLocaleString(); }
@@ -513,7 +527,7 @@ function renderList(){
   var hiddenN=ROWS.filter(function(r){return act(r).hidden;}).length;
   var toggle=hiddenN?'<div class="loadrow"><a href="#" onclick="toggleHidden();return false;">'+(SHOW_HIDDEN?'Hide ':'Show ')+hiddenN+' hidden</a></div>':'';
   var vis=ROWS.map(function(r,i){return [r,i];}).filter(function(p){return SHOW_HIDDEN||!act(p[0]).hidden;});
-  if(!vis.length){ el.innerHTML=toggle+'<div class="empty">No deals match. Widen your filters or pick another state.</div>'; return; }
+  if(!vis.length){ el.innerHTML=toggle+emptyStateHtml(); return; }
   el.innerHTML=toggle+vis.map(function(p){ var r=p[0], i=p[1];
     var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
     var pu=photoUrl(r);
