@@ -51,3 +51,10 @@ Rules: if a phase is not done by its deadline, report it as overdue in the heart
 - Verification check required before marking any task done.
 ---
 Source: Ted via Telegram + Google Doc "Task" (Drive id 1ETnFhRjEfCZWxnFB8hEE8ef32p3rx1AQWjbF8G79xR0), received 2026-10-03 08:46 UTC. Day 1 = 2026-10-03 (America/Denver).
+
+## Addendum 2026-10-03 (Ted, Telegram) — Deal-room list view for national scale
+1. Search box is the primary entry point. State chips move below search as a secondary "browse by state" section (or dropdown); they remain a quick-tap shortcut, not the main navigation.
+2. Empty state: a state with no deals shows "no auctions in <state> right now — see nearby states" with links to adjacent states that have listings. Never a blank list.
+3. Header credit meter reads "N credits left" or the plan name, not a raw regional number.
+4. Bottom nav "Lookup" tab renamed "Search".
+Rule: commit before starting and after each completed task.
