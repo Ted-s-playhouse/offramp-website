@@ -68,6 +68,7 @@ GOOGLE_OAUTH_SECRET = _read(os.path.join(SEC, "google-oauth-revivebuyers-client-
 # product/price/coupon ids were created fresh in the live account; this wires
 # them into the app. Test-mode files (stripe-secret-offramp-test etc.) are
 # kept on disk untouched as a rollback reference, not read anymore.
+SEO_FLUSH_TOKEN = _read(os.path.join(SEC, "offramp-seo-flush-token"))
 STRIPE_SECRET = _read(os.path.join(SEC, "stripe-secret-offramp-live"))
 STRIPE_WEBHOOK_SECRET = _read(os.path.join(SEC, "stripe-webhook-offramp-secret-live"))
 try:
@@ -991,6 +992,20 @@ class Handler(SimpleHTTPRequestHandler):
         route = self.path.split("?")[0]
 
         # ---------- stripe webhook (raw body, verified BEFORE any JSON parse) ----------
+        if route == "/internal/seo-flush":
+            # Item 12: the daily diff cron asks the live server to drop its page cache
+            # + sitemap file so regenerated pages show the new feed. Localhost + token only.
+            tok = self.headers.get("X-Seo-Flush-Token", "")
+            if self.client_address[0] != "127.0.0.1" or not SEO_FLUSH_TOKEN or not hmac.compare_digest(tok, SEO_FLUSH_TOKEN):
+                return self._json(403, {"error": "forbidden"})
+            n = len(seo_pages._CACHE)
+            seo_pages._CACHE.clear()
+            try:
+                os.remove(seo_pages.SITEMAP_PATH)
+            except OSError:
+                pass
+            return self._json(200, {"flushed": n, "sitemap_cleared": True})
+
         if route == "/api/stripe/webhook":
             n = int(self.headers.get("Content-Length", 0))
             raw = self.rfile.read(n)

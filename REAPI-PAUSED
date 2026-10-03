@@ -1,0 +1,2 @@
+REAPI auction/listing pulls PAUSED by Ted 2026-10-03 (crontab lines tagged PAUSED-2026-10-03-ted-stop-reapi-auction).
+auction_daily_diff.py refuses to spend REAPI credits while this file exists. Delete it only on Ted's explicit GO.
