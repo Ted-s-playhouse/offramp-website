@@ -202,6 +202,21 @@
   .mb.surplus{background:linear-gradient(135deg,#d9a53a,#f6d77a 60%,#e3b341);color:#2a1d05;border-radius:20px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55),0 1px 3px rgba(120,80,0,.25)}
   .mb .lk{font-size:8.5px;background:var(--gold);color:#231a0c;padding:2px 5px;border-radius:8px;margin-left:2px;letter-spacing:.04em}
   .mb.locked .mv{filter:blur(4px);user-select:none}
+  .rowline .v small{display:block;font-weight:600;color:var(--sub);font-size:12px}
+  .badge.occ{background:var(--warm)!important;color:#3a2a06!important;border-color:rgba(0,0,0,.08)!important}
+  /* verdict tiles (Ted 2026-10-03: court records / liens / next of kin as big verdicts) */
+  .vgrid{display:grid;grid-template-columns:1fr;gap:10px}
+  .vtile{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 14px 12px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start}
+  .vtile .ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;flex:0 0 52px}
+  .vtile.clear .ico{background:#e7f4ec;color:#1f6f43}.vtile.flag .ico{background:#fbeae6;color:var(--danger)}.vtile.none .ico{background:#f0efe9;color:var(--sub)}
+  .vtile .word{font-size:22px;font-weight:900;letter-spacing:.02em;line-height:1.1}
+  .vtile.clear .word{color:#1f6f43}.vtile.flag .word{color:var(--danger)}.vtile.none .word{color:var(--sub)}
+  .vtile .title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub)}
+  .vtile .proof{font-size:12px;color:var(--sub);margin-top:5px;line-height:1.4}
+  .vtile .detail{font-size:13.5px;font-weight:700;margin-top:4px}
+  .vtile .cases{margin-top:6px;font-size:12.5px}.vtile .cases div{padding:3px 0;border-top:1px dashed var(--border)}
+  .vtile .more{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:800;color:var(--accent);background:var(--accentSoft);border:1px solid rgba(27,67,50,.25);padding:6px 11px;border-radius:9px;cursor:pointer}
+  .vtile.lockt{cursor:pointer}.vtile.lockt .word{filter:blur(5px)}
   .sigintro{font-size:12px;color:var(--sub);margin:-4px 2px 10px;line-height:1.4}
   .sig{background:var(--card);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
   .sig.ramp{border-left-color:#0f172a}.sig.gavel{border-left-color:#B42318}.sig.gavel.med{border-left-color:#d7a23c}.sig.gavel.low{border-left-color:#cbd5e1}
@@ -822,35 +837,21 @@ function openDetail(i){
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
   var saleDate=fmtDate(r.auction_date)+(r.auction_time?(' · '+r.auction_time):'');
 
-  // ---- Evaluation (Revive order: equity %, equity $, AVM, loan balance). Free: $ rows grayed.
-  var evalRows=[
-    lineIf('Equity',r.equity_unverified?'Unverified':(r.equity_pct!=null?pct(r.equity_pct):'')),
-    lineIf('Why unverified',whyUnverified(r)),
-    lineIf('First lien',lienText(r,1)),
-    lineIf('Second lien',lienText(r,2)),
-    lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
-    lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
-    lineIf('Tax lien',r.tax_lien?'Yes':''),
-    lineIf('Judgment',r.judgment_flag?'Yes':''),
-    paid?lineIf('Equity $',(r.equity_dollars!=null&&!r.equity_unverified)?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
-    lineIf('AVM',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
-    paid?lineIf('Loan balance',r.mortgage_balance!=null?money(r.mortgage_balance):''):lockedRow('Loan balance','pro'),
-    lineIf('Loan-to-value',(r.ltv_pct!=null&&!r.equity_unverified)?pct(r.ltv_pct):''),
-    lineIf('Lender',(r.lien_count>0)?'':r.mortgage_lender)
-  ];
   // ---- Contact (phone, email, next of kin). Free: all three grayed. Pro: phone row runs skip-trace. Next of kin: Premium.
   var contactRows='<div id="contacts"></div>';
   if(!paid){ contactRows=lockedRow('Phone','pro')+lockedRow('Email','pro')+lockedRow('Next of kin','pro'); }
   else if(!prem){ contactRows+=lockedRow('Next of kin','premium'); }
   else { contactRows+=(r.next_of_kin?line('Next of kin',r.next_of_kin):'<div class="rowline"><span class="k">Next of kin</span><span class="v empty-v">None on file</span></div>'); }
 
+  var maplinks='<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>';
+  var rbF=rampBid(r);
   var html=hero+
     '<div class="dhead">'+
       '<button class="dback" onclick="closeDetail()">‹ Back</button>'+
       '<div class="owner">'+esc(owner)+'</div>'+
       '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
       '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
-      '<div class="badges">'+hbadges+'</div>'+sigBadges(r)+
+      '<div class="badges">'+hbadges+occupancyChip(r)+'</div>'+
       '<div class="dkv">'+
         cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
         cell('Sq ft',r.living_area_sqft?Number(r.living_area_sqft).toLocaleString():'—')+
@@ -861,12 +862,11 @@ function openDetail(i){
     '<div class="dbody">'+
       '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
       signalsSection(r)+
-      section('Evaluation',evalRows)+
+      section('Loan &amp; equity',loanRows(r,paid))+
       surplusSection(r)+
-      '<div class="sec">Court records</div><div class="card2">'+(paid?'<div id="courtrec">'+courtRecordsIntro(r)+'</div>':lockedRow('Bankruptcy & federal cases','pro'))+'</div>'+
+      checksSection(r,paid,prem)+
       '<div class="sec">Engage</div>'+
-      actionBar(r)+
-      '<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>'+
+      actionBar(r)+maplinks+
       flagStrip(r)+
       section('Foreclosure',[
         lineIf('Status',statusLabel(r)+(trusteeMark(r)?' (trustee verified)':'')),
@@ -875,7 +875,7 @@ function openDetail(i){
         lineIf('Sale date',saleDate),
         lineIf('Days to auction',(r.days_to_auction!=null&&r.days_to_auction>=0)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
         lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
-        (paid&&r.trustee_opening_bid==null&&r.mortgage_balance!=null)?lineRaw('Est. credit bid','<span title="Estimate: the recorded loan balance. Lenders usually open at or near what they are owed. Not a live figure.">'+money(r.mortgage_balance)+' <small style="color:var(--sub)">Est. · from stored loan balance</small></span>'):'',
+        (paid&&r.trustee_opening_bid==null&&rbF)?lineRaw('Ramp Bid&trade;','<span>'+money(rbF.v)+'<small>OffRamp opening-bid model</small></span>'):'',
         lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
         lineIf('Case / NOD #',r.nod_case_number),
         lineIf('Trustee file #',r.trustee_file_no),
@@ -884,39 +884,13 @@ function openDetail(i){
         lineIf('Sale venue',[r.venue_name,r.venue_address].filter(Boolean).join(' · ')),
         (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
       ])+
-      (paid?section('Mortgage',[
-        lineIf('Interest rate',r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),
-        lineIf('Loan type',r.mortgage_loan_type),
-        lineIf('Recorded',fmtDate(r.mortgage_recording_date)),
-        lineIf('Maturity',fmtDate(r.mortgage_maturity_date)),
-        r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
-      ]):'')+
       premiumSection(r)+
-      section('Property',[
-        lineIf('Type',r.property_type),
-        lineIf('Occupancy',r.occupancy),
-        lineIf('APN',r.apn),
-        lineIf('Owner mailing',r.mailing_address)
-      ])+
-      '<div class="sec">Deal Analyzer</div>'+
-      '<div class="analyzer">'+
-        '<div class="ins">'+
-          '<div><label>ARV</label><input id="an_arv" type="number" value="'+(r.arv||r.market_value||r.avm||'')+'" oninput="runAnalyze()"></div>'+
-          '<div><label>Rehab</label><input id="an_rehab" type="number" value="0" oninput="runAnalyze()"></div>'+
-          '<div><label>Your offer</label><input id="an_offer" type="number" placeholder="e.g. 180000" oninput="runAnalyze()"></div>'+
-          '<div><label>Loan balance</label><input id="an_mb" type="number" value="'+(r.mortgage_balance||'')+'" oninput="runAnalyze()"></div>'+
-        '</div>'+
-        '<div class="out">'+
-          '<div class="box"><div class="k">Est. profit</div><div class="v" id="o_profit">—</div></div>'+
-          '<div class="box"><div class="k">ROI</div><div class="v" id="o_roi">—</div></div>'+
-        '</div>'+
-        '<div class="verdict neutral" id="o_verdict">Enter an offer to score the deal</div>'+
-      '</div>'+
+      '<div class="sec">Property facts</div><div class="card2" id="facts"><div class="hint">Pulling the county record…</div></div>'+
     '</div>';
   document.getElementById('detailInner').innerHTML=html;
   document.getElementById('detail').scrollTop=0;
   document.getElementById('detail').classList.add('open');
-  if(paid)renderContacts(); runAnalyze();
+  if(paid)renderContacts(); loadFacts(r);
 }
 function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
 function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
@@ -953,7 +927,6 @@ function flagStrip(r){
   if(r.mls_active===true||r.mls_status) f.push(['mls','Listed on MLS'+(r.mls_list_price?(' · '+money(r.mls_list_price)):'')]);
   if(r.reverse_mortgage===true) f.push(['rev','Reverse mortgage']);
   var mail=(r.mailing_address||'').toLowerCase(), street=(r.property_street||'').toLowerCase();
-  if(mail&&street&&mail.indexOf(street.slice(0,8))<0) f.push(['abs','Absentee owner']);
   if(!f.length) return '';
   return '<div class="flagstrip">'+f.map(function(x){return '<span class="flag '+x[0]+'">'+esc(x[1])+'</span>';}).join('')+'</div>';
 }
@@ -1003,27 +976,36 @@ function surplusSection(r){  // Ted 2026-10-03: surplus funds on the card (Premi
    Gavel Odds = will the sale hit the block (trustee live list, liens, MLS, equity). Reversion = Ramp Bid vs value (>=90% high, 75-90 med).
    Surplus Chaser = sold above the debt (surplus_amount) or trustee-verified with $50k+ of value over the Ramp Bid. ---------- */
 function rampBid(r){
+  // quality gate (Ted 2026-10-03: never a false confidence token): a posted trustee bid, or a real rate + recording date. No defaults.
   if(r.trustee_opening_bid!=null&&Number(r.trustee_opening_bid)>1000)return {v:Number(r.trustee_opening_bid),posted:true};
-  var P=Number(r.mortgage_balance||0); if(!(P>0))return null;
-  var rate=Number(r.mortgage_interest_rate); if(!(rate>0))rate=6.5; var i=rate/100/12, n=360;
-  var pay=P*i/(1-Math.pow(1+i,-n)); var m=0;
-  if(r.mortgage_recording_date){ var d=new Date(String(r.mortgage_recording_date).slice(0,10)), now=new Date(); if(!isNaN(d))m=Math.max(0,(now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth())); }
+  var P=Number(r.mortgage_balance||0), rate=Number(r.mortgage_interest_rate); if(!(P>0)||!(rate>0)||!r.mortgage_recording_date)return null;
+  var d=new Date(String(r.mortgage_recording_date).slice(0,10)); if(isNaN(d))return null;
+  var i=rate/100/12, n=360, pay=P*i/(1-Math.pow(1+i,-n)), now=new Date();
+  var m=Math.max(0,(now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth()));
   var bal=m?(P*Math.pow(1+i,m)-pay*(Math.pow(1+i,m)-1)/i):P; if(!(bal>0))bal=0;
   return {v:Math.round((bal+9*pay+4500)/100)*100,posted:false};
 }
 function gavelOdds(r){
+  // only the stupidly-obvious calls (Ted 2026-10-03). High: trustee live list, sale within 14 days, no postponement, no bankruptcy, not listed, equity under 10%. Low: bankruptcy on file or listed on MLS. Everything else: no call.
   if(!r.auction_date)return null;
   var st=r.foreclosure_status||'', live=trusteeLive(r);
-  var bk=r.bankruptcy_flag===true, mls=r.mls_active===true||!!r.mls_status, post=/postponed/i.test(st), cured=/cured|reinstat|cancel/i.test(st);
-  if(bk||mls||(cured&&!live)||(post&&!live))return 'low';
+  var bk=r.bankruptcy_flag===true, mls=r.mls_active===true||!!r.mls_status, post=/postponed/i.test(st);
+  if(bk||mls)return 'low';
   var eq=(r.equity_unverified||r.equity_pct==null)?null:Number(r.equity_pct);
-  if(live&&!post&&eq!==null&&eq<20)return 'high';
-  return 'med';
+  var d=r.days_to_auction;
+  if(live&&!post&&eq!==null&&eq<10&&d!=null&&d>=0&&d<=14)return 'high';
+  return null;
 }
-function reversion(r){ var rb=rampBid(r); var v=Number(r.avm||r.market_value||0); if(!rb||!(v>0))return null; var x=rb.v/v; return x>=0.9?'high':(x>=0.75?'med':'low'); }
+function reversion(r){
+  // High only when the Ramp Bid is at or above value (nobody outbids the bank). Low only when value is 40%+ over the bid (bidding war). Otherwise no call.
+  if(!trusteeMark(r))return null;  // only on a trustee-verified sale: the call depends on the sale being real, and AVM noise alone fired on 40% of AZ rows
+  var rb=rampBid(r); var v=Number(r.avm||r.market_value||0); if(!rb||!(v>0))return null; var x=rb.v/v;
+  return x>=1.0?'high':(x<=0.6?'low':null);
+}
 function surplusChaser(r){
-  if(r.surplus_amount!=null&&r.surplus_amount!=='')return {v:Number(r.surplus_amount),sold:true};
-  if(r.surplus_margin!=null&&Number(r.surplus_margin)>=50000&&!!trusteeMark(r))return {v:Number(r.surplus_margin),sold:false};
+  // sold with $50k+ stamped, or a trustee-verified sale with $150k+ of room over the bid. Anything smaller stays off the badge.
+  if(r.surplus_amount!=null&&r.surplus_amount!==''&&Number(r.surplus_amount)>=50000)return {v:Number(r.surplus_amount),sold:true};
+  if(r.surplus_margin!=null&&Number(r.surplus_margin)>=150000&&!!trusteeMark(r))return {v:Number(r.surplus_margin),sold:false};
   return null;
 }
 function moneyK(n){ var x=Number(n); if(!(x>0))return money(n); return x>=1e6?('$'+(x/1e6).toFixed(2).replace(/\.?0+$/,'')+'M'):('$'+Math.round(x/1000)+'k'); }
@@ -1035,25 +1017,115 @@ var SIG_ICON={
 var LVL={high:'High',med:'Medium',low:'Low'};
 function meterBars(m){ return '<span class="bars"><i class="on"></i><i'+(m!=='low'?' class="on"':'')+'></i><i'+(m==='high'?' class="on"':'')+'></i></span>'; }
 function sigBadges(r){
-  var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium), out='', lk=paid?'':' locked';
-  var rb=rampBid(r); if(rb)out+='<span class="mb ramp'+lk+'">'+SIG_ICON.ramp+'Ramp Bid <span class="mv">'+(paid?moneyK(rb.v):'$•••k')+'</span>'+(rb.posted&&paid?'<span class="lk">posted</span>':'')+'</span>';
-  var g=gavelOdds(r); if(g)out+='<span class="mb gavel '+g+lk+'">'+SIG_ICON.gavel+'Gavel Odds <span class="mv">'+(paid?LVL[g]:'•••')+'</span></span>';
-  var m=reversion(r); if(m)out+='<span class="mb meter'+lk+'">'+meterBars(m)+'Reversion <span class="mv">'+(paid?LVL[m]:'•••')+'</span></span>';
-  var s=surplusChaser(r); if(s&&prem)out+='<span class="mb surplus">'+SIG_ICON.coin+'Surplus Chaser <span class="mv">'+moneyK(s.v)+'</span></span>';
-  return out?'<div class="mbrow">'+out+'</div>':'';
+  // list cards: at most ONE badge, paid users only, and only a strong call (Ted 2026-10-03: extremely sparingly). Ramp Bid never rides on a card.
+  var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); if(!paid)return '';
+  var s=surplusChaser(r); if(s&&prem)return '<div class="mbrow"><span class="mb surplus">'+SIG_ICON.coin+'Surplus Chaser <span class="mv">'+moneyK(s.v)+'</span></span></div>';
+  var g=gavelOdds(r); if(g==='high')return '<div class="mbrow"><span class="mb gavel high">'+SIG_ICON.gavel+'Gavel Odds <span class="mv">High</span></span></div>';
+  var m=reversion(r); if(m)return '<div class="mbrow"><span class="mb meter">'+meterBars(m)+'Reversion <span class="mv">'+LVL[m]+'</span></span></div>';
+  return '';
 }
 function signalsSection(r){
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
   var rb=rampBid(r), g=gavelOdds(r), m=reversion(r), s=surplusChaser(r);
   if(!rb&&!g&&!m&&!s)return '';
   var lk=paid?'':' locked', h='';
-  h+='<div class="sec">OffRamp Signals</div><div class="sigintro">Proprietary models built on 94,000 foreclosure records. Nobody else runs these.</div>';
+  h+='<div class="sec">OffRamp Signals</div><div class="sigintro">Proprietary models built on 94,000 foreclosure records. A signal only shows when the call is clear.</div>';
   if(!paid)h+='<div class="siglock"><span>Signals unlock on Pro</span><button class="cta" style="margin:0" onclick="showScreen(\'acct\');closeDetail()">See Pro</button></div>';
   if(rb)h+='<div class="sig ramp'+lk+'"><div class="nm">Ramp Bid<sup>&trade;</sup></div><div class="big">'+(paid?money(rb.v):'$•••,•••')+(rb.posted&&paid?' <span class="lk" style="font-size:10px;vertical-align:middle;background:#9fe3bf;color:#0f172a;padding:2px 7px;border-radius:9px">trustee posted</span>':'')+'</div><div class="how">'+(rb.posted?'The trustee has posted this opening bid. It is the real number.':'Our proprietary opening-bid model. Reconstructs what the lender is owed on sale day. Calibrated against real trustee bids.')+'</div></div>';
   if(g)h+='<div class="sig gavel '+g+lk+'"><div class="nm">Gavel Odds<sup>&trade;</sup></div><div class="big">'+(paid?LVL[g]:'•••')+'</div><div class="how">Our read on whether this sale actually hits the block. Trustee activity, liens, listings and equity in one call.</div></div>';
   if(m)h+='<div class="sig meter'+lk+'"><div class="nm">Reversion Meter<sup>&trade;</sup></div><div class="big">'+(paid?LVL[m]:'•••')+'</div><div class="how">Odds the bank ends up owning it. Ramp Bid against value. High means investors stay home. Low means a bidding war.</div></div>';
   if(s&&prem)h+='<div class="sig surplus"><div class="nm">Surplus Chaser<sup>&trade;</sup></div><div class="big">'+money(s.v)+'</div><div class="how">'+(s.sold?'Sold above the debt. The overage belongs to the former owner and we track it from the recorded deed.':'Value room above the Ramp Bid. If bidding runs past the debt the owner walks away with the difference.')+'</div></div>';
   return h;
+}
+/* ---------- Property view redesign (Ted 2026-10-03): facts not math; verdict tiles; occupancy chip in the header ---------- */
+function occupancyChip(r){
+  var mail=(r.mailing_address||'').toLowerCase(), street=(r.property_street||'').toLowerCase();
+  var abs=(r.owner_absentee===true)||(!!mail&&!!street&&mail.indexOf(street.slice(0,8))<0);
+  if(abs)return '<span class="badge hbadge occ">Absentee owner</span>';
+  if(mail&&street)return '<span class="badge hbadge occ">Owner occupied</span>';
+  return '';
+}
+function estPayment(r){ var P=Number(r.mortgage_balance||0), rate=Number(r.mortgage_interest_rate); if(!(P>0)||!(rate>0))return null; var i=rate/100/12; return Math.round(P*i/(1-Math.pow(1+i,-360))); }
+function loanRows(r,paid){
+  var pay=estPayment(r), hasLiens=(r.lien_count!=null&&r.lien_count>0);
+  var firstSub=[r.mortgage_loan_type,(r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),(r.mortgage_recording_date?'recorded '+fmtDate(r.mortgage_recording_date):''),(r.mortgage_maturity_date?'matures '+fmtDate(r.mortgage_maturity_date):'')].filter(Boolean).join(' · ');
+  return [
+    lineIf('Equity',r.equity_unverified?'Unverified':(r.equity_pct!=null?pct(r.equity_pct):'')),
+    lineIf('Why unverified',whyUnverified(r)),
+    paid?lineIf('Equity $',(r.equity_dollars!=null&&!r.equity_unverified)?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
+    lineIf('Value (AVM)',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
+    hasLiens?lineRaw('First lien',esc(lienText(r,1))+(firstSub?'<small>'+esc(firstSub)+'</small>':'')):'',
+    (!hasLiens&&paid)?lineIf('Loan balance',r.mortgage_balance!=null?money(r.mortgage_balance):''):(!hasLiens?lockedRow('Loan balance','pro'):''),
+    (!hasLiens)?lineIf('Lender',r.mortgage_lender):'',
+    (!hasLiens&&firstSub)?line('Loan terms',firstSub):'',
+    (paid&&pay)?lineRaw('Est. payment',money(pay)+' /mo<small>principal and interest from amount, rate and term</small>'):'',
+    lineIf('Second lien',lienText(r,2)),
+    lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
+    (hasLiens&&r.lien_total_amount)?line('Total debt on record',money(r.lien_total_amount)):'',
+    lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
+    lineIf('Tax lien',r.tax_lien?'Yes':''),
+    lineIf('Judgment',r.judgment_flag?'Yes':''),
+    r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
+  ];
+}
+function lockedTile(title,sub,kind){ return '<div class="vtile none lockt" onclick="openUpgradeSheet(\''+kind+'\')"><div class="ico">🔒</div><div><div class="title">'+title+'</div><div class="word">CLEAR</div><div class="proof">'+sub+' · unlocks on '+(kind==='premium'?'Premium':'Pro')+'</div></div></div>'; }
+function lienTile(r){
+  if(r.lien_count==null)return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Liens on record</div><div class="word">NO RECORD</div><div class="proof">No recorded lien sheet on file for this property yet.</div></div></div>';
+  if(r.lien_count===0)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Liens on record</div><div class="word">CLEAR</div><div class="detail">No liens recorded'+(r.free_and_clear?' · free and clear':'')+'</div><div class="proof">County record via REAPI.</div></div></div>';
+  var tot=r.lien_total_amount||((Number(r.lien_first_amount)||0)+(Number(r.lien_second_amount)||0));
+  var parts=[]; if(r.lien_first_amount)parts.push('First '+money(r.lien_first_amount)+(r.lien_first_lender?' '+r.lien_first_lender:'')); if(r.lien_second_amount)parts.push('Second '+money(r.lien_second_amount)); if(r.tax_lien)parts.push('Tax lien'); if(r.judgment_flag)parts.push('Judgment');
+  return '<div class="vtile flag"><div class="ico">&#9873;</div><div><div class="title">Liens on record</div><div class="word">'+r.lien_count+(r.lien_count===1?' LIEN':' LIENS')+'</div>'+(tot?'<div class="detail">'+money(tot)+' ahead of you</div>':'')+'<div class="proof">'+esc(parts.join(' · '))+(parts.length?' · ':'')+'county record via REAPI</div></div></div>';
+}
+function nokTile(r){
+  if(r.next_of_kin)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Next of kin</div><div class="word">ON FILE</div><div class="detail">'+esc(r.next_of_kin)+'</div><div class="proof">Family and relative records for the owner.</div></div></div>';
+  return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Next of kin</div><div class="word">NONE ON FILE</div><div class="proof">Family and relative records attach here when a Premium skip trace finds them.</div></div></div>';
+}
+function checksSection(r,paid,prem){
+  var h='<div class="sec">Checks</div><div class="vgrid">';
+  h+=paid?('<div id="courtrec">'+courtTile(r)+'</div>'):lockedTile('Court records','Bankruptcy and federal cases',' pro'.trim());
+  h+=lienTile(r);
+  h+=prem?nokTile(r):lockedTile('Next of kin','Family and relative records','premium');
+  return h+'</div>';
+}
+function yesno(v){ return v===true?'Yes':(v===false?'No':''); }
+function factsRows(r,f){
+  var mail=f.owner_mailing||r.mailing_address||'', street=(r.property_street||'').toLowerCase();
+  var same=mail&&street&&mail.toLowerCase().indexOf(street.slice(0,8))>=0;
+  var sale=f.last_sale_date?(fmtDate(f.last_sale_date)+(f.last_sale_doc?' · '+f.last_sale_doc:'')+(Number(f.last_sale_amount)>0?' · '+money(f.last_sale_amount):'')):'';
+  return [
+    lineIf('Type',[(f.property_use||r.property_type),(f.stories?f.stories+(f.stories==1?' story':' stories'):'')].filter(Boolean).join(' · ')),
+    lineIf('Garage',f.garage_type?(f.garage_type+(f.garage_sqft?' · '+Number(f.garage_sqft).toLocaleString()+' sq ft':'')):''),
+    lineIf('Basement',f.basement?String(f.basement).replace(/^NO BASEMENT$/i,'None'):''),
+    lineIf('Heat / cool',[f.heat,f.cool].filter(Boolean).join(' / ')),
+    lineIf('Pool',yesno(f.pool)),
+    lineIf('Fireplace',yesno(f.fireplace)),
+    lineIf('Lot',[(f.lot_acres?Number(f.lot_acres)+' ac':''),(f.lot_sqft?Number(f.lot_sqft).toLocaleString()+' sq ft':'')].filter(Boolean).join(' · ')),
+    lineIf('Zoning',[f.zoning,f.land_use].filter(Boolean).join(' · ')),
+    lineIf('Subdivision',f.subdivision),
+    lineIf('Flood zone',f.flood?String(f.flood).replace(/^AREA OF MINIMAL FLOOD HAZARD$/i,'Minimal hazard'):''),
+    f.assessed_value?lineRaw('Assessed value',money(f.assessed_value)+'<small>'+esc((f.assessment_year?f.assessment_year+' · ':'')+(f.county_market_value?'county market value '+money(f.county_market_value):''))+'</small>'):'',
+    f.tax_amount?lineRaw('Annual tax',money(f.tax_amount)+'<small>'+esc(f.tax_year||'')+(f.tax_delinquent_year?' · <b style=\'color:var(--danger)\'>delinquent since '+esc(f.tax_delinquent_year)+'</b>':' · not delinquent')+'</small>'):'',
+    lineIf('Last sale',sale),
+    lineIf('Years owned',f.years_owned!=null?String(f.years_owned):''),
+    lineIf('HOA',yesno(f.hoa)),
+    lineIf('Corporate owned',f.corporate_owned===true?'Yes':''),
+    mail?lineRaw('Owner mailing',esc(mail)+'<small>'+(same?'same as property':'absentee · mail goes elsewhere')+'</small>'):'',
+    lineIf('APN',r.apn),
+    f.est_value?line('REAPI est. value',money(f.est_value)):''
+  ];
+}
+function loadFacts(r){
+  var el=document.getElementById('facts'); if(!el)return;
+  var basic=[lineIf('Type',r.property_type),lineIf('Occupancy',r.occupancy),lineIf('APN',r.apn),lineIf('Owner mailing',r.mailing_address)].filter(Boolean).join('');
+  api('/api/property-facts?id='+encodeURIComponent(r.id)).then(function(x){return x.json();}).then(function(j){
+    if(CUR!==r)return; var el2=document.getElementById('facts'); if(!el2)return;
+    if(!j.facts){
+      if(j.source==='locked'){ el2.innerHTML=basic+lockedRow('Full county record','pro')+'<div class="hint">Zoning, lot, garage, taxes, flood zone, last sale and years owned unlock on Pro.</div>'; return; }
+      el2.innerHTML=basic+'<div class="hint">No county record came back for this address.</div>'; return;
+    }
+    var f=j.facts, rows=factsRows(r,f).filter(Boolean).join('');
+    el2.innerHTML=(rows||basic)+'<div class="hint">County record via REAPI'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
+  }).catch(function(){ var el2=document.getElementById('facts'); if(el2&&CUR===r)el2.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; });
 }
 function premiumSection(r){
   if(r.premium_locked){
@@ -1111,18 +1183,22 @@ function reveal(){
 
 
 /* ---------- Court records (CourtListener RECAP: bankruptcy Ch 7/13 + federal civil; Phase 5 #35) ---------- */
-function courtRecordsIntro(r){
+function courtRecordsIntro(r){ return courtTile(r); }
+function courtTile(r){
   if(r.court_records&&r.court_records.cases){ return courtRecordsHtml(r.court_records); }
-  return '<div class="rowline"><span class="k">Bankruptcy &amp; federal cases</span><span class="v"><button class="btn small" onclick="courtLookup(false)">Check</button></span></div>'+
-         '<div class="hint">Free lookup of federal court dockets for the owner name. County liens and judgments are not in this index.</div>';
+  return '<div class="vtile none"><div class="ico">?</div><div><div class="title">Court records</div><div class="word">NOT CHECKED</div>'+
+         '<div class="proof">Bankruptcy and federal civil dockets for the owner name. County liens and judgments are not in this index.</div>'+
+         '<span class="more" onclick="courtLookup(false)">Run the check ›</span></div></div>';
 }
 function courtRecordsHtml(cr){
-  var h='';
-  if(!cr.cases||!cr.cases.length){ h+='<div class="rowline"><span class="k">Bankruptcy &amp; federal cases</span><span class="v">None found'+(cr.scope&&cr.scope!=='nationwide'?' in '+esc(cr.scope):'')+'</span></div>'; }
-  else { h+=cr.cases.slice(0,6).map(function(c){ return '<div class="rowline"><span class="k">'+esc((c.chapter?'Ch '+c.chapter+' · ':'')+(c.filed||''))+'</span><span class="v">'+(c.url?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">':'')+esc(c.case||'')+(c.url?'</a>':'')+'<br><small>'+esc((c.court||'')+(c.docket?' · '+c.docket:'')+(c.terminated?' · closed '+c.terminated:''))+'</small></span></div>'; }).join('');
-         if(cr.count>6) h+='<div class="hint">'+cr.count+' matches total. Showing newest 6.</div>'; }
-  h+='<div class="hint">Checked '+esc((cr.checked_at||'').slice(0,10))+' for "'+esc(cr.query||'')+'" · '+(cr.scope==='nationwide'?'all federal courts':'courts in '+esc(cr.scope||''))+' · '+(cr.scope==='nationwide'?'':'<a href="#" onclick="courtLookup(true);return false;">Search nationwide</a>')+'</div>';
-  return h;
+  var n=(cr.cases||[]).length, clear=!n;
+  var h='<div class="vtile '+(clear?'clear':'flag')+'"><div class="ico">'+(clear?'&#10003;':'&#9873;')+'</div><div><div class="title">Court records</div>'+
+        '<div class="word">'+(clear?'CLEAR':((cr.count||n)+(((cr.count||n)===1)?' CASE':' CASES')))+'</div>';
+  if(!clear){ h+='<div class="cases">'+cr.cases.slice(0,4).map(function(c){ return '<div>'+(c.chapter?'Ch '+esc(c.chapter)+' · ':'')+esc(c.filed||'')+' · '+(c.url?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">':'')+esc(c.case||'')+(c.url?'</a>':'')+'<br><small>'+esc((c.court||'')+(c.docket?' · '+c.docket:'')+(c.terminated?' · closed '+c.terminated:''))+'</small></div>'; }).join('')+'</div>';
+    if((cr.count||n)>4) h+='<div class="proof">'+(cr.count||n)+' matches total. Showing newest 4.</div>'; }
+  h+='<div class="proof">Checked '+esc((cr.checked_at||'').slice(0,10))+' against '+(cr.scope==='nationwide'?'all 94 federal district and bankruptcy courts':'the federal courts in '+esc(cr.scope||''))+' for "'+esc(cr.query||'')+'"</div>';
+  if(cr.scope!=='nationwide') h+='<span class="more" onclick="courtLookup(true)">Search all 94 federal courts ›</span>';
+  return h+'</div></div>';
 }
 function courtLookup(nationwide){
   var el=document.getElementById('courtrec'); if(!el) return; el.innerHTML='<div class="locked">Checking federal dockets…</div>';

@@ -479,6 +479,72 @@ def reapi_lookup(address):
     return payload, "live"
 
 
+def _reapi_detail_cached(row):
+    """Cached REAPI PropertyDetail for a hit_list row. App cache (crm.offramp_lookups) first, then the
+    pipeline cache (crm.reapi_calls via crm.reapi_detail_index.reapi_property_id; expression index
+    reapi_calls_data_id_idx on response->data->>id, added 2026-10-03). Returns (payload, source, fetched)."""
+    addr = f"{row.get('property_street') or ''}, {row.get('property_city') or ''}, {row.get('property_state') or ''} {row.get('property_zip') or ''}".strip()
+    key = norm_addr(addr)
+    try:
+        c = sb("GET", f"/offramp_lookups?select=payload&address_key=eq.{urllib.parse.quote(key)}&limit=1")
+        if c:
+            return c[0]["payload"], "cache", ""
+    except Exception as e:
+        print(f"[facts] app cache read failed: {e}")
+    ak = row.get("addr_key")
+    if ak:
+        try:
+            i = sb("GET", f"/reapi_detail_index?select=reapi_property_id,fetched_at&addr_key=eq.{urllib.parse.quote(ak)}&limit=1")
+            if i and i[0].get("reapi_property_id"):
+                # plain id match only: adding endpoint ilike + order made the planner skip the expression index (statement timeout)
+                c = sb("GET", f"/reapi_calls?select=response,fetched_at&response->data->>id=eq.{urllib.parse.quote(str(i[0]['reapi_property_id']))}&limit=1")
+                if c:
+                    return c[0]["response"], "pipeline", (c[0].get("fetched_at") or "")
+        except Exception as e:
+            print(f"[facts] pipeline cache miss: {e}")
+    return None, "miss", ""
+
+
+def property_facts(row, live_ok):
+    """Property facts block for the lead view (Ted 2026-10-03: more data on the property). Cached REAPI
+    detail for everyone; a live PropertyDetail pull (enrich-once into offramp_lookups) only for paid users."""
+    payload, src, when = _reapi_detail_cached(row)
+    if payload is None:
+        if not live_ok:
+            return None, "locked"
+        addr = f"{row.get('property_street') or ''}, {row.get('property_city') or ''}, {row.get('property_state') or ''} {row.get('property_zip') or ''}".strip()
+        payload, src2 = reapi_lookup(addr)
+        if payload is None:
+            return None, src2
+        src, when = "live", datetime.date.today().isoformat()
+    d = payload.get("data") if isinstance(payload, dict) and isinstance(payload.get("data"), dict) else payload
+    if not isinstance(d, dict):
+        return None, "bad-payload"
+    pi = d.get("propertyInfo") or {}; li = d.get("lotInfo") or {}; ti = d.get("taxInfo") or {}
+    ls = d.get("lastSale") or {}; oi = d.get("ownerInfo") or {}
+    own_months = oi.get("ownershipLength")
+    f = {
+        "stories": pi.get("stories"), "garage_type": pi.get("garageType"), "garage_sqft": pi.get("garageSquareFeet"),
+        "basement": pi.get("basementType") or ("Yes" if pi.get("basementSquareFeet") else None),
+        "heat": pi.get("heatingType"), "cool": pi.get("airConditioningType"), "pool": pi.get("pool"),
+        "fireplace": pi.get("fireplace"), "hoa": pi.get("hoa"), "beds": pi.get("bedrooms"), "baths": pi.get("bathrooms"),
+        "sqft": pi.get("livingSquareFeet"), "year_built": pi.get("yearBuilt"), "property_use": pi.get("propertyUse"),
+        "lot_acres": li.get("lotAcres"), "lot_sqft": li.get("lotSquareFeet"), "zoning": li.get("zoning"),
+        "land_use": li.get("landUse"), "subdivision": li.get("subdivision"),
+        "flood": d.get("floodZoneDescription"), "flood_zone": d.get("floodZoneType"),
+        "assessed_value": ti.get("assessedValue"), "assessment_year": ti.get("assessmentYear") or ti.get("year"),
+        "county_market_value": ti.get("marketValue"), "tax_amount": ti.get("taxAmount"), "tax_year": ti.get("year"),
+        "tax_delinquent_year": ti.get("taxDelinquentYear"),
+        "last_sale_date": ((ls.get("saleDate") or "")[:10] or None), "last_sale_amount": ls.get("saleAmount"),
+        "last_sale_doc": ls.get("documentType"),
+        "years_owned": (round(own_months / 12) if isinstance(own_months, (int, float)) and own_months else None),
+        "owner_mailing": (oi.get("mailAddress") or {}).get("label"), "absentee": oi.get("absenteeOwner"),
+        "owner_occupied": oi.get("ownerOccupied"), "corporate_owned": oi.get("corporateOwned"),
+        "est_value": d.get("estimatedValue"), "fetched": (when or "")[:10],
+    }
+    return f, src
+
+
 def dm_skiptrace(parts):
     """DealMachine enrichment-by-address. `parts` = {street, city, state, zip}.
     Returns (payload, src). Request/response shape per api.docs.dealmachine.com
@@ -649,7 +715,7 @@ def fetch_photo(address):
 
 
 # ---------------------------- search / rows ----------------------------------
-SEARCH_COLS = ("surplus_amount,surplus_sale_date,surplus_purchaser,surplus_court,surplus_claim_deadline,surplus_margin,pipeline,sale_status_verified,equity_unverified,equity_verify_note,lien_count,lien_first_position,lien_first_lender,lien_first_amount,lien_first_type,lien_second_amount,lien_total_amount,tax_lien,judgment_flag,free_and_clear,sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
+SEARCH_COLS = ("addr_key,owner_absentee,surplus_amount,surplus_sale_date,surplus_purchaser,surplus_court,surplus_claim_deadline,surplus_margin,pipeline,sale_status_verified,equity_unverified,equity_verify_note,lien_count,lien_first_position,lien_first_lender,lien_first_amount,lien_first_type,lien_second_amount,lien_total_amount,tax_lien,judgment_flag,free_and_clear,sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
                "property_state,property_zip,county,foreclosure_status,lead_status,"
                "auction_date,auction_time,days_to_auction,market_value,avm,arv,"
                "equity_dollars,equity_pct,ltv_pct,mortgage_balance,beds,baths,"
@@ -1304,6 +1370,16 @@ class Handler(SimpleHTTPRequestHandler):
             r["analysis"] = analyze(r.get("arv") or r.get("avm") or r.get("market_value"),
                                     0, None, r.get("mortgage_balance"), r.get("market_value"))
             return self._json(200, {"property": r})
+
+        if route == "/api/property-facts":
+            pid = (qs.get("id") or [""])[0]
+            if not pid:
+                return self._json(400, {"error": "id required"})
+            rows = sb("GET", f"/hit_list?select=id,addr_key,property_street,property_city,property_state,property_zip&id=eq.{pid}&limit=1")
+            if not rows:
+                return self._json(404, {"error": "not found"})
+            facts, src = property_facts(rows[0], live_ok=bool(u and is_paid(u)))
+            return self._json(200, {"facts": facts, "source": src})
 
         if route == "/api/export":
             if not is_paid(u):
