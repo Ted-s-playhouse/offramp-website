@@ -668,9 +668,10 @@ function search(){
   var nq=new URLSearchParams(); if(STATE)nq.set('state',STATE); if(c)nq.set('q',c); nq.set('limit',STATE?'300':'150');
   document.getElementById('list').innerHTML='<div class="loadrow">Searching…</div>';
   var seq=(window.SEARCH_SEQ=(window.SEARCH_SEQ||0)+1);
+  var hasFilters=false; qs.forEach(function(v,k){ if(k!=='state'&&k!=='q'&&k!=='limit'&&v)hasFilters=true; });  // national rows carry no filter fields; skip the national feed when any filter is set (fix 2026-10-03: old s/e vars were removed with the fStatus select and every search threw ReferenceError)
   Promise.all([
     api('/api/search?'+qs.toString()).then(function(r){return r.json();}).catch(function(){return {results:[]};}),
-    (s||e)?Promise.resolve({results:[]}):api('/api/national-search?'+nq.toString()).then(function(r){return r.json();}).catch(function(){return {results:[]};})
+    hasFilters?Promise.resolve({results:[]}):api('/api/national-search?'+nq.toString()).then(function(r){return r.json();}).catch(function(){return {results:[]};})
   ]).then(function(res){
     if(seq!==window.SEARCH_SEQ)return;
     var enriched=res[0].results||[], national=res[1].results||[];
