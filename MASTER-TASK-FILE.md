@@ -96,6 +96,10 @@ Source: Ted 2026-10-03 10:30–10:45Z Telegram ("develop the next phase: the UI/
 35. CourtListener on the card: free API token (5,000/day); on every append run one RECAP search on the owner name scoped to the property state's bankruptcy + district courts, cache on the row (court_records jsonb); Pro "Court records" row shows chapter / filed / docket link. "Advanced search" tap = nationwide name search. Liens & judgments stay REAPI $0.75 Premium on tap.
 36. Obituary → owner match daily cron: Echovita + Legacy national pulls already land in offramp-scout/storage/obits (~4.5k/day); match name + city/state against hit_list owners and contacts, set deceased_flag + deceased_source='obituary' + obit_url + date_of_death, lead type "deceased pre-probate". Verify: daily count of new matches in heartbeat.
 
+37. Trial + tiers (Ted 2026-10-03 11:10Z, awaiting trial length + which plan): Stripe Checkout trial_period_days (card on file) converting to Pro $49; tiers Free / Pro $49 / Premium $99 / Team $199 (seats). Verify: test-mode checkout shows the trial end date; day-8 invoice created.
+38. Postcards (Ted 2026-10-03, awaiting GO): PostGrid API, "Send postcard" on the card w/ photo + message template, allowance per plan (Pro 25/mo, Premium 100/mo, overage $1.25) metered on offramp_credit_ledger. Verify: one real postcard to Ted's address.
+39. SEO forward plan (Ted asked 2026-10-03; Ron's list pending): city pages, "auctions this week in <state/county>", how-to-bid per state (bid_pages), probate/bankruptcy lead-type pages — all generated from existing data; fold in Ron's ideas and rank once received.
+
 ### Timeline
 - 5A #22 finishes today; #23/#24 by 2026-10-04.
 - 5B #26/#27 by 2026-10-05; #28 mockup by 2026-10-06.
