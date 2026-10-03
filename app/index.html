@@ -182,7 +182,38 @@
 .badge.status{color:#fff}
   .badge.soon{background:var(--danger);color:#fff}
   .badge.auc{background:var(--warm);color:#3a2a06}
-  .badge.surplus{background:var(--gold);color:#231a0c}
+  /* ---------- OffRamp Signals badges (Ted 2026-10-03: Ramp Bid / Gavel Odds / Reversion Meter / Surplus Chaser; each has its own look) ---------- */
+  .mbrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  .mb{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;padding:5px 9px 5px 8px;line-height:1;border-radius:7px;white-space:nowrap}
+  .mb svg{width:11px;height:11px;flex:none}
+  .mb .mv{font-weight:800;letter-spacing:0;text-transform:none;font-size:11.5px}
+  .mb.ramp{background:#0f172a;color:#fff;border-radius:3px 9px 9px 3px;clip-path:polygon(0 100%,10px 0,100% 0,100% 100%);padding-left:15px}
+  .mb.ramp .mv{color:#9fe3bf}
+  .mb.ramp .lk{background:#9fe3bf;color:#0f172a}
+  .mb.gavel{background:#fff;border:1.5px solid;border-radius:4px}
+  .mb.gavel.high{color:#B42318;border-color:#B42318;background:#fff3f1}
+  .mb.gavel.med{color:#8a5a12;border-color:#d7a23c;background:#fff8e8}
+  .mb.gavel.low{color:#6b7280;border-color:#cbd5e1;background:#f8fafc}
+  .mb.meter{background:#f3eefb;color:#4b2a80;border:1px solid #cdb9ea;border-radius:20px}
+  .mb.meter .bars{display:inline-flex;gap:2px;align-items:flex-end;height:11px}
+  .mb.meter .bars i{display:block;width:4px;background:#d9c8ee;border-radius:1px}
+  .mb.meter .bars i:nth-child(1){height:5px}.mb.meter .bars i:nth-child(2){height:8px}.mb.meter .bars i:nth-child(3){height:11px}
+  .mb.meter .bars i.on{background:#5b3a86}
+  .mb.surplus{background:linear-gradient(135deg,#d9a53a,#f6d77a 60%,#e3b341);color:#2a1d05;border-radius:20px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55),0 1px 3px rgba(120,80,0,.25)}
+  .mb .lk{font-size:8.5px;background:var(--gold);color:#231a0c;padding:2px 5px;border-radius:8px;margin-left:2px;letter-spacing:.04em}
+  .mb.locked .mv{filter:blur(4px);user-select:none}
+  .sigintro{font-size:12px;color:var(--sub);margin:-4px 2px 10px;line-height:1.4}
+  .sig{background:var(--card);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .sig.ramp{border-left-color:#0f172a}.sig.gavel{border-left-color:#B42318}.sig.gavel.med{border-left-color:#d7a23c}.sig.gavel.low{border-left-color:#cbd5e1}
+  .sig.meter{border-left-color:#5b3a86}.sig.surplus{border-left-color:#d9a53a}
+  .sig .nm{font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+  .sig .nm sup{font-size:8px;margin-left:1px;letter-spacing:0}
+  .sig .big{font-size:24px;font-weight:900;margin-top:3px;color:var(--text);line-height:1.1}
+  .sig.gavel.high .big{color:#B42318}.sig.gavel.med .big{color:#8a5a12}.sig.gavel.low .big{color:#6b7280}
+  .sig.meter .big{color:#4b2a80}.sig.surplus .big{color:#8a5a12}
+  .sig .how{font-size:12.5px;color:var(--sub);margin-top:5px;line-height:1.45}
+  .sig.locked .big{filter:blur(6px);user-select:none}
+  .siglock{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--sub)}
   .badge.outline{background:transparent;border-color:var(--border);color:var(--sub)}
 
   .empty{padding:48px 24px;text-align:center;color:var(--sub);font-size:14px}
@@ -691,7 +722,6 @@ function badgeHtml(r){
   var out='';
   if(statusLabel(r)){ var _sl=statusLabel(r); out+='<span class="badge status'+(_sl==='Cured'?' stop':'')+'">'+esc(_sl)+'</span>'; }  // Ted 2026-10-03: one color, badges are confidence tokens
   out+=trusteeMark(r);
-  if(r.surplus_amount!=null&&r.surplus_amount!=='')out+='<span class="badge surplus">est. surplus '+money(r.surplus_amount)+'</span>';
   var d=r.days_to_auction;
   if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
   return out;
@@ -727,7 +757,7 @@ function renderList(){
         '<div class="right"><div class="eq'+(r.equity_unverified?' eq-unv':'')+'">'+(r.equity_unverified?'n/a':(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'—'))+'</div><div class="eqk">'+(r.equity_unverified?'equity unverified':'equity')+'</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
       '</div>'+
-      '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div></div>';
+      '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div>'+sigBadges(r)+'</div>';
   }).join('');
 }
 /* Pro gate chip removed from list cards (Ted 2026-10-03: redundant on every card); the detail page carries the lock rows */
@@ -820,7 +850,7 @@ function openDetail(i){
       '<div class="owner">'+esc(owner)+'</div>'+
       '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
       '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
-      '<div class="badges">'+hbadges+'</div>'+
+      '<div class="badges">'+hbadges+'</div>'+sigBadges(r)+
       '<div class="dkv">'+
         cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
         cell('Sq ft',r.living_area_sqft?Number(r.living_area_sqft).toLocaleString():'—')+
@@ -830,6 +860,7 @@ function openDetail(i){
     '</div>'+
     '<div class="dbody">'+
       '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
+      signalsSection(r)+
       section('Evaluation',evalRows)+
       surplusSection(r)+
       '<div class="sec">Court records</div><div class="card2">'+(paid?'<div id="courtrec">'+courtRecordsIntro(r)+'</div>':lockedRow('Bankruptcy & federal cases','pro'))+'</div>'+
@@ -966,6 +997,63 @@ function surplusSection(r){  // Ted 2026-10-03: surplus funds on the card (Premi
     line('Value over credit bid',money(r.surplus_margin)),
     '<div class="hint">Trustee verified sale with $50k or more of value above what the lender is owed. If bidding goes past the credit bid the difference belongs to the owner.</div>'
   ]);
+}
+/* ---------- OffRamp Signals (Ted 2026-10-03): Ramp Bid / Gavel Odds / Reversion Meter / Surplus Chaser.
+   Ramp Bid = loan amortized to today + 9 months of P&I + $4,500 costs; calibrated on 130 real trustee opening bids (within 10% on 82%).
+   Gavel Odds = will the sale hit the block (trustee live list, liens, MLS, equity). Reversion = Ramp Bid vs value (>=90% high, 75-90 med).
+   Surplus Chaser = sold above the debt (surplus_amount) or trustee-verified with $50k+ of value over the Ramp Bid. ---------- */
+function rampBid(r){
+  if(r.trustee_opening_bid!=null&&Number(r.trustee_opening_bid)>1000)return {v:Number(r.trustee_opening_bid),posted:true};
+  var P=Number(r.mortgage_balance||0); if(!(P>0))return null;
+  var rate=Number(r.mortgage_interest_rate); if(!(rate>0))rate=6.5; var i=rate/100/12, n=360;
+  var pay=P*i/(1-Math.pow(1+i,-n)); var m=0;
+  if(r.mortgage_recording_date){ var d=new Date(String(r.mortgage_recording_date).slice(0,10)), now=new Date(); if(!isNaN(d))m=Math.max(0,(now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth())); }
+  var bal=m?(P*Math.pow(1+i,m)-pay*(Math.pow(1+i,m)-1)/i):P; if(!(bal>0))bal=0;
+  return {v:Math.round((bal+9*pay+4500)/100)*100,posted:false};
+}
+function gavelOdds(r){
+  if(!r.auction_date)return null;
+  var st=r.foreclosure_status||'', live=trusteeLive(r);
+  var bk=r.bankruptcy_flag===true, mls=r.mls_active===true||!!r.mls_status, post=/postponed/i.test(st), cured=/cured|reinstat|cancel/i.test(st);
+  if(bk||mls||(cured&&!live)||(post&&!live))return 'low';
+  var eq=(r.equity_unverified||r.equity_pct==null)?null:Number(r.equity_pct);
+  if(live&&!post&&eq!==null&&eq<20)return 'high';
+  return 'med';
+}
+function reversion(r){ var rb=rampBid(r); var v=Number(r.avm||r.market_value||0); if(!rb||!(v>0))return null; var x=rb.v/v; return x>=0.9?'high':(x>=0.75?'med':'low'); }
+function surplusChaser(r){
+  if(r.surplus_amount!=null&&r.surplus_amount!=='')return {v:Number(r.surplus_amount),sold:true};
+  if(r.surplus_margin!=null&&Number(r.surplus_margin)>=50000&&!!trusteeMark(r))return {v:Number(r.surplus_margin),sold:false};
+  return null;
+}
+function moneyK(n){ var x=Number(n); if(!(x>0))return money(n); return x>=1e6?('$'+(x/1e6).toFixed(2).replace(/\.?0+$/,'')+'M'):('$'+Math.round(x/1000)+'k'); }
+var SIG_ICON={
+  ramp:'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 11 L12 1 L12 11 Z" fill="currentColor"/></svg>',
+  gavel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M14 4l6 6M4 20l8-8M9 9l6 6M3 21h8"/></svg>',
+  coin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h3.5a2 2 0 010 4H10a2 2 0 000 4h4"/></svg>'
+};
+var LVL={high:'High',med:'Medium',low:'Low'};
+function meterBars(m){ return '<span class="bars"><i class="on"></i><i'+(m!=='low'?' class="on"':'')+'></i><i'+(m==='high'?' class="on"':'')+'></i></span>'; }
+function sigBadges(r){
+  var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium), out='', lk=paid?'':' locked';
+  var rb=rampBid(r); if(rb)out+='<span class="mb ramp'+lk+'">'+SIG_ICON.ramp+'Ramp Bid <span class="mv">'+(paid?moneyK(rb.v):'$•••k')+'</span>'+(rb.posted&&paid?'<span class="lk">posted</span>':'')+'</span>';
+  var g=gavelOdds(r); if(g)out+='<span class="mb gavel '+g+lk+'">'+SIG_ICON.gavel+'Gavel Odds <span class="mv">'+(paid?LVL[g]:'•••')+'</span></span>';
+  var m=reversion(r); if(m)out+='<span class="mb meter'+lk+'">'+meterBars(m)+'Reversion <span class="mv">'+(paid?LVL[m]:'•••')+'</span></span>';
+  var s=surplusChaser(r); if(s&&prem)out+='<span class="mb surplus">'+SIG_ICON.coin+'Surplus Chaser <span class="mv">'+moneyK(s.v)+'</span></span>';
+  return out?'<div class="mbrow">'+out+'</div>':'';
+}
+function signalsSection(r){
+  var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
+  var rb=rampBid(r), g=gavelOdds(r), m=reversion(r), s=surplusChaser(r);
+  if(!rb&&!g&&!m&&!s)return '';
+  var lk=paid?'':' locked', h='';
+  h+='<div class="sec">OffRamp Signals</div><div class="sigintro">Proprietary models built on 94,000 foreclosure records. Nobody else runs these.</div>';
+  if(!paid)h+='<div class="siglock"><span>Signals unlock on Pro</span><button class="cta" style="margin:0" onclick="showScreen(\'acct\');closeDetail()">See Pro</button></div>';
+  if(rb)h+='<div class="sig ramp'+lk+'"><div class="nm">Ramp Bid<sup>&trade;</sup></div><div class="big">'+(paid?money(rb.v):'$•••,•••')+(rb.posted&&paid?' <span class="lk" style="font-size:10px;vertical-align:middle;background:#9fe3bf;color:#0f172a;padding:2px 7px;border-radius:9px">trustee posted</span>':'')+'</div><div class="how">'+(rb.posted?'The trustee has posted this opening bid. It is the real number.':'Our proprietary opening-bid model. Reconstructs what the lender is owed on sale day. Calibrated against real trustee bids.')+'</div></div>';
+  if(g)h+='<div class="sig gavel '+g+lk+'"><div class="nm">Gavel Odds<sup>&trade;</sup></div><div class="big">'+(paid?LVL[g]:'•••')+'</div><div class="how">Our read on whether this sale actually hits the block. Trustee activity, liens, listings and equity in one call.</div></div>';
+  if(m)h+='<div class="sig meter'+lk+'"><div class="nm">Reversion Meter<sup>&trade;</sup></div><div class="big">'+(paid?LVL[m]:'•••')+'</div><div class="how">Odds the bank ends up owning it. Ramp Bid against value. High means investors stay home. Low means a bidding war.</div></div>';
+  if(s&&prem)h+='<div class="sig surplus"><div class="nm">Surplus Chaser<sup>&trade;</sup></div><div class="big">'+money(s.v)+'</div><div class="how">'+(s.sold?'Sold above the debt. The overage belongs to the former owner and we track it from the recorded deed.':'Value room above the Ramp Bid. If bidding runs past the debt the owner walks away with the difference.')+'</div></div>';
+  return h;
 }
 function premiumSection(r){
   if(r.premium_locked){
