@@ -683,7 +683,7 @@ function renderList(){
         '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
           '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
           '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+'</div></div>'+
-        '<div class="right"><div class="eq">'+(r.equity_pct!=null?r.equity_pct+'%':'—')+'</div><div class="eqk">equity</div>'+
+        '<div class="right"><div class="eq">'+(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'—')+'</div><div class="eqk">equity</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
       '</div>'+
       '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div></div>';
@@ -709,7 +709,7 @@ function renderPins(){
     if(r.latitude&&r.longitude){
       var m=L.circleMarker([r.latitude,r.longitude],{radius:7,color:'#1B4332',weight:2,fillColor:tempColor(r.temperature),fillOpacity:.85});
       m.on('click',function(){openDetail(i);});
-      m.bindTooltip((r.property_street||'')+' · '+(r.equity_pct!=null?r.equity_pct+'%':''),{direction:'top'});
+      m.bindTooltip((r.property_street||'')+' · '+(r.equity_pct!=null?Math.round(r.equity_pct)+'%':''),{direction:'top'});
       m.addTo(MARKERS); pts.push([r.latitude,r.longitude]);
     }
   });
@@ -840,7 +840,7 @@ function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div cla
 function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
 function lineIf(k,v){ return (v===null||v===undefined||v===''||v==='—')?'':line(k,v); }
 function lineRaw(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
-function pct(x){ return (x===null||x===undefined||x==='')?'':(Number(x).toFixed(Number(x)%1?1:0)+'%'); }
+function pct(x){ return (x===null||x===undefined||x==='')?'':(Math.round(Number(x))+'%'); }  // Ted 2026-10-03: never a decimal on a percent
 function fmtDate(d){ if(!d)return ''; var s=String(d).slice(0,10); var p=s.split('-'); return p.length===3?(p[1]+'/'+p[2]+'/'+p[0]):s; }
 function section(title,rows){ var body=rows.filter(Boolean).join(''); return body?('<div class="sec">'+title+'</div><div class="card2">'+body+'</div>'):''; }
 function flagStrip(r){
@@ -971,7 +971,7 @@ function sendAnalyze(){
     var v=document.getElementById('o_verdict');
     if(!profit||!roi||!v) return;
     profit.textContent=a.est_profit!==null?money(a.est_profit):'—';
-    roi.textContent=a.roi_pct!==null?a.roi_pct+'%':'—';
+    roi.textContent=a.roi_pct!==null?Math.round(a.roi_pct)+'%':'—';
     v.textContent=a.verdict;
     v.className='verdict '+(a.est_profit===null?'neutral':(a.est_profit>0?'good':'bad'));
   }).catch(function(err){
