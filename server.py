@@ -27,7 +27,7 @@ Plans:
     pro  : 2000 lookups/mo, 250 skip-traces/mo, CSV export <= 2000 rows
 """
 import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets
-import functools, urllib.request, urllib.error, urllib.parse
+import functools, sys, urllib.request, urllib.error, urllib.parse
 import seo_pages
 sys.path.insert(0, "/home/cortextos/cortextos/services/lib")
 import skiptrace_router  # waterfall: cache -> DM 40711 -> Tracerfy -> REAPI -> DM 23501 (2026-10-03)
