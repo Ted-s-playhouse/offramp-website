@@ -603,7 +603,34 @@ def build_national_query(qs, limit):
     county = (qs.get("county") or [""])[0].strip()
     if county:
         parts.append(f"county=ilike.*{urllib.parse.quote(county)}*")
+    text = (qs.get("q") or [""])[0].strip()
+    if text:  # one box: street, city, county, zip (national rows have no owner name)
+        q = urllib.parse.quote(text)
+        ors = [f"street.ilike.*{q}*", f"city.ilike.*{q}*", f"county_norm.ilike.*{q}*", f"county.ilike.*{q}*"]
+        ors.insert(0, f"zip.eq.{q}") if (text.isdigit() and len(text) == 5) else ors.append(f"zip.ilike.{q}*")
+        parts.append("or=(" + ",".join(ors) + ")")
     return "/offramp_national_listings?" + "&".join(parts)
+
+
+_STATE_COUNTS = {"at": 0, "val": None}
+
+
+def state_counts():
+    """Active deal counts per state: enriched hit_list + national auction.com feed. Cached 10 min."""
+    if _STATE_COUNTS["val"] and time.time() - _STATE_COUNTS["at"] < 600:
+        return _STATE_COUNTS["val"]
+    hit, nat = {}, {}
+    for r in sb("GET", "/hit_list?select=property_state&active=eq.true&or=(days_to_auction.gte.-3,days_to_auction.is.null)&limit=100000"):
+        st = (r.get("property_state") or "").upper()
+        if st:
+            hit[st] = hit.get(st, 0) + 1
+    for r in sb("GET", "/offramp_national_listings?select=state&status_group=eq.ACTIVE&delisted_at=is.null&limit=100000"):
+        st = (r.get("state") or "").upper()
+        if st:
+            nat[st] = nat.get(st, 0) + 1
+    val = {"hit": hit, "national": nat, "total": {k: hit.get(k, 0) + nat.get(k, 0) for k in set(hit) | set(nat)}}
+    _STATE_COUNTS.update({"at": time.time(), "val": val})
+    return val
 
 
 def normalize_national_row(r):
@@ -906,6 +933,12 @@ class Handler(SimpleHTTPRequestHandler):
         u = self._current_user()
         if not u:
             return self._json(401, {"error": "not signed in"})
+
+        if route == "/api/state-counts":
+            try:
+                return self._json(200, state_counts())
+            except Exception as ex:
+                return self._json(500, {"error": str(ex)[:200]})
 
         if route == "/api/lead-actions":
             # Item 11: per-user lead state so leads stick between logins.

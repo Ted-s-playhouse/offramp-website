@@ -91,6 +91,9 @@
   .searchbox{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 12px}
   .searchbox svg{width:18px;height:18px;color:var(--sub);flex:none}
   .searchbox input{flex:1;border:0;outline:none;padding:11px 8px;font-size:15px;background:transparent;color:var(--text)}
+  .browse{padding:2px 0 0}
+  .browsehead{display:flex;align-items:center;justify-content:space-between;padding:4px 12px 0;font-size:12px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .browsehead select{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);max-width:60%}
   .chiprow{display:flex;gap:8px;overflow-x:auto;padding:8px 12px 4px;scrollbar-width:none}
   .chiprow::-webkit-scrollbar{display:none}
   .chip{flex:none;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);
@@ -282,10 +285,13 @@
       <div class="searchbar">
         <div class="searchbox">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="fSearch" type="text" placeholder="Owner, street, city, zip…" onkeydown="if(event.key==='Enter')search()">
+          <input id="fSearch" type="text" placeholder="Search any owner, street, city, zip or state…" onkeydown="if(event.key==='Enter')search()">
         </div>
       </div>
-      <div class="chiprow" id="stateChips"></div>
+      <div class="browse" id="browseState">
+        <div class="browsehead"><span>Browse by state</span><select id="stateSelect" onchange="pickState(this.value)"><option value="">All states</option></select></div>
+        <div class="chiprow" id="stateChips"></div>
+      </div>
       <div class="subfilter">
         <select id="fStatus" onchange="search()">
           <option value="">All statuses</option>
@@ -350,7 +356,8 @@
 <script>
 var ME=null, MAP=null, MARKERS=null, ROWS=[], CUR=null, SCREEN='deals';
 var ACTIONS={}; var SHOW_HIDDEN=false;
-var STATE='UT';
+var STATE=null; var COUNTS={hit:{},national:{},total:{}};
+var STATE_NAMES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
 
 function money(n){ if(n===null||n===undefined||n==='')return '—'; var x=Number(n); if(isNaN(x))return '—'; return '$'+Math.round(x).toLocaleString(); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -406,11 +413,11 @@ function enterApp(){
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('shell').classList.remove('hidden');
   renderHeader();
-  // state chips
-  if(ME.markets.indexOf(STATE)<0) STATE=ME.markets[0];
-  document.getElementById('stateChips').innerHTML=ME.markets.map(function(m){
-    return '<button class="chip'+(m===STATE?' on':'')+'" onclick="pickState(\''+m+'\')">'+m+'</button>';
-  }).join('');
+  // search is the entry point; states are a secondary browse. Default = all states (national).
+  try{ STATE=localStorage.getItem('offramp_state')||null; }catch(e){}
+  if(STATE&&!STATE_NAMES[STATE])STATE=null;
+  renderStateBrowse();
+  api('/api/state-counts').then(function(r){return r.json();}).then(function(j){ COUNTS=j||COUNTS; renderStateBrowse(); }).catch(function(){});
   loadActions().then(search);
   renderAccount();
   if(window.PENDING_CHECKOUT&&!isNativeApp()){ var pc=window.PENDING_CHECKOUT; window.PENDING_CHECKOUT=null; showScreen('acct'); doUpgrade(pc); }
@@ -425,9 +432,22 @@ function renderHeader(){
   var u=ME.usage;
   document.getElementById('meterChip').innerHTML='Credits <b>'+u.lookups.used+'/'+u.lookups.limit+'</b>'+(u.overage_credits?' <span style="color:#b26a00">+'+u.overage_credits+' overage</span>':'');
 }
-function pickState(m){ STATE=m;
-  document.querySelectorAll('#stateChips .chip').forEach(function(c){c.classList.toggle('on',c.textContent===m);});
-  search();
+function pickState(m){ STATE=m||null;
+  try{ if(STATE)localStorage.setItem('offramp_state',STATE); else localStorage.removeItem('offramp_state'); }catch(e){}
+  renderStateBrowse(); search();
+}
+function renderStateBrowse(){
+  var sel=document.getElementById('stateSelect');
+  var opts='<option value="">All states</option>'+Object.keys(STATE_NAMES).sort(function(a,b){return STATE_NAMES[a]<STATE_NAMES[b]?-1:1;}).map(function(k){
+    var n=(COUNTS.total||{})[k]||0; return '<option value="'+k+'"'+(k===STATE?' selected':'')+'>'+STATE_NAMES[k]+(n?' ('+n+')':'')+'</option>';
+  }).join('');
+  sel.innerHTML=opts;
+  // quick-tap shortcuts: the enriched markets first, then the busiest national states
+  var quick=ME.markets.slice();
+  Object.keys(COUNTS.total||{}).sort(function(a,b){return (COUNTS.total[b]||0)-(COUNTS.total[a]||0);}).forEach(function(k){ if(quick.length<9&&quick.indexOf(k)<0)quick.push(k); });
+  document.getElementById('stateChips').innerHTML='<button class="chip'+(STATE?'':' on')+'" onclick="pickState(\'\')">All</button>'+quick.map(function(m){
+    return '<button class="chip'+(m===STATE?' on':'')+'" onclick="pickState(\''+m+'\')">'+m+'</button>';
+  }).join('');
 }
 function showScreen(name){
   SCREEN=name;
@@ -439,18 +459,37 @@ function showScreen(name){
 }
 
 /* ---------- search ---------- */
+function stateFromText(t){
+  var u=(t||'').trim().toUpperCase(); if(!u)return null;
+  if(STATE_NAMES[u])return u;
+  for(var k in STATE_NAMES){ if(STATE_NAMES[k].toUpperCase()===u)return k; }
+  return null;
+}
 function search(){
+  var c=document.getElementById('fSearch').value.trim();
+  var typedState=stateFromText(c);
+  if(typedState){ STATE=typedState; c=''; document.getElementById('fSearch').value=''; try{localStorage.setItem('offramp_state',STATE);}catch(e){} renderStateBrowse(); }
   var qs=new URLSearchParams();
-  qs.set('state',STATE);
-  var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('q',c);
+  if(STATE)qs.set('state',STATE);
+  if(c)qs.set('q',c);
   var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);
   var e=document.getElementById('fEquity').value; if(e)qs.set('min_equity',e);
   qs.set('limit','200');
+  var nq=new URLSearchParams(); if(STATE)nq.set('state',STATE); if(c)nq.set('q',c); nq.set('limit',STATE?'300':'150');
   document.getElementById('list').innerHTML='<div class="loadrow">Searching…</div>';
-  api('/api/search?'+qs.toString()).then(function(r){return r.json();}).then(function(j){
-    ROWS=j.results||[]; renderList(); if(MAP)renderPins();
-    document.getElementById('countLine').textContent=(j.count||0)+' deals in '+STATE;
-  }).catch(function(){document.getElementById('list').innerHTML='<div class="empty">Search failed. Try again.</div>';});
+  var seq=(window.SEARCH_SEQ=(window.SEARCH_SEQ||0)+1);
+  Promise.all([
+    api('/api/search?'+qs.toString()).then(function(r){return r.json();}).catch(function(){return {results:[]};}),
+    (s||e)?Promise.resolve({results:[]}):api('/api/national-search?'+nq.toString()).then(function(r){return r.json();}).catch(function(){return {results:[]};})
+  ]).then(function(res){
+    if(seq!==window.SEARCH_SEQ)return;
+    var enriched=res[0].results||[], national=res[1].results||[];
+    var seen={}; enriched.forEach(function(r){ seen[((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase()]=1; });
+    var extra=national.filter(function(r){ var k=((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase(); if(seen[k])return false; seen[k]=1; return true; });
+    ROWS=enriched.concat(extra); renderList(); if(MAP)renderPins();
+    var where=STATE?(STATE_NAMES[STATE]||STATE):'all states';
+    document.getElementById('countLine').textContent=ROWS.length?(ROWS.length+' deals in '+where+(enriched.length&&extra.length?' · '+enriched.length+' with owner data':'')):'';
+  });
 }
 function badgeHtml(r){
   var out='';
