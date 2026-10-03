@@ -261,6 +261,9 @@ def shell(title, desc, body, canonical):
   .hero {{ background:linear-gradient(160deg,var(--green),var(--green2)); color:#fff; padding:36px 0 32px; }}
   .hero h1 {{ margin:0 0 8px; font-size:34px; letter-spacing:-.02em; line-height:1.15; }}
   .hero p {{ margin:0; max-width:680px; color:#e3efe7; }}
+  .photo {{ display:block; width:100%; max-width:800px; height:auto; aspect-ratio:800/420; object-fit:cover; border-radius:14px; margin:18px 0 6px; background:#e6ede8; }}
+  .thumb {{ width:96px; height:64px; object-fit:cover; border-radius:8px; background:#e6ede8; display:block; }}
+  .thumbcell {{ width:104px; padding-right:0; }}
   .wrap {{ padding-top:28px; padding-bottom:48px; }}
   .crumbs {{ font-size:13px; color:var(--muted); margin:0 0 18px; }}
   .crumbs a {{ color:var(--green2); text-decoration:none; }}
@@ -412,7 +415,8 @@ def county_page(slug_st, slug_co):
         if window_start(r) and window_start(r) < today - timedelta(days=14):
             continue
         body_rows.append(
-            f'<tr><td><a href="/{slug_st}/{slug_co}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
+            f'<tr><td class="thumbcell"><img class="thumb" loading="lazy" width="96" height="64" src="/{slug_st}/{slug_co}/{listing_slug(r)}.jpg" alt=""></td>'
+            f'<td><a href="/{slug_st}/{slug_co}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
             f'<div class="meta">{e((r.get("city") or "").title())} {e(r.get("zip") or "")}</div></td>'
             f'<td>{e(r.get("auction_window") or "Date not posted")}</td>'
             f'<td>{e(human_type(r.get("structure_type")))}</td></tr>')
@@ -421,7 +425,7 @@ def county_page(slug_st, slug_co):
 <p>Public listings with sale dates.</p></div></header>
 <div class="wrap">
 <p class="crumbs"><a href="/">Home</a> / <a href="/{slug_st}">{e(name)}</a> / {e(label)}</p>
-<table><thead><tr><th>Property</th><th>Sale date</th><th>Type</th></tr></thead>
+<table><thead><tr><th></th><th>Property</th><th>Sale date</th><th>Type</th></tr></thead>
 <tbody>{shown}</tbody></table>
 <p class="note">{len(rows):,} public listings in this county. Private underwriting is not on this page.</p>
 <a class="cta" href="/app/">Open the deal room</a>
@@ -458,6 +462,7 @@ def listing_page(slug_st, slug_co, slug_li):
     body = f"""<header class="hero"><div class="wrap"><h1>{e(street)}</h1>
 <p>{e(city)}, {e(county)} County, {e(name)} {e(r.get('zip') or '')}</p></div></header>
 <div class="wrap">
+<img class="photo" src="/{slug_st}/{slug_co}/{slug_li}.jpg" alt="Street view of {e(street)}, {e(city)}, {e(abbr)}" width="800" height="420" loading="eager">
 <p class="crumbs"><a href="/">Home</a> / <a href="/{slug_st}">{e(name)}</a> / <a href="/{slug_st}/{slug_co}">{e(county)} County</a> / {e(street)}</p>
 <table><tbody>
 <tr><th>Address</th><td>{e(street)}, {e(city)}, {e(abbr)} {e(r.get('zip') or '')}</td></tr>
@@ -538,6 +543,38 @@ def _send(handler, code, body, ctype):
     handler.wfile.write(data)
 
 
+def listing_address(abbr, r):
+    return f"{(r.get('street') or '').strip()}, {(r.get('city') or '').strip()}, {abbr} {r.get('zip') or ''}".strip()
+
+
+def _serve_listing_photo(handler, slug_st, slug_co, slug_li):
+    """Public Street View front photo for one listing (Ted 2026-10-03: same card photo as
+    the app). Bounded to real listings so nobody can bill arbitrary addresses; bytes come
+    from server.fetch_photo's on-disk cache (cache/photos/<md5>.jpg) so each address is
+    fetched from Google at most once."""
+    import sys
+    srv = sys.modules.get("__main__")
+    fetch = getattr(srv, "fetch_photo", None)
+    abbr, _name = STATES.get(slug_st, (None, None))
+    rows = [r for r in county_rows(abbr, slug_co) if listing_slug(r) == slug_li] if abbr else []
+    if not rows or not fetch:
+        _send(handler, 404, "no image", "text/plain")
+        return True
+    b, ct = fetch(listing_address(abbr, rows[0]))
+    if not b:
+        handler.send_response(302)
+        handler.send_header("Location", "/brand/house-placeholder.svg")
+        handler.end_headers()
+        return True
+    handler.send_response(200)
+    handler.send_header("Content-Type", ct or "image/jpeg")
+    handler.send_header("Cache-Control", "public, max-age=1209600")
+    handler.send_header("Content-Length", str(len(b)))
+    handler.end_headers()
+    handler.wfile.write(b)
+    return True
+
+
 def serve(handler, route, qs):
     path = route.rstrip("/") or "/"
     if path == "/sitemap.xml":
@@ -562,6 +599,8 @@ def serve(handler, route, qs):
     parts = [p for p in path.split("/") if p]
     if not parts or parts[0] not in STATES:
         return False
+    if len(parts) == 3 and parts[2].endswith(".jpg"):
+        return _serve_listing_photo(handler, parts[0], parts[1], parts[2][:-4])
     try:
         if len(parts) == 1:
             page = state_page(parts[0])
