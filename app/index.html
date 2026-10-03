@@ -965,8 +965,10 @@ function renderContacts(){
     '<div style="font-size:11.5px;color:var(--sub);margin:4px 0 2px">Skip trace uses 1 credit · mobile numbers only</div>';
 }
 function callButton(phones){
-  var mob=(phones||[]).filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});
-  var p=(mob.length?mob:(phones||[]))[0]; if(!p)return '';
+  var ok=(phones||[]).filter(function(p){return !p.dnc;});  // Ted 2026-10-03 (Vernal card): never put a DNC number behind the call button
+  if((phones||[]).length&&!ok.length)return '<div class="callbtn stop" style="background:#b42318;cursor:default">&#9940; Do not call · all numbers on the DNC list</div>';
+  var mob=ok.filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});
+  var p=(mob.length?mob:ok)[0]; if(!p)return '';
   var n=String(p.number||'').replace(/\D/g,''); if(!n)return '';
   var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n;
   return '<a class="callbtn" href="tel:'+n+'" onclick="setAction(\'contacted\',true)">📞 Call owner · '+f+'</a>';
