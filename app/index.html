@@ -800,7 +800,7 @@ function openDetail(i){
     lineIf('AVM',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     paid?lineIf('Loan balance',r.mortgage_balance!=null?money(r.mortgage_balance):''):lockedRow('Loan balance','pro'),
     lineIf('Loan-to-value',(r.ltv_pct!=null&&!r.equity_unverified)?pct(r.ltv_pct):''),
-    lineIf('Lender',r.mortgage_lender)
+    lineIf('Lender',(r.lien_count>0)?'':r.mortgage_lender)
   ];
   // ---- Contact (phone, email, next of kin). Free: all three grayed. Pro: phone row runs skip-trace. Next of kin: Premium.
   var contactRows='<div id="contacts"></div>';
