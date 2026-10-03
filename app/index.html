@@ -299,7 +299,9 @@
   .locked b{color:var(--accent);display:block;margin-bottom:6px}
   .cta{display:inline-block;background:var(--gold);color:#231a0c;font-weight:800;padding:10px 18px;border-radius:10px;border:0;margin-top:8px;font-size:13.5px}
   .revealbtn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:0;padding:13px;border-radius:11px;font-weight:800;font-size:14.5px}
-  .phone{display:flex;align-items:center;justify-content:space-between;padding:11px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-top:8px}
+  .phone{display:flex;align-items:center;justify-content:space-between;padding:13px 12px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-top:8px;text-decoration:none}
+  a.phone:active{background:var(--accentSoft)}
+  .phone.dnc{opacity:.75}
   .phone .num{font-weight:800;font-size:16px;color:var(--accent)}
   .phone .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;background:var(--accentSoft);color:var(--accent2)}
   .phone .tag.dnc{background:#fbeae6;color:var(--danger)}
@@ -964,7 +966,9 @@ function renderContacts(){
     '<div class="rowline"><span class="k">Email</span><span class="v empty-v">'+((r.emails&&r.emails.length)?esc(typeof r.emails[0]==='string'?r.emails[0]:(r.emails[0].email||'')):'None on file yet')+'</span></div>'+
     '<div style="font-size:11.5px;color:var(--sub);margin:4px 0 2px">Skip trace uses 1 credit · mobile numbers only</div>';
 }
-function callButton(phones){
+function callButton(phones){ return '';
+  // (replaced 2026-10-03 by per-number rows in phoneHtml)
+  var __dead=1; if(__dead)return '';
   var ok=(phones||[]).filter(function(p){return !p.dnc;});  // Ted 2026-10-03 (Vernal card): never put a DNC number behind the call button
   if((phones||[]).length&&!ok.length)return '<div class="callbtn stop" style="background:#b42318;cursor:default">&#9940; Do not call · all numbers on the DNC list</div>';
   var mob=ok.filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});
@@ -974,13 +978,14 @@ function callButton(phones){
   return '<a class="callbtn" href="tel:'+n+'" onclick="setAction(\'contacted\',true)">📞 Call owner · '+f+'</a>';
 }
 function phoneHtml(phones,emails){
-  var mob=(phones||[]).filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});
-  if(!mob.length)mob=phones||[];
-  var h=mob.map(function(p){var n=String(p.number||'').replace(/\D/g,'');var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n;
-    return '<div class="phone"><a class="num" href="tel:'+n+'">'+f+'</a><span class="tag'+(p.dnc?' dnc':'')+'">'+(p.dnc?'DNC':esc(p.type||'mobile'))+'</span></div>';}).join('');
-  if(emails&&emails.length){ h+='<div style="margin-top:10px">'+emails.map(function(e){var em=(typeof e==='string')?e:(e.email||'');return '<span class="emailchip">'+esc(em)+'</span>';}).join('')+'</div>'; }
-  return h;
+  var all=(phones||[]);  // Ted 2026-10-03: every number is its own tappable row (DealMachine property sheet), no single call button; DNC listed but not dialable
+  var h=all.map(function(p){var n=String(p.number||'').replace(/\D/g,'');var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n; var t=(p.dnc?'DNC':esc(p.type||'mobile'));
+    if(p.dnc) return '<div class="phone dnc"><span class="num">'+f+'</span><span class="tag dnc">DNC · do not call</span></div>';
+    return '<a class="phone" href="tel:'+n+'" onclick="setAction(\'contacted\',true)"><span class="num">&#128222; '+f+'</span><span class="tag">'+t+'</span></a>';}).join('');
+  var e=(emails||[]).map(function(x){return '<a class="mail" href="mailto:'+esc(x)+'">'+esc(x)+'</a>';}).join('');
+  return h+(e?'<div class="mails">'+e+'</div>':'');
 }
+
 function reveal(){
   var el=document.getElementById('contacts'); el.innerHTML='<div class="locked">Skip-tracing…</div>';
   api('/api/skiptrace',{method:'POST',body:{id:CUR.id}}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
@@ -1126,8 +1131,6 @@ function renderAccount(){
     planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, CSV export. Overage $0.35 a credit.',ME.plan==='pro')+
     planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',isPrem)+
   '</div>';
-  html+='<div style="color:var(--sub);font-size:12.5px;margin:14px 2px 4px">Markets with live inventory</div>'+
-    '<div class="chiprow" style="padding-left:0">'+ME.markets.map(function(m){return '<span class="chip">'+m+'</span>';}).join('')+'</div>';
   if(isPaid){ html+='<button class="btn-ghost" onclick="doExport()">⬇ Export current search (CSV)</button>'; }
   if(isPaid&&!ME.trial&&ME.billing_portal){ html+='<button class="btn-ghost" onclick="openBillingPortal()">Manage billing</button>'; }
   html+='<button class="btn-ghost" id="installBtn" style="display:'+(window.deferredInstall?'block':'none')+'" onclick="installApp()">⬇ Install OffRamp on this device</button>';
