@@ -1029,6 +1029,12 @@ def spend_credit(u, kind, ref=None):
 
 # ------------------------------ HTTP -----------------------------------------
 class Handler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # The app shell and the service worker must never sit in an edge cache (Cloudflare held sw.js 4h on 2026-10-03 and phones kept a broken shell).
+        pth = self.path.split("?")[0]
+        if pth in ("/app/", "/app/index.html", "/app/sw.js", "/app/manifest.json"):
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        super().end_headers()
     # ---- helpers ----
     def _json(self, code, obj, extra_headers=None):
         payload = json.dumps(obj).encode()
