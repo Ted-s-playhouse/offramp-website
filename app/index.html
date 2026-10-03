@@ -1082,35 +1082,31 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
     unv?line('Equity','Unverified'):(ev.neg?line('Equity','Negative'):(ev.pct!=null?line('Equity',ev.pct+'%'):'')),
     lineIf('Value',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     (r.mls_active===true||r.mls_status)?line('Listed',r.mls_list_price?('On MLS · '+money(r.mls_list_price)):'On MLS'):'',
-    hasLiens?line('First lien',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):lineIf('Loan balance',mb>0?((r.mortgage_lender?r.mortgage_lender+' · ':'')+money(mb)):''),
-    lineIf('Second lien',(r.lien_second_amount&&!dupLien(r))?money(r.lien_second_amount):''),
+    hasLiens?line('First mortgage',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):lineIf('Mortgage',mb>0?((r.mortgage_lender?r.mortgage_lender+' · ':'')+money(mb)):''),
+    lineIf('Second mortgage',(r.lien_second_amount&&!dupLien(r))?money(r.lien_second_amount):''),
     (hasLiens&&lienCount(r)>1&&lienTotal(r))?line('Total debt',money(lienTotal(r))):'',
-    lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
+    lineIf('Mortgages',(r.lien_count===0)?'None recorded':''),
     r.reverse_mortgage===true?line('Reverse mortgage','Yes'):'',
     paid?lineIf('Equity $',(ev.dollars!=null&&!unv&&!ev.neg)?money(ev.dollars):''):lockedRow('Equity $','pro'),
     paid?(pay?line('Est. payment',money(pay)+' /mo'):''):lockedRow('Est. payment','pro')
   ];
   if(prem){  // Ted 2026-10-03: everybody gets lien + value + listed + deceased basics; Premium keeps the rest
     rows=rows.concat([
-      lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
+      lineIf('More mortgages',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
       lineIf('Tax lien',r.tax_lien?'Yes':''),
       lineIf('Judgment',r.judgment_flag?'Yes':'')
     ]);
   } else if(r.lien_count>2||r.tax_lien||r.judgment_flag){
-    rows.push(lockedRow('More liens & judgments','premium'));
+    rows.push(lockedRow('Judgments & tax liens','premium'));
   }
   return rows;
 }
 function lockedTile(title,sub,kind){ var tag=(kind==='premium'?'Premium':'Pro'); return '<div class="vtile none lockt" onclick="openUpgradeSheet(\''+kind+'\')"><div class="ico">🔒</div><div><div class="title">'+title+'</div><div class="word">CLEAR</div><div class="proof">'+sub+'</div><span class="more">Unlock on '+tag+' ›</span></div></div>'; }
-function lienTile(r){
-  if(r.lien_count==null)return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Liens on record</div><div class="word">NO RECORD</div><div class="proof">No recorded lien sheet on file for this property yet.</div></div></div>';
-  if(r.lien_count===0)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Liens on record</div><div class="word">CLEAR</div><div class="detail">No liens recorded'+(r.free_and_clear?' · free and clear':'')+'</div><div class="proof">OffRamp county record.</div></div></div>';
-  var tot=lienTotal(r)||((Number(r.lien_first_amount)||0)+(dupLien(r)?0:(Number(r.lien_second_amount)||0)));
-  if(dupLien(r))r=Object.assign({},r,{lien_count:lienCount(r),lien_second_amount:null});
-  // Ted 2026-10-03: one lien is just the loan being foreclosed — never 'ahead of you', never a red flag. Two or more is the flag.
-  if(r.lien_count===1)return '<div class="vtile none"><div class="ico">1</div><div><div class="title">Liens on record</div><div class="word">1 LIEN</div><div class="detail">'+(tot?money(tot):'')+(r.lien_first_lender?' · '+esc(r.lien_first_lender):'')+'</div><div class="proof">The loan being foreclosed. OffRamp county record.</div></div></div>';
-  var parts=[]; if(r.lien_first_amount)parts.push('First '+money(r.lien_first_amount)+(r.lien_first_lender?' '+r.lien_first_lender:'')); if(r.lien_second_amount)parts.push('Second '+money(r.lien_second_amount)); if(r.tax_lien)parts.push('Tax lien'); if(r.judgment_flag)parts.push('Judgment');
-  return '<div class="vtile flag"><div class="ico">&#9873;</div><div><div class="title">Liens on record</div><div class="word">'+r.lien_count+' LIENS</div>'+(tot?'<div class="detail">'+money(tot)+' total</div>':'')+'<div class="proof">'+esc(parts.join(' · '))+(parts.length?' · ':'')+'OffRamp county record</div></div></div>';
+function lienTile(r){  // Ted 2026-10-03: in this industry a mortgage is a mortgage. Liens = judgments, tax liens, lis pendens. Mortgages live in Loan & equity.
+  var items=[]; if(r.tax_lien)items.push('Tax lien'); if(r.judgment_flag)items.push('Judgment');
+  if(r.lien_count==null&&!items.length)return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Liens</div><div class="word">NO RECORD</div><div class="proof">No county lien sheet on file for this property yet.</div></div></div>';
+  if(!items.length)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Liens</div><div class="word">CLEAR</div><div class="proof">No tax liens or judgments on the county record.</div></div></div>';
+  return '<div class="vtile flag"><div class="ico">&#9873;</div><div><div class="title">Liens</div><div class="word">'+esc(items.join(' + ').toUpperCase())+'</div><div class="proof">On the county record. Paid before the owner sees a dime.</div></div></div>';
 }
 function nokTile(r){
   if(r.next_of_kin)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Next of kin</div><div class="word">ON FILE</div><div class="detail">'+esc(r.next_of_kin)+'</div><div class="proof">Family and relative records for the owner.</div></div></div>';
@@ -1119,7 +1115,7 @@ function nokTile(r){
 function checksSection(r,paid,prem){
   var h='<div class="sec">Checks</div><div class="vgrid">';
   h+=paid?('<div id="courtrec">'+courtTile(r)+'</div>'):lockedTile('Court records','Bankruptcy and federal cases',' pro'.trim());
-  h+=lienTile(r);
+  h+=prem?lienTile(r):lockedTile('Liens','Tax liens and judgments on the county record','premium');
   h+=prem?nokTile(r):lockedTile('Next of kin','Family and relative records','premium');
   return h+'</div>';
 }
