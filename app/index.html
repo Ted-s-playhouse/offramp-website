@@ -220,6 +220,16 @@
   .plancard .pn{font-weight:800;font-size:15px}.plancard .pp{float:right;color:#1B4332}.plancard .pp small{font-weight:500;color:var(--sub)}
   .plancard .pb{font-size:12px;color:var(--sub);margin:6px 0 10px;line-height:1.4}.plancard .pcur{font-size:12px;font-weight:700;color:#1B4332}
   .plancard .btn-gold{width:100%;margin:0}
+  .locked-row{cursor:pointer}
+  .locked-row .v{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+  .locked-row .blur{filter:blur(5px);user-select:none;color:var(--sub)}
+  .locked-row .lock{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--gold);color:#231a0c;padding:3px 7px;border-radius:12px}
+  .contactcard{padding:0 12px}.empty-v{color:var(--sub);font-style:italic}
+  .revealbtn.inline{display:inline-block;width:auto;padding:6px 10px;font-size:12px;margin-left:8px}
+  #upsheet{display:none;position:fixed;inset:0;z-index:60}
+  .upsheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  .upsheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg,#fff);border-radius:18px 18px 0 0;padding:10px 16px 24px;max-height:85vh;overflow:auto}
+  .upsheet .grab{width:40px;height:4px;border-radius:2px;background:#ccc;margin:0 auto 12px}.upt{font-weight:800;font-size:16px;margin:4px 0 10px}
   .badge.act{background:#eef3ef;color:#1B4332;border:1px solid #cfe0d6}
   .badge.act.hid{background:#f3f3f3;color:#777;border-color:#ddd}
   .abar{display:flex;gap:8px;margin:0 0 8px}
@@ -575,6 +585,22 @@ function renderPins(){
 }
 
 /* ---------- detail ---------- */
+function lockedRow(label,kind){
+  // Free-tier gray-out: the value is withheld server-side; the blurred placeholder is a lock, not data.
+  var tag=kind==='premium'?'Premium':'Pro';
+  return '<div class="rowline locked-row" onclick="openUpgradeSheet(\''+kind+'\')"><span class="k">'+label+'</span><span class="v"><span class="blur">'+(label==='Phone'?'(•••) •••-••••':(label==='Email'?'•••••@•••••.com':'$•••,•••'))+'</span><span class="lock">'+tag+'</span></span></div>';
+}
+function openUpgradeSheet(kind){
+  var el=document.getElementById('upsheet'); if(!el){ el=document.createElement('div'); el.id='upsheet'; document.body.appendChild(el); }
+  var isPrem=kind==='premium';
+  el.innerHTML='<div class="upsheet-bg" onclick="closeUpgradeSheet()"></div><div class="upsheet"><div class="grab"></div>'+
+    '<div class="upt">'+(isPrem?'Next of kin &amp; PACER tracking are on Premium':'Owner contact and the numbers are on Pro')+'</div>'+
+    '<div class="plangrid">'+planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, equity and loan figures, CSV export.',ME.plan==='pro')+
+    planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',ME.plan==='premium')+'</div>'+
+    '<button class="btn-ghost" onclick="closeUpgradeSheet()">Not now</button></div>';
+  el.style.display='block';
+}
+function closeUpgradeSheet(){ var el=document.getElementById('upsheet'); if(el)el.style.display='none'; }
 function openDetail(i){
   CUR=ROWS[i]; var r=CUR;
   var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
@@ -588,6 +614,23 @@ function openDetail(i){
   if(r.days_to_auction!=null&&r.days_to_auction>=0)hbadges+='<span class="badge hbadge">auction '+r.days_to_auction+'d</span>';
   var maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(addr);
   var zillow='https://www.zillow.com/homes/'+encodeURIComponent(addr)+'_rb/';
+  var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
+  var saleDate=fmtDate(r.auction_date)+(r.auction_time?(' · '+r.auction_time):'');
+
+  // ---- Evaluation (Revive order: equity %, equity $, AVM, loan balance). Free: $ rows grayed.
+  var evalRows=[
+    lineIf('Equity',r.equity_pct!=null?pct(r.equity_pct):''),
+    paid?lineIf('Equity $',r.equity_dollars!=null?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
+    lineIf('AVM',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
+    paid?lineIf('Loan balance',r.mortgage_balance!=null?money(r.mortgage_balance):''):lockedRow('Loan balance','pro'),
+    lineIf('Loan-to-value',r.ltv_pct!=null?pct(r.ltv_pct):''),
+    lineIf('Lender',r.mortgage_lender)
+  ];
+  // ---- Contact (phone, email, next of kin). Free: all three grayed. Pro: phone row runs skip-trace. Next of kin: Premium.
+  var contactRows='<div id="contacts"></div>';
+  if(!paid){ contactRows=lockedRow('Phone','pro')+lockedRow('Email','pro')+lockedRow('Next of kin','pro'); }
+  else if(!prem){ contactRows+=lockedRow('Next of kin','premium'); }
+  else { contactRows+=(r.next_of_kin?line('Next of kin',r.next_of_kin):'<div class="rowline"><span class="k">Next of kin</span><span class="v empty-v">None on file</span></div>'); }
 
   var html=hero+
     '<div class="dhead">'+
@@ -600,47 +643,42 @@ function openDetail(i){
         cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
         cell('Sq ft',r.living_area_sqft?Number(r.living_area_sqft).toLocaleString():'—')+
         cell('Year built',r.year_built||'—')+
-        cell('Occupancy',r.occupancy||'—')+
+        cell('Sale date',saleDate||'—')+
       '</div>'+
     '</div>'+
     '<div class="dbody">'+
+      '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
+      section('Evaluation',evalRows)+
+      '<div class="sec">Engage</div>'+
       actionBar(r)+
-      '<div class="kpis">'+
-        '<div class="kpi"><div class="k">Est. value</div><div class="v">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
-        '<div class="kpi"><div class="k">Loan balance</div><div class="v">'+money(r.mortgage_balance)+'</div></div>'+
-        '<div class="kpi big"><div class="k">Estimated equity</div><div class="v">'+money(r.equity_dollars)+(r.equity_pct!=null?' &nbsp;·&nbsp; '+r.equity_pct+'%':'')+'</div></div>'+
-      '</div>'+
-      '<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a></div>'+
+      '<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>'+
       flagStrip(r)+
       section('Foreclosure',[
         lineIf('Status',r.foreclosure_status),
         lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
-        lineIf('Auction date',fmtDate(r.auction_date)+(r.auction_time?(' · '+r.auction_time):'')),
+        lineIf('Sale date',saleDate),
         lineIf('Days to auction',(r.days_to_auction!=null)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
         lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
-        (r.trustee_opening_bid==null&&r.mortgage_balance!=null)?lineRaw('Est. credit bid','<span title="Estimate: the recorded loan balance. Lenders usually open at or near what they are owed. Not a live figure.">'+money(r.mortgage_balance)+' <small style="color:var(--sub)">Est. · from stored loan balance</small></span>'):'',
+        (paid&&r.trustee_opening_bid==null&&r.mortgage_balance!=null)?lineRaw('Est. credit bid','<span title="Estimate: the recorded loan balance. Lenders usually open at or near what they are owed. Not a live figure.">'+money(r.mortgage_balance)+' <small style="color:var(--sub)">Est. · from stored loan balance</small></span>'):'',
         lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
         lineIf('Case / NOD #',r.nod_case_number),
         lineIf('Trustee file #',r.trustee_file_no),
         lineIf('Foreclosing atty',r.foreclosing_attorney),
         r.attorney_phone?lineRaw('Attorney phone','<a href="tel:'+String(r.attorney_phone).replace(/\D/g,'')+'">'+esc(r.attorney_phone)+'</a>'):'',
         lineIf('Sale venue',[r.venue_name,r.venue_address].filter(Boolean).join(' · ')),
-        (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):'',
-        r.public_url?lineRaw('Public page','<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Open the public listing page ›</a>'):''
+        (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
       ])+
-      section('Mortgage',[
-        lineIf('Lender',r.mortgage_lender),
-        lineIf('Balance',r.mortgage_balance!=null?money(r.mortgage_balance):''),
+      (paid?section('Mortgage',[
         lineIf('Interest rate',r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),
-        lineIf('Loan-to-value',r.ltv_pct!=null?pct(r.ltv_pct):''),
         lineIf('Loan type',r.mortgage_loan_type),
         lineIf('Recorded',fmtDate(r.mortgage_recording_date)),
         lineIf('Maturity',fmtDate(r.mortgage_maturity_date)),
         r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
-      ])+
+      ]):'')+
       premiumSection(r)+
       section('Property',[
         lineIf('Type',r.property_type),
+        lineIf('Occupancy',r.occupancy),
         lineIf('APN',r.apn),
         lineIf('Owner mailing',r.mailing_address)
       ])+
@@ -658,13 +696,11 @@ function openDetail(i){
         '</div>'+
         '<div class="verdict neutral" id="o_verdict">Enter an offer to score the deal</div>'+
       '</div>'+
-      '<div class="sec">Owner contact</div>'+
-      '<div id="contacts"></div>'+
     '</div>';
   document.getElementById('detailInner').innerHTML=html;
   document.getElementById('detail').scrollTop=0;
   document.getElementById('detail').classList.add('open');
-  renderContacts(); runAnalyze();
+  if(paid)renderContacts(); runAnalyze();
 }
 function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
 function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
@@ -720,14 +756,13 @@ function premiumSection(r){
   ]);
 }
 function renderContacts(){
-  var el=document.getElementById('contacts'); var r=CUR;
-  if(!ME.paid){
-    el.innerHTML='<div class="locked"><b>🔒 Owner phones &amp; emails are a Pro feature</b>Skip-traced mobile numbers (DNC-flagged) + emails unlock on Pro.<br><button class="cta" onclick="showScreen(\'acct\');closeDetail()">See Pro</button></div>';
-    return;
-  }
+  var el=document.getElementById('contacts'); if(!el)return; var r=CUR;
+  if(!ME.paid){ el.innerHTML=''; return; } // free never reaches here; locked rows render instead
   if(r.phones&&r.phones.length){ el.innerHTML=callButton(r.phones)+phoneHtml(r.phones,r.emails); return; }
-  el.innerHTML='<button class="revealbtn" onclick="reveal()">☎ Reveal owner contact (skip-trace)</button>'+
-    '<div style="font-size:11.5px;color:var(--sub);margin-top:8px;text-align:center">Uses 1 of your '+ME.usage.skiptraces.limit+' monthly skip-traces · mobile numbers only</div>';
+  // CRM empty state (mirrors Revive ContactPhoneBlock): no numbers yet, skip trace is the action on the phone row.
+  el.innerHTML='<div class="rowline"><span class="k">Phone</span><span class="v"><span class="empty-v">No phones on file yet.</span> <button class="revealbtn inline" onclick="reveal()">Run skip trace</button></span></div>'+
+    '<div class="rowline"><span class="k">Email</span><span class="v empty-v">'+((r.emails&&r.emails.length)?esc(typeof r.emails[0]==='string'?r.emails[0]:(r.emails[0].email||'')):'None on file yet')+'</span></div>'+
+    '<div style="font-size:11.5px;color:var(--sub);margin:4px 0 2px">Skip trace uses 1 credit · mobile numbers only</div>';
 }
 function callButton(phones){
   var mob=(phones||[]).filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});

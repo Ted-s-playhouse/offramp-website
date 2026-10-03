@@ -713,11 +713,16 @@ def plan_from_session(sess):
 
 
 def strip_contacts(row):
-    """Free tier sees everything EXCEPT owner phones/emails (skip-trace gated)."""
+    """Free tier: owner phones/emails and the Evaluation dollar figures (equity $, loan balance)
+    are withheld server-side; the app renders those rows grayed with a Pro label. Equity %,
+    AVM, status, sale date and property facts stay clear."""
     r = dict(row)
     r["phones"] = None
     r["emails"] = None
     r["contacts_locked"] = True
+    r["equity_dollars"] = None
+    r["mortgage_balance"] = None
+    r["evaluation_locked"] = True
     return r
 
 
