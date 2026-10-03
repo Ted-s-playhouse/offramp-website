@@ -30,6 +30,7 @@ import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets
 import functools, sys, urllib.request, urllib.error, urllib.parse
 import seo_pages
 sys.path.insert(0, "/home/cortextos/cortextos/services/lib")
+import court_records  # CourtListener RECAP lookup (Phase 5 #35)
 import skiptrace_router  # waterfall: cache -> DM 40711 -> Tracerfy -> REAPI -> DM 23501 (2026-10-03)
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from http.cookies import SimpleCookie
@@ -1238,7 +1239,7 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(200, {"ok": True}, extra_headers=[self._clear_cookie()])
 
         # ---------- app data (session required) ----------
-        if route in ("/api/analyze", "/api/lookup", "/api/skiptrace", "/api/lead-actions"):
+        if route in ("/api/analyze", "/api/lookup", "/api/skiptrace", "/api/lead-actions", "/api/court-records"):
             u = self._current_user()
             if not u:
                 return self._json(401, {"error": "not signed in"})
@@ -1289,6 +1290,36 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(200, {"source": src, "data": payload,
                                         "usage": public_user(u)["usage"]})
 
+            if route == "/api/court-records":
+                if not is_paid(u):
+                    return self._json(403, {"error": "Court records are a Pro feature", "upgrade": True})
+                pid = (data.get("id") or "").strip()
+                nationwide = bool(data.get("nationwide"))
+                if not pid:
+                    return self._json(400, {"error": "id required"})
+                rows = sb("GET", f"/hit_list?select=id,owner_first,owner_last,owner_full,property_state,court_records&id=eq.{pid}&limit=1")
+                if not rows:
+                    return self._json(404, {"error": "not found"})
+                r = rows[0]
+                name = (r.get("owner_full") or " ".join(x for x in [r.get("owner_first"), r.get("owner_last")] if x) or "").strip()
+                if not name:
+                    return self._json(200, {"source": "none", "reason": "no owner name on file yet", "cases": [], "count": 0})
+                cached = r.get("court_records")
+                want_scope = "nationwide" if nationwide else (r.get("property_state") or "").upper()
+                if isinstance(cached, dict) and court_records.is_fresh(cached) and cached.get("scope") == want_scope and cached.get("query") == name:
+                    return self._json(200, dict(cached, source="cache"))
+                try:
+                    res = court_records.search(name, r.get("property_state"), nationwide=nationwide)
+                except Exception as e:
+                    print(f"[court-records] {e}", file=sys.stderr, flush=True)
+                    return self._json(502, {"error": "Court lookup is temporarily unavailable. You were not charged."})
+                if res is None:
+                    return self._json(200, {"source": "none", "cases": [], "count": 0})
+                try:
+                    sb("PATCH", f"/hit_list?id=eq.{pid}", {"court_records": res}, {"Prefer": "return=minimal"})
+                except Exception as e:
+                    print(f"[court-records] cache write failed {pid}: {e}", file=sys.stderr, flush=True)
+                return self._json(200, dict(res, source="live"))
             if route == "/api/skiptrace":
                 if not is_paid(u):
                     return self._json(403, {"error": "Skip-trace is a Pro feature", "upgrade": True})

@@ -779,6 +779,7 @@ function openDetail(i){
     '<div class="dbody">'+
       '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
       section('Evaluation',evalRows)+
+      '<div class="sec">Court records</div><div class="card2">'+(paid?'<div id="courtrec">'+courtRecordsIntro(r)+'</div>':lockedRow('Bankruptcy & federal cases','pro'))+'</div>'+
       '<div class="sec">Engage</div>'+
       actionBar(r)+
       '<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>'+
@@ -920,6 +921,29 @@ function reveal(){
    }).catch(function(){el.innerHTML='<div class="locked">Network error</div>';});
 }
 
+
+/* ---------- Court records (CourtListener RECAP: bankruptcy Ch 7/13 + federal civil; Phase 5 #35) ---------- */
+function courtRecordsIntro(r){
+  if(r.court_records&&r.court_records.cases){ return courtRecordsHtml(r.court_records); }
+  return '<div class="rowline"><span class="k">Bankruptcy &amp; federal cases</span><span class="v"><button class="btn small" onclick="courtLookup(false)">Check</button></span></div>'+
+         '<div class="hint">Free lookup of federal court dockets for the owner name. County liens and judgments are not in this index.</div>';
+}
+function courtRecordsHtml(cr){
+  var h='';
+  if(!cr.cases||!cr.cases.length){ h+='<div class="rowline"><span class="k">Bankruptcy &amp; federal cases</span><span class="v">None found'+(cr.scope&&cr.scope!=='nationwide'?' in '+esc(cr.scope):'')+'</span></div>'; }
+  else { h+=cr.cases.slice(0,6).map(function(c){ return '<div class="rowline"><span class="k">'+esc((c.chapter?'Ch '+c.chapter+' · ':'')+(c.filed||''))+'</span><span class="v">'+(c.url?'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">':'')+esc(c.case||'')+(c.url?'</a>':'')+'<br><small>'+esc((c.court||'')+(c.docket?' · '+c.docket:'')+(c.terminated?' · closed '+c.terminated:''))+'</small></span></div>'; }).join('');
+         if(cr.count>6) h+='<div class="hint">'+cr.count+' matches total. Showing newest 6.</div>'; }
+  h+='<div class="hint">Checked '+esc((cr.checked_at||'').slice(0,10))+' for "'+esc(cr.query||'')+'" · '+(cr.scope==='nationwide'?'all federal courts':'courts in '+esc(cr.scope||''))+' · '+(cr.scope==='nationwide'?'':'<a href="#" onclick="courtLookup(true);return false;">Search nationwide</a>')+'</div>';
+  return h;
+}
+function courtLookup(nationwide){
+  var el=document.getElementById('courtrec'); if(!el) return; el.innerHTML='<div class="locked">Checking federal dockets…</div>';
+  api('/api/court-records',{method:'POST',body:{id:CUR.id,nationwide:!!nationwide}}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+   .then(function(res){ if(!res.ok){ el.innerHTML='<div class="locked"><b>'+esc(res.j.error||'Lookup failed')+'</b></div>'; return; }
+     if(res.j.reason){ el.innerHTML='<div class="locked">'+esc(res.j.reason)+'</div>'; return; }
+     CUR.court_records=res.j; el.innerHTML=courtRecordsHtml(res.j); })
+   .catch(function(){ el.innerHTML='<div class="locked">Network error</div>'; });
+}
 /* ---------- analyzer (no MAO) ---------- */
 var ANALYZE_TIMER=null, ANALYZE_CTL=null;
 function runAnalyze(){
