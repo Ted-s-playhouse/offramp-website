@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OffRamp lead card redesign</title>
+<style>
+:root{--bg:#F6F5F1;--card:#FFFFFF;--text:#15221B;--sub:#5C6B62;--border:#E3E1D9;--accent:#1B4332;--accent2:#2D6A4F;--accentSoft:#DDE9E1;--danger:#C0392B;--gold:#E3B341;--warm:#F3DFA2;--shadow:0 2px 6px rgba(11,31,22,.06),0 8px 24px rgba(11,31,22,.05);--maxw:520px}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#e9e8e2}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+a{color:var(--accent2);text-decoration:none}
+#shell{max-width:var(--maxw);margin:0 auto;min-height:100vh;background:var(--bg)}
+.mocknote{background:#15221B;color:#fff;font-size:12.5px;padding:10px 16px;line-height:1.4}
+.mocknote b{color:var(--gold)}
+.dhead{background:var(--accent);color:#fff;padding:14px 16px 16px;padding-top:calc(14px + env(safe-area-inset-top))}
+.dback{display:inline-flex;align-items:center;gap:4px;background:transparent;border:0;color:#cfe6d8;font-weight:800;font-size:14.5px;margin-bottom:8px}
+.dhead .owner{font-size:23px;font-weight:900;line-height:1.2}
+.dhead .street{font-size:15px;font-weight:600;margin-top:3px}
+.dhead .csz{font-size:12.5px;opacity:.82;margin-top:1px}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.dhead .badges{margin-top:11px}
+.badge{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:20px;border:1px solid transparent}
+.badge.hbadge{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.24)}
+.badge.vmark{background:#e7f3ec;color:#1f6f43;border:1px solid #b7dcc6}
+.badge.abs{background:var(--warm);color:#3a2a06;border:1px solid rgba(0,0,0,.08)}
+.dkv{display:flex;flex-wrap:wrap;margin-top:8px}
+.dkv .cell{width:50%;padding:6px 8px 0 0}
+.dkv .cell .k{font-size:11px;opacity:.75}
+.dkv .cell .v{font-size:16px;font-weight:700}
+.dbody{padding:14px 14px 60px}
+.sec{margin:20px 2px 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);display:flex;align-items:center;gap:8px}
+.tag{font-size:9.5px;font-weight:900;letter-spacing:.06em;padding:2px 7px;border-radius:6px;background:var(--gold);color:#231a0c}
+.tag.moved{background:#e7f0fb;color:#2b5f92}.tag.gone{background:#fbeae6;color:var(--danger)}
+.card2{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px 12px}
+.rowline{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.rowline:last-child{border-bottom:0}.rowline .k{color:var(--sub)}.rowline .v{font-weight:700;text-align:right}
+.rowline .v small{display:block;font-weight:600;color:var(--sub);font-size:12px}
+.hint{font-size:12px;color:var(--sub);padding:8px 0 4px;line-height:1.4}
+.phone{display:flex;align-items:center;justify-content:space-between;padding:13px 12px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-top:8px}
+.phone .num{font-weight:800;font-size:16px;color:var(--accent)}
+.phone .tag2{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;background:var(--accentSoft);color:var(--accent2);margin-left:6px}
+.phone .tag2.dnc{background:#fbeae6;color:var(--danger)}
+.contactcard{padding:0 12px}.empty-v{color:var(--sub);font-style:italic}
+/* verdict tiles */
+.vgrid{display:grid;grid-template-columns:1fr;gap:10px}
+.vtile{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 14px 12px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start}
+.vtile .ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;flex:0 0 52px}
+.vtile.clear .ico{background:#e7f4ec;color:#1f6f43}
+.vtile.flag .ico{background:#fbeae6;color:var(--danger)}
+.vtile.none .ico{background:#f0efe9;color:var(--sub)}
+.vtile .word{font-size:22px;font-weight:900;letter-spacing:.02em;line-height:1.1}
+.vtile.clear .word{color:#1f6f43}.vtile.flag .word{color:var(--danger)}.vtile.none .word{color:var(--sub)}
+.vtile .title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub)}
+.vtile .proof{font-size:12px;color:var(--sub);margin-top:5px;line-height:1.4}
+.vtile .detail{font-size:13.5px;font-weight:700;margin-top:4px}
+.vtile .more{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:800;color:var(--accent);background:var(--accentSoft);border:1px solid rgba(27,67,50,.25);padding:6px 11px;border-radius:9px}
+.actionbar{display:flex;gap:8px;margin-top:4px}
+.abtn{flex:1;padding:9px 6px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--sub);font-weight:600;font-size:13px;text-align:center}
+.maplinks{display:flex;gap:9px;margin-top:12px}
+.maplinks a{flex:1;text-align:center;background:var(--accentSoft);border:1px solid rgba(27,67,50,.25);color:var(--accent);font-weight:800;font-size:13.5px;padding:10px;border-radius:11px}
+.changes{margin:26px 0 0;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.changes h3{margin:0 0 8px;font-size:14px;color:var(--accent)}
+.changes ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.5}
+.changes li{margin-bottom:5px}
+</style></head><body><div id="shell">
+<div class="mocknote"><b>MOCKUP</b> · lead card redesign on a real row (Salt Lake City). Static page. Gold = new. Blue = moved. Red = removed. Tap nothing. Just read it.</div>
+
+<div class="dhead">
+  <button class="dback">‹ Back</button>
+  <div class="owner">Dennis Morgan Jr</div>
+  <div class="street">934 E 200 S</div>
+  <div class="csz">Salt Lake City, UT, 84102 · Salt Lake County</div>
+  <div class="badges">
+    <span class="badge hbadge">Scheduled</span>
+    <span class="badge vmark">&#10003; Trustee verified</span>
+    <span class="badge hbadge">auction 23d</span>
+    <span class="badge abs">Owner occupied</span>
+  </div>
+  <div class="dkv">
+    <div class="cell"><div class="k">Beds / Baths</div><div class="v">5 / 3</div></div>
+    <div class="cell"><div class="k">Sq ft</div><div class="v">2,850</div></div>
+    <div class="cell"><div class="k">Year built</div><div class="v">1908</div></div>
+    <div class="cell"><div class="k">Sale date</div><div class="v">Oct 26, 2026</div></div>
+  </div>
+</div>
+
+<div class="dbody">
+  <div class="sec">Contact</div>
+  <div class="card2 contactcard">
+    <div class="phone"><span><span class="num">(213) 210-0034</span><span class="tag2">Mobile</span><span class="tag2 dnc">DNC</span></span><span style="color:var(--sub)">Call ›</span></div>
+    <div class="phone"><span><span class="num">(801) 673-8150</span><span class="tag2">Mobile</span><span class="tag2 dnc">DNC</span></span><span style="color:var(--sub)">Call ›</span></div>
+    <div class="phone" style="margin-bottom:8px"><span><span class="num">(619) 788-7190</span><span class="tag2">Mobile</span><span class="tag2 dnc">DNC</span></span><span style="color:var(--sub)">Call ›</span></div>
+    <div class="rowline"><span class="k">Email</span><span class="v empty-v">None on file</span></div>
+  </div>
+
+  <div class="sec">Loan &amp; equity <span class="tag">facts only</span></div>
+  <div class="card2">
+    <div class="rowline"><span class="k">Equity</span><span class="v">26% · $197,611</span></div>
+    <div class="rowline"><span class="k">Value (AVM)</span><span class="v">$755,111</span></div>
+    <div class="rowline"><span class="k">First lien</span><span class="v">Embrace Home Loans · $557,500<small>Conventional · 3.05% · 30 yr · recorded Jan 2022 · matures Feb 2052</small></span></div>
+    <div class="rowline"><span class="k">Est. payment</span><span class="v">$2,366 /mo<small>principal and interest only · from amount, rate, term</small></span></div>
+    <div class="rowline"><span class="k">Second lien</span><span class="v">US Bank · $63,273<small>HELOC · recorded Mar 2022</small></span></div>
+    <div class="rowline"><span class="k">Total debt on record</span><span class="v">$620,773</span></div>
+    <div class="rowline"><span class="k">Tax lien</span><span class="v">None</span></div>
+    <div class="rowline"><span class="k">Judgment</span><span class="v">None</span></div>
+  </div>
+
+  <div class="sec">Checks <span class="tag">verdict tiles</span></div>
+  <div class="vgrid">
+    <div class="vtile clear"><div class="ico">&#10003;</div><div>
+      <div class="title">Court records</div><div class="word">CLEAR</div>
+      <div class="proof">Checked today · federal bankruptcy and civil dockets in Utah · "Dennis Morgan Jr"</div>
+      <span class="more">Search all 94 federal courts ›</span></div></div>
+    <div class="vtile flag"><div class="ico">&#9873;</div><div>
+      <div class="title">Liens on record</div><div class="word">2 LIENS</div>
+      <div class="detail">$620,773 ahead of you</div>
+      <div class="proof">First $557,500 Embrace · Second $63,273 US Bank HELOC · county record via REAPI · pulled Sep 22, 2026</div></div></div>
+    <div class="vtile none"><div class="ico">&#8212;</div><div>
+      <div class="title">Next of kin</div><div class="word">NONE FOUND</div>
+      <div class="proof">Searched family and relative records for the owner · DealMachine + REAPI · Premium</div>
+      <span class="more">Search again ›</span></div></div>
+  </div>
+
+  <div class="sec">Engage</div>
+  <div class="actionbar"><div class="abtn">★ Save</div><div class="abtn">✓ Contacted</div><div class="abtn">✎ Note</div><div class="abtn">Hide</div></div>
+  <div class="maplinks"><a>Open in Maps</a><a>View on Zillow</a></div>
+
+  <div class="sec">Foreclosure</div>
+  <div class="card2">
+    <div class="rowline"><span class="k">Status</span><span class="v">Scheduled (trustee verified)</span></div>
+    <div class="rowline"><span class="k">Type</span><span class="v">Non-judicial</span></div>
+    <div class="rowline"><span class="k">Sale date</span><span class="v">Oct 26, 2026</span></div>
+    <div class="rowline"><span class="k">Days to auction</span><span class="v">23 days</span></div>
+    <div class="rowline"><span class="k">Est. credit bid</span><span class="v">$557,500<small>Est. · from stored loan balance</small></span></div>
+    <div class="rowline"><span class="k">Foreclosing atty</span><span class="v">Halliday Watkins &amp; Mann, P.C.</span></div>
+  </div>
+
+  <div class="sec">Property facts <span class="tag">new</span></div>
+  <div class="card2">
+    <div class="rowline"><span class="k">Type</span><span class="v">Single Family · 2 stories</span></div>
+    <div class="rowline"><span class="k">Garage</span><span class="v">Detached · 616 sq ft</span></div>
+    <div class="rowline"><span class="k">Basement</span><span class="v">None</span></div>
+    <div class="rowline"><span class="k">Heat / cool</span><span class="v">Central / Central</span></div>
+    <div class="rowline"><span class="k">Pool</span><span class="v">No</span></div>
+    <div class="rowline"><span class="k">Lot</span><span class="v">0.14 ac · 6,272 sq ft</span></div>
+    <div class="rowline"><span class="k">Zoning</span><span class="v">1205 · Residential</span></div>
+    <div class="rowline"><span class="k">Flood zone</span><span class="v">Minimal hazard</span></div>
+    <div class="rowline"><span class="k">Assessed value</span><span class="v">$436,535 <small>2025 · county market value $793,700</small></span></div>
+    <div class="rowline"><span class="k">Annual tax</span><span class="v">$3,566 <small>2025 · not delinquent</small></span></div>
+    <div class="rowline"><span class="k">Last sale</span><span class="v">Jun 2016 · Intrafamily transfer</span></div>
+    <div class="rowline"><span class="k">Years owned</span><span class="v">10</span></div>
+    <div class="rowline"><span class="k">HOA</span><span class="v">No</span></div>
+    <div class="rowline"><span class="k">Owner mailing</span><span class="v">934 E 200 S, Salt Lake City, UT 84102<small>same as property</small></span></div>
+    <div class="rowline"><span class="k">APN</span><span class="v">16051810060000</span></div>
+    <div class="hint">County record via REAPI · pulled Sep 22, 2026. Rows without a cached record pull on open.</div>
+  </div>
+
+  <div class="sec">Deal analyzer <span class="tag gone">removed</span></div>
+  <div class="hint" style="padding:0 2px">ARV / rehab / offer / ROI calculator is gone. Buyers underwrite their own way.</div>
+
+  <div class="changes"><h3>What changed</h3><ol>
+    <li><b>Occupancy chip</b> moved up into the header badge row. Absentee rows show "Absentee owner" in that slot. Nothing else lives in the badge row.</li>
+    <li><b>Loan &amp; equity</b> is raw facts. Balance, rate, lender, term, est. P&amp;I, every lien with amount, total debt. No LTV math line.</li>
+    <li><b>Checks</b> are three verdict tiles. Big word. One proof line that says what was checked, where, when, and for whom. Court records CLEAR or red flag with the case count. Liens with count and dollars ahead. Next of kin on file or none found.</li>
+    <li><b>Property facts</b> is new. From the cached county record. Zoning, lot, garage, basement, heat and cool, flood, assessed value, tax, last sale, years owned, mailing address.</li>
+    <li><b>Deal analyzer</b> removed.</li>
+  </ol></div>
+</div>
+</div></body></html>

@@ -127,7 +127,8 @@ PLAN_LIMITS = {
 PAID_PLANS = ("pro", "premium")
 TRIAL_PLAN = "trial"
 PREMIUM_COLS = ("next_of_kin", "deceased_party", "probate_case_number", "bankruptcy_flag", "bankruptcy_chapter", "bankruptcy_case",
-                "bankruptcy_case_title", "bankruptcy_case_link", "bankruptcy_active_stay")
+                "bankruptcy_case_title", "bankruptcy_case_link", "bankruptcy_active_stay",
+                "surplus_amount", "surplus_sale_date", "surplus_purchaser", "surplus_court", "surplus_claim_deadline")
 
 
 def plan_key(u):
@@ -648,7 +649,7 @@ def fetch_photo(address):
 
 
 # ---------------------------- search / rows ----------------------------------
-SEARCH_COLS = ("sale_status_verified,equity_unverified,equity_verify_note,lien_count,lien_first_position,lien_first_lender,lien_first_amount,lien_first_type,lien_second_amount,lien_total_amount,tax_lien,judgment_flag,free_and_clear,sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
+SEARCH_COLS = ("surplus_amount,surplus_sale_date,surplus_purchaser,surplus_court,surplus_claim_deadline,surplus_margin,pipeline,sale_status_verified,equity_unverified,equity_verify_note,lien_count,lien_first_position,lien_first_lender,lien_first_amount,lien_first_type,lien_second_amount,lien_total_amount,tax_lien,judgment_flag,free_and_clear,sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
                "property_state,property_zip,county,foreclosure_status,lead_status,"
                "auction_date,auction_time,days_to_auction,market_value,avm,arv,"
                "equity_dollars,equity_pct,ltv_pct,mortgage_balance,beds,baths,"
@@ -773,7 +774,15 @@ def build_search_query(qs, limit, u=None):
     if val("nok") == "1":
         parts.append("next_of_kin=not.is.null")
     if val("surplus") == "1":
-        parts.append("or=(surplus_amount.not.is.null,auction_reserve_gt_reapi_debt.is.true)")
+        # Ted 2026-10-03: surplus = (a) sold above the debt (surplus_amount stamped by services/surplus-reconcile;
+        # those rows are past-sale, so drop the live-inventory gates for them) or (b) an upcoming trustee-verified
+        # sale whose value beats the credit bid by $50k+ (surplus_margin = avm - coalesce(trustee_opening_bid,
+        # mortgage_balance), stored generated column). The old auction_reserve_gt_reapi_debt term was the
+        # hidden-lien flag - the opposite of surplus - and is gone.
+        parts = [p for p in parts if p not in ("active=eq.true", "days_to_auction=gte.-3") and not p.startswith("order=")]
+        parts.append("or=(surplus_amount.not.is.null,and(active.is.true,days_to_auction.gte.-3,surplus_margin.gte.50000,"
+                     "sale_verified_source.not.is.null,sale_verified_source.not.ilike.*realestateapi*,equity_unverified.not.is.true))")
+        parts.append("order=surplus_amount.desc.nullslast,days_to_auction.asc.nullslast")
     return "/hit_list?" + "&".join(parts), ignored
 
 

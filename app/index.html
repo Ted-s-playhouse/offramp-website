@@ -182,6 +182,7 @@
 .badge.status{color:#fff}
   .badge.soon{background:var(--danger);color:#fff}
   .badge.auc{background:var(--warm);color:#3a2a06}
+  .badge.surplus{background:var(--gold);color:#231a0c}
   .badge.outline{background:transparent;border-color:var(--border);color:var(--sub)}
 
   .empty{padding:48px 24px;text-align:center;color:var(--sub);font-size:14px}
@@ -446,7 +447,7 @@
       <label class="fcheck"><input type="checkbox" id="fOos" data-f="out_of_state"> Out-of-state owner</label>
       <label class="fcheck"><input type="checkbox" id="fMulti" data-f="multi"> Owns multiple properties</label>
       <label class="fcheck"><input type="checkbox" id="fNok" data-f="nok"> Next of kin on file</label>
-      <label class="fcheck"><input type="checkbox" id="fSurplus" data-f="surplus"> Surplus candidate</label>
+      <label class="fcheck"><input type="checkbox" id="fSurplus" data-f="surplus"> Surplus candidate (sold above the debt, or $50k+ of value over the credit bid)</label>
       </div>
       <div class="fbtns"><button class="btn-ghost" onclick="clearFilterSheet()">Clear</button><button class="btn-primary" onclick="applyFilters()">Apply</button></div>
     </div>
@@ -690,6 +691,7 @@ function badgeHtml(r){
   var out='';
   if(statusLabel(r)){ var _sl=statusLabel(r); out+='<span class="badge status'+(_sl==='Cured'?' stop':'')+'">'+esc(_sl)+'</span>'; }  // Ted 2026-10-03: one color, badges are confidence tokens
   out+=trusteeMark(r);
+  if(r.surplus_amount!=null&&r.surplus_amount!=='')out+='<span class="badge surplus">est. surplus '+money(r.surplus_amount)+'</span>';
   var d=r.days_to_auction;
   if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
   return out;
@@ -829,6 +831,7 @@ function openDetail(i){
     '<div class="dbody">'+
       '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
       section('Evaluation',evalRows)+
+      surplusSection(r)+
       '<div class="sec">Court records</div><div class="card2">'+(paid?'<div id="courtrec">'+courtRecordsIntro(r)+'</div>':lockedRow('Bankruptcy & federal cases','pro'))+'</div>'+
       '<div class="sec">Engage</div>'+
       actionBar(r)+
@@ -839,7 +842,7 @@ function openDetail(i){
         lineIf('Sale moved',saleMoved(r)),
         lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
         lineIf('Sale date',saleDate),
-        lineIf('Days to auction',(r.days_to_auction!=null)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
+        lineIf('Days to auction',(r.days_to_auction!=null&&r.days_to_auction>=0)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
         lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
         (paid&&r.trustee_opening_bid==null&&r.mortgage_balance!=null)?lineRaw('Est. credit bid','<span title="Estimate: the recorded loan balance. Lenders usually open at or near what they are owed. Not a live figure.">'+money(r.mortgage_balance)+' <small style="color:var(--sub)">Est. · from stored loan balance</small></span>'):'',
         lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
@@ -896,7 +899,8 @@ function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)retur
   var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
   return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
 function trusteeLive(r){ var v=r.sale_verified_source||''; return !!(v && !/realestateapi/i.test(v) && /^(active|scheduled|live)$/i.test(r.sale_status_verified||'')); }
-function statusLabel(r){ var st=(r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,'');  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
+function statusLabel(r){ if(r.surplus_amount!=null&&r.surplus_amount!=='')return 'Sold';  // Ted 2026-10-03: surplus rows are past-sale
+  var st=(r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,'');  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
   if(/^postponed/i.test(st))return 'Postponed';                       // Ted 2026-10-03: plain Postponed tag; dates go to the 'Sale moved' line
   if(/cured|reinstat|cancel/i.test(st)){ return trusteeLive(r)?'Scheduled':'Cured'; }  // Ted 2026-10-03: a trustee-verified live sale beats stale feed text; a real cure is a red stop sign
   if(r.auction_date&&(!st||/pre.?foreclosure|notice of|^foreclosure$/i.test(st)))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
@@ -941,6 +945,27 @@ function saveNote(){
   var t=document.getElementById('anote'); if(!t)return; var v=t.value;
   var cur=(ACTIONS[CUR.id]||{}).note||''; if(v===cur)return;
   api('/api/lead-actions',{method:'POST',body:{id:CUR.id,note:v}}).then(function(r){return r.json();}).then(function(j){ if(j.action){ACTIONS[CUR.id]=j.action; renderList();} }).catch(function(){toast('note not saved');});
+}
+function surplusSection(r){  // Ted 2026-10-03: surplus funds on the card (Premium)
+  var prem=!!(ME&&ME.premium);
+  var sold=(r.surplus_amount!=null&&r.surplus_amount!=='');
+  var cand=(!sold&&r.surplus_margin!=null&&Number(r.surplus_margin)>=50000&&!!trusteeMark(r));
+  if(!sold&&!cand)return '';
+  if(!prem)return '<div class="sec">Surplus funds</div><div class="card2">'+lockedRow('Surplus funds','premium')+'</div>';
+  if(sold){
+    return section('Surplus funds',[
+      line('Sold',fmtDate(r.surplus_sale_date)||'Yes'),
+      lineIf('Purchaser',r.surplus_purchaser),
+      line('Est. surplus',money(r.surplus_amount)),
+      lineIf('Where to claim',r.surplus_court),
+      lineIf('Claim deadline',fmtDate(r.surplus_claim_deadline)),
+      '<div class="hint">Recorded sale price minus the first mortgage and costs. Junior liens are paid first. The trustee holds the balance for the former owner.</div>'
+    ]);
+  }
+  return section('Surplus funds',[
+    line('Value over credit bid',money(r.surplus_margin)),
+    '<div class="hint">Trustee verified sale with $50k or more of value above what the lender is owed. If bidding goes past the credit bid the difference belongs to the owner.</div>'
+  ]);
 }
 function premiumSection(r){
   if(r.premium_locked){
