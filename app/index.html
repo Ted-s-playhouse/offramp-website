@@ -769,7 +769,7 @@ function renderList(){
         '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
           '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
           '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+'</div></div>'+
-        '<div class="right"><div class="eq'+(r.equity_unverified?' eq-unv':'')+'">'+(r.equity_unverified?'n/a':(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'—'))+'</div><div class="eqk">'+(r.equity_unverified?'equity unverified':'equity')+'</div>'+
+        '<div class="right"><div class="eq'+(equityUnv(r)?' eq-unv':'')+'">'+(equityUnv(r)?'n/a':(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'—'))+'</div><div class="eqk">'+(equityUnv(r)?'equity unverified':'equity')+'</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
       '</div>'+
       '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div>'+sigBadges(r)+'</div>';
@@ -910,7 +910,15 @@ function statusLabel(r){ if(r.surplus_amount!=null&&r.surplus_amount!=='')return
   if(/cured|reinstat|cancel/i.test(st)){ return trusteeLive(r)?'Scheduled':'Cured'; }  // Ted 2026-10-03: a trustee-verified live sale beats stale feed text; a real cure is a red stop sign
   if(r.auction_date&&(!st||/pre.?foreclosure|notice of|^foreclosure$/i.test(st)))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
   return st; }
-function whyUnverified(r){ var n=(r.equity_verify_note||'').toLowerCase(); if(!r.equity_unverified)return '';
+function equityConflict(r){  // Ted 2026-10-03 (Jackson Hole screenshot): 57% equity next to $1.78M of recorded liens on a $529k house. Recorded liens that dwarf the loan on file = equity unknown.
+  var tot=Number(r.lien_total_amount||0), mb=Number(r.mortgage_balance||0), v=Number(r.avm||r.market_value||0);
+  if(!(r.lien_count>0)||!(tot>0))return false;
+  if(mb>0&&tot>mb*1.15)return true;
+  if(v>0&&tot>v&&Number(r.equity_pct||0)>0)return true;
+  return false; }
+function equityUnv(r){ return !!r.equity_unverified||equityConflict(r); }
+function whyUnverified(r){ var n=(r.equity_verify_note||'').toLowerCase(); if(!equityUnv(r))return '';
+  if(!r.equity_unverified&&equityConflict(r))return 'Recorded liens exceed the loan balance on file. A blanket or commercial loan may cover more than this property.';
   if(/no recorded open loan/.test(n))return 'No loan found on record. The foreclosing lien is private, tax or HOA.';
   if(/detail sheet lists/.test(n))return 'Loan balance unknown. Recorded mortgages exist but no balance.';
   if(/open-lien estimate|senior|usda/.test(n))return 'Loan balance is an estimate. A senior lien may be missing.';
@@ -953,7 +961,7 @@ function saveNote(){
 function surplusSection(r){  // Ted 2026-10-03: surplus funds on the card (Premium)
   var prem=!!(ME&&ME.premium);
   var sold=(r.surplus_amount!=null&&r.surplus_amount!=='');
-  var cand=(!sold&&r.surplus_margin!=null&&Number(r.surplus_margin)>=50000&&!!trusteeMark(r));
+  var cand=(!sold&&!equityConflict(r)&&r.surplus_margin!=null&&Number(r.surplus_margin)>=50000&&!!trusteeMark(r));
   if(!sold&&!cand)return '';
   if(!prem)return '<div class="sec">Surplus funds</div><div class="card2">'+lockedRow('Surplus funds','premium')+'</div>';
   if(sold){
@@ -978,6 +986,7 @@ function surplusSection(r){  // Ted 2026-10-03: surplus funds on the card (Premi
 function rampBid(r){
   // quality gate (Ted 2026-10-03: never a false confidence token): a posted trustee bid, or a real rate + recording date. No defaults.
   if(r.trustee_opening_bid!=null&&Number(r.trustee_opening_bid)>1000)return {v:Number(r.trustee_opening_bid),posted:true};
+  if(equityConflict(r))return null;  // the loan on file is not the whole debt
   var P=Number(r.mortgage_balance||0), rate=Number(r.mortgage_interest_rate); if(!(P>0)||!(rate>0)||!r.mortgage_recording_date)return null;
   var d=new Date(String(r.mortgage_recording_date).slice(0,10)); if(isNaN(d))return null;
   var i=rate/100/12, n=360, pay=P*i/(1-Math.pow(1+i,-n)), now=new Date();
@@ -991,7 +1000,7 @@ function gavelOdds(r){
   var st=r.foreclosure_status||'', live=trusteeLive(r);
   var bk=r.bankruptcy_flag===true, mls=r.mls_active===true||!!r.mls_status, post=/postponed/i.test(st);
   if(bk||mls)return 'low';
-  var eq=(r.equity_unverified||r.equity_pct==null)?null:Number(r.equity_pct);
+  var eq=(equityUnv(r)||r.equity_pct==null)?null:Number(r.equity_pct);
   var d=r.days_to_auction;
   if(live&&!post&&eq!==null&&eq<10&&d!=null&&d>=0&&d<=14)return 'high';
   return null;
@@ -1005,7 +1014,7 @@ function reversion(r){
 function surplusChaser(r){
   // sold with $50k+ stamped, or a trustee-verified sale with $150k+ of room over the bid. Anything smaller stays off the badge.
   if(r.surplus_amount!=null&&r.surplus_amount!==''&&Number(r.surplus_amount)>=50000)return {v:Number(r.surplus_amount),sold:true};
-  if(r.surplus_margin!=null&&Number(r.surplus_margin)>=150000&&!!trusteeMark(r))return {v:Number(r.surplus_margin),sold:false};
+  if(!equityConflict(r)&&r.surplus_margin!=null&&Number(r.surplus_margin)>=150000&&!!trusteeMark(r))return {v:Number(r.surplus_margin),sold:false};
   return null;
 }
 function moneyK(n){ var x=Number(n); if(!(x>0))return money(n); return x>=1e6?('$'+(x/1e6).toFixed(2).replace(/\.?0+$/,'')+'M'):('$'+Math.round(x/1000)+'k'); }
@@ -1051,17 +1060,21 @@ function occupancyChip(r){
 }
 function estPayment(r){ var P=Number(r.mortgage_balance||0), rate=Number(r.mortgage_interest_rate); if(!(P>0)||!(rate>0))return null; var i=rate/100/12; return Math.round(P*i/(1-Math.pow(1+i,-360))); }
 function loanRows(r,paid){
-  var pay=estPayment(r), hasLiens=(r.lien_count!=null&&r.lien_count>0);
-  var firstSub=[r.mortgage_loan_type,(r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),(r.mortgage_recording_date?'recorded '+fmtDate(r.mortgage_recording_date):''),(r.mortgage_maturity_date?'matures '+fmtDate(r.mortgage_maturity_date):'')].filter(Boolean).join(' · ');
+  var hasLiens=(r.lien_count!=null&&r.lien_count>0), unv=equityUnv(r);
+  var mb=Number(r.mortgage_balance||0), first=Number(r.lien_first_amount||0);
+  var agree=!hasLiens||(mb>0&&first>0&&Math.abs(mb-first)<=first*0.02);   // the loan on file is the recorded first lien
+  var terms=[r.mortgage_loan_type,(r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),(r.mortgage_recording_date?'recorded '+fmtDate(r.mortgage_recording_date):''),(r.mortgage_maturity_date?'matures '+fmtDate(r.mortgage_maturity_date):'')].filter(Boolean).join(' · ');
+  var pay=agree?estPayment(r):null;
   return [
-    lineIf('Equity',r.equity_unverified?'Unverified':(r.equity_pct!=null?pct(r.equity_pct):'')),
+    lineIf('Equity',unv?'Unverified':(r.equity_pct!=null?pct(r.equity_pct):'')),
     lineIf('Why unverified',whyUnverified(r)),
-    paid?lineIf('Equity $',(r.equity_dollars!=null&&!r.equity_unverified)?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
+    paid?lineIf('Equity $',(r.equity_dollars!=null&&!unv)?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
     lineIf('Value (AVM)',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
-    hasLiens?lineRaw('First lien',esc(lienText(r,1))+(firstSub?'<small>'+esc(firstSub)+'</small>':'')):'',
-    (!hasLiens&&paid)?lineIf('Loan balance',r.mortgage_balance!=null?money(r.mortgage_balance):''):(!hasLiens?lockedRow('Loan balance','pro'):''),
+    hasLiens?lineRaw('First lien',esc(lienText(r,1))+((agree&&terms)?'<small>'+esc(terms)+'</small>':'')):'',
+    (!hasLiens&&paid)?lineIf('Loan balance',mb>0?money(mb):''):(!hasLiens?lockedRow('Loan balance','pro'):''),
     (!hasLiens)?lineIf('Lender',r.mortgage_lender):'',
-    (!hasLiens&&firstSub)?line('Loan terms',firstSub):'',
+    (!hasLiens&&terms)?line('Loan terms',terms):'',
+    (hasLiens&&!agree&&paid&&mb>0)?lineRaw('Loan on file',money(mb)+'<small>'+esc((r.mortgage_lender?r.mortgage_lender+' · ':'')+terms)+' · does not match the recorded first lien</small>'):'',
     (paid&&pay)?lineRaw('Est. payment',money(pay)+' /mo<small>principal and interest from amount, rate and term</small>'):'',
     lineIf('Second lien',lienText(r,2)),
     lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
