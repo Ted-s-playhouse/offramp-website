@@ -538,7 +538,7 @@ NATIONAL_COLS = ("id,listing_id,state,county,city,zip,street,address,detail_url,
 
 def build_national_query(qs, limit):
     parts = [f"select={NATIONAL_COLS}", f"limit={limit}",
-             "status_group=eq.ACTIVE", "order=id.desc"]
+             "status_group=eq.ACTIVE", "delisted_at=is.null", "order=id.desc"]
     state = (qs.get("state") or [""])[0].upper().strip()
     if state:
         parts.append(f"state=eq.{state}")

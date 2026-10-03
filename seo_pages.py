@@ -162,7 +162,7 @@ def beds_baths(row):
 
 
 def public_rows(state=None, county_like=None):
-    parts = [f"select={PUBLIC_COLS}", "status_group=eq.ACTIVE"]
+    parts = [f"select={PUBLIC_COLS}", "status_group=eq.ACTIVE", "delisted_at=is.null"]
     if state:
         parts.append(f"state=eq.{urllib.parse.quote(state)}")
     if county_like:
@@ -172,7 +172,7 @@ def public_rows(state=None, county_like=None):
 
 def live_states():
     def load():
-        rows = _pages("/offramp_national_listings?select=state&status_group=eq.ACTIVE")
+        rows = _pages("/offramp_national_listings?select=state&status_group=eq.ACTIVE&delisted_at=is.null")
         counts = {}
         for r in rows:
             st = (r.get("state") or "").upper()
@@ -188,7 +188,7 @@ def week_rows():
         end = today + timedelta(days=7)
         mon = today.strftime("%b")
         rows = _pages("/offramp_national_listings?select=" + PUBLIC_COLS +
-                      f"&status_group=eq.ACTIVE&auction_window=ilike.*{mon}*")
+                      f"&status_group=eq.ACTIVE&delisted_at=is.null&auction_window=ilike.*{mon}*")
         hit = [r for r in rows if overlaps_week(r, today, end)]
         hit.sort(key=lambda r: window_start(r) or date.max)
         return hit[:24]
@@ -439,7 +439,7 @@ def sitemap_xml():
             return open(SITEMAP_PATH, encoding="utf-8").read()
     except OSError:
         pass
-    rows = _pages("/offramp_national_listings?select=listing_id,state,county,city,street,updated_at&status_group=eq.ACTIVE", cap=30)
+    rows = _pages("/offramp_national_listings?select=listing_id,state,county,city,street,updated_at&status_group=eq.ACTIVE&delisted_at=is.null", cap=30)
     urls = [f"{ORIGIN}/"]
     seen_states = set()
     seen_counties = set()
