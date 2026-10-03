@@ -1,0 +1,57 @@
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Auction source diff</title>
+<style>body{font:15px/1.45 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;margin:0;padding:20px;max-width:980px;margin:auto;color:#1a1a1a;background:#fafafa}h1{font-size:22px;margin:0 0 6px}p{margin:6px 0 14px;color:#444}.wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;background:#fff}th,td{padding:7px 10px;border-bottom:1px solid #e5e5e5;text-align:left;white-space:nowrap}th{background:#f0f0f0;position:sticky;top:0}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}tfoot td{font-weight:600;background:#f7f7f7}.k{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:12px 14px;margin:12px 0}</style></head><body>
+<h1>Auction sources side by side — 2026-10-03</h1>
+<p><b>REAPI auction</b> = properties with a county-recorded notice of sale (PropertySearch <code>auction:true</code>, free count mode, no records billed). <b>Auction.com live</b> = listings in the public auction.com feed with status ACTIVE and not delisted (our crm.offramp_national_listings table).</p>
+<div class=k><b>Why REAPI is roughly double.</b> REAPI counts every trustee and sheriff sale notice on the county record in all 51 jurisdictions. Auction.com is one platform's inventory. They overlap only about a third: in a free 150-address test of live auction.com listings, REAPI knew 148 but flagged auction on 51, pre-foreclosure-only on 36, and neither on 61 (bank-owned and online auctions carry no fresh county notice). Neither source contains the other. The real auction universe is the union with address dedupe.</div>
+<div class=wrap><table><thead><tr><th>State</th><th class=n>REAPI auction</th><th class=n>Auction.com live</th><th class=n>Ratio</th><th class=n>REAPI − A.com</th></tr></thead><tbody><tr><td>TX</td><td class=n>0</td><td class=n>1,414</td><td class=n>0.0x</td><td class=n>-1,414</td></tr>
+<tr><td>CA</td><td class=n>0</td><td class=n>1,375</td><td class=n>0.0x</td><td class=n>-1,375</td></tr>
+<tr><td>AZ</td><td class=n>0</td><td class=n>1,325</td><td class=n>0.0x</td><td class=n>-1,325</td></tr>
+<tr><td>IL</td><td class=n>0</td><td class=n>998</td><td class=n>0.0x</td><td class=n>-998</td></tr>
+<tr><td>MI</td><td class=n>0</td><td class=n>757</td><td class=n>0.0x</td><td class=n>-757</td></tr>
+<tr><td>PA</td><td class=n>0</td><td class=n>602</td><td class=n>0.0x</td><td class=n>-602</td></tr>
+<tr><td>WA</td><td class=n>0</td><td class=n>599</td><td class=n>0.0x</td><td class=n>-599</td></tr>
+<tr><td>FL</td><td class=n>0</td><td class=n>597</td><td class=n>0.0x</td><td class=n>-597</td></tr>
+<tr><td>TN</td><td class=n>0</td><td class=n>589</td><td class=n>0.0x</td><td class=n>-589</td></tr>
+<tr><td>GA</td><td class=n>0</td><td class=n>585</td><td class=n>0.0x</td><td class=n>-585</td></tr>
+<tr><td>NY</td><td class=n>0</td><td class=n>560</td><td class=n>0.0x</td><td class=n>-560</td></tr>
+<tr><td>CO</td><td class=n>0</td><td class=n>518</td><td class=n>0.0x</td><td class=n>-518</td></tr>
+<tr><td>OH</td><td class=n>0</td><td class=n>512</td><td class=n>0.0x</td><td class=n>-512</td></tr>
+<tr><td>MN</td><td class=n>0</td><td class=n>499</td><td class=n>0.0x</td><td class=n>-499</td></tr>
+<tr><td>AL</td><td class=n>0</td><td class=n>449</td><td class=n>0.0x</td><td class=n>-449</td></tr>
+<tr><td>LA</td><td class=n>0</td><td class=n>383</td><td class=n>0.0x</td><td class=n>-383</td></tr>
+<tr><td>NJ</td><td class=n>0</td><td class=n>370</td><td class=n>0.0x</td><td class=n>-370</td></tr>
+<tr><td>MD</td><td class=n>0</td><td class=n>339</td><td class=n>0.0x</td><td class=n>-339</td></tr>
+<tr><td>MO</td><td class=n>0</td><td class=n>333</td><td class=n>0.0x</td><td class=n>-333</td></tr>
+<tr><td>NC</td><td class=n>0</td><td class=n>317</td><td class=n>0.0x</td><td class=n>-317</td></tr>
+<tr><td>AR</td><td class=n>0</td><td class=n>311</td><td class=n>0.0x</td><td class=n>-311</td></tr>
+<tr><td>IN</td><td class=n>0</td><td class=n>267</td><td class=n>0.0x</td><td class=n>-267</td></tr>
+<tr><td>OK</td><td class=n>0</td><td class=n>179</td><td class=n>0.0x</td><td class=n>-179</td></tr>
+<tr><td>OR</td><td class=n>0</td><td class=n>176</td><td class=n>0.0x</td><td class=n>-176</td></tr>
+<tr><td>VA</td><td class=n>0</td><td class=n>172</td><td class=n>0.0x</td><td class=n>-172</td></tr>
+<tr><td>SC</td><td class=n>0</td><td class=n>155</td><td class=n>0.0x</td><td class=n>-155</td></tr>
+<tr><td>MS</td><td class=n>0</td><td class=n>150</td><td class=n>0.0x</td><td class=n>-150</td></tr>
+<tr><td>KY</td><td class=n>0</td><td class=n>131</td><td class=n>0.0x</td><td class=n>-131</td></tr>
+<tr><td>NV</td><td class=n>0</td><td class=n>122</td><td class=n>0.0x</td><td class=n>-122</td></tr>
+<tr><td>IA</td><td class=n>0</td><td class=n>118</td><td class=n>0.0x</td><td class=n>-118</td></tr>
+<tr><td>WV</td><td class=n>0</td><td class=n>93</td><td class=n>0.0x</td><td class=n>-93</td></tr>
+<tr><td>ID</td><td class=n>0</td><td class=n>83</td><td class=n>0.0x</td><td class=n>-83</td></tr>
+<tr><td>MA</td><td class=n>0</td><td class=n>78</td><td class=n>0.0x</td><td class=n>-78</td></tr>
+<tr><td>NE</td><td class=n>0</td><td class=n>67</td><td class=n>0.0x</td><td class=n>-67</td></tr>
+<tr><td>WI</td><td class=n>0</td><td class=n>64</td><td class=n>0.0x</td><td class=n>-64</td></tr>
+<tr><td>KS</td><td class=n>0</td><td class=n>63</td><td class=n>0.0x</td><td class=n>-63</td></tr>
+<tr><td>NM</td><td class=n>0</td><td class=n>61</td><td class=n>0.0x</td><td class=n>-61</td></tr>
+<tr><td>UT</td><td class=n>0</td><td class=n>56</td><td class=n>0.0x</td><td class=n>-56</td></tr>
+<tr><td>MT</td><td class=n>0</td><td class=n>51</td><td class=n>0.0x</td><td class=n>-51</td></tr>
+<tr><td>NH</td><td class=n>0</td><td class=n>51</td><td class=n>0.0x</td><td class=n>-51</td></tr>
+<tr><td>ME</td><td class=n>0</td><td class=n>42</td><td class=n>0.0x</td><td class=n>-42</td></tr>
+<tr><td>CT</td><td class=n>0</td><td class=n>41</td><td class=n>0.0x</td><td class=n>-41</td></tr>
+<tr><td>DE</td><td class=n>0</td><td class=n>40</td><td class=n>0.0x</td><td class=n>-40</td></tr>
+<tr><td>WY</td><td class=n>0</td><td class=n>29</td><td class=n>0.0x</td><td class=n>-29</td></tr>
+<tr><td>AK</td><td class=n>0</td><td class=n>28</td><td class=n>0.0x</td><td class=n>-28</td></tr>
+<tr><td>DC</td><td class=n>0</td><td class=n>24</td><td class=n>0.0x</td><td class=n>-24</td></tr>
+<tr><td>RI</td><td class=n>0</td><td class=n>23</td><td class=n>0.0x</td><td class=n>-23</td></tr>
+<tr><td>HI</td><td class=n>0</td><td class=n>20</td><td class=n>0.0x</td><td class=n>-20</td></tr>
+<tr><td>SD</td><td class=n>0</td><td class=n>17</td><td class=n>0.0x</td><td class=n>-17</td></tr>
+<tr><td>VT</td><td class=n>0</td><td class=n>14</td><td class=n>0.0x</td><td class=n>-14</td></tr>
+<tr><td>ND</td><td class=n>0</td><td class=n>13</td><td class=n>0.0x</td><td class=n>-13</td></tr></tbody><tfoot><tr><td>Total (51)</td><td class=n>0</td><td class=n>15,860</td><td class=n>0.0x</td><td class=n>-15,860</td></tr></tfoot></table></div>
+<p style="color:#666;font-size:13px">VT and SD are genuine zeros in REAPI (404/count 0). Counts file: storage/reapi_auction/reapi_auction_counts_20261003.json. Nothing billed; pull is on hold pending Ted's go.</p></body></html>
