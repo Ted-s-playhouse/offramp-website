@@ -813,6 +813,7 @@ function lockedRow(label,kind){
   return '<div class="rowline locked-row" onclick="openUpgradeSheet(\''+kind+'\')"><span class="k">'+label+'</span><span class="v"><span class="blur">'+(label==='Phone'?'(•••) •••-••••':(label==='Email'?'•••••@•••••.com':'$•••,•••'))+'</span><span class="lock">Unlock · '+tag+' ›</span></span></div>';
 }
 function openUpgradeSheet(kind){
+  try{ api('/api/track',{method:'POST',body:{event:'upgrade_prompt',path:'lock:'+kind+(CUR&&CUR.property_state?':'+CUR.property_state:'')}}).catch(function(){}); }catch(e){}
   var el=document.getElementById('upsheet'); if(!el){ el=document.createElement('div'); el.id='upsheet'; document.body.appendChild(el); }
   var isPrem=kind==='premium';
   el.innerHTML='<div class="upsheet-bg" onclick="closeUpgradeSheet()"></div><div class="upsheet"><div class="grab"></div>'+

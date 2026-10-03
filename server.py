@@ -1516,6 +1516,7 @@ class Handler(SimpleHTTPRequestHandler):
             plan = (data.get("plan") or "pro").strip().lower()
             if plan not in PAID_PLANS and plan != TRIAL_PLAN:
                 return self._json(400, {"error": "unknown plan"})
+            funnel("checkout_start", user_id=u["id"], path=f"plan:{plan}", handler=self)  # cart-abandonment numerator (Ted 2026-10-03)
             if plan == TRIAL_PLAN:
                 if not TRIAL_ENABLED:
                     return self._json(409, {"error": "free trial is not open yet"})
@@ -1801,6 +1802,15 @@ class Handler(SimpleHTTPRequestHandler):
                        body={"tags": tags}, headers={"Prefer": "return=minimal"})
             except Exception as e:
                 print(f"[unsub] error: {e}")
+            return self._json(200, {"ok": True})
+
+        if route == "/api/track":
+            # first-party funnel beacon from the app (Ted 2026-10-03: checkout abandonment). Whitelisted events only.
+            ev = (data.get("event") or "").strip()
+            if ev not in ("upgrade_prompt",):
+                return self._json(400, {"error": "unknown event"})
+            tu = self._current_user()
+            funnel(ev, user_id=(tu["id"] if tu else None), path=(data.get("path") or "")[:120], handler=self)
             return self._json(200, {"ok": True})
 
         if route == "/api/request-access":

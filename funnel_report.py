@@ -31,7 +31,7 @@ OUT = os.path.join(DIR, "_funnel-report-3d7b", "index.html")
 SB_URL = "https://scnpwjyjbcmbjzwgivlu.supabase.co/rest/v1"
 SEC = os.path.expanduser("~/.cortextos/secrets")
 STEPS = ["public_view", "app_open", "signup", "trial_start", "paid"]
-EXTRA = ["lead"]            # public lead form on the homepage (not an app account)
+EXTRA = ["lead", "upgrade_prompt", "checkout_start"]            # public lead form on the homepage (not an app account)
 LABELS = {"public_view": "Public page views", "app_open": "App opens", "signup": "Signups",
           "trial_start": "Trial starts", "paid": "Paid", "lead": "Lead form"}
 DAYS = 14
@@ -113,6 +113,13 @@ def summarize(rows, days=DAYS, now=None):
         out_rows.append({"day": d, **counts, "raw": raw[d], "conv": _conv(counts)})
     totals = {s: len(window[s]) for s in STEPS + EXTRA}
     totals["conv"] = _conv(totals)
+    # checkout abandonment (Ted 2026-10-03): users who opened a Stripe checkout and never came back paid/trialing
+    co = window.get("checkout_start", set())
+    done = co & (window.get("paid", set()) | window.get("trial_start", set()))
+    totals["checkout_converted"] = len(done)
+    totals["checkout_abandoned"] = len(co) - len(done)
+    totals["checkout_abandon_pct"] = _pct(len(co) - len(done), len(co))
+    totals["upgrade_prompt_to_checkout_pct"] = _pct(len(co), len(window.get("upgrade_prompt", set())))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "tz": TZ_NAME, "days": days, "steps": STEPS, "extra": EXTRA,
@@ -122,6 +129,8 @@ def summarize(rows, days=DAYS, now=None):
         "notes": ["public_view/app_open = unique visitors per day (ip+ua hash); "
                   "signup/trial_start/paid = unique users per day; bots excluded; "
                   "totals are unique over the whole window.",
+                  "upgrade_prompt = unique users who hit a locked row/tile and saw the plan sheet; "
+                  "checkout_start = unique users sent to Stripe checkout; checkout_abandon_pct = started but never paid/trialing in the window.",
                   "trial_start only fires if a Stripe subscription arrives with status 'trialing' "
                   "(trials are not built yet)."],
     }
