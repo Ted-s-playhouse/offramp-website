@@ -1,0 +1,1542 @@
+[
+{
+"id": "almb",
+"full_name": "United States Bankruptcy Court, M.D. Alabama",
+"jurisdiction": "FB",
+"short_name": "M.D. Alabama",
+"citation_string": "Bankr. M.D. Ala."
+},
+{
+"id": "alnb",
+"full_name": "United States Bankruptcy Court, N.D. Alabama",
+"jurisdiction": "FB",
+"short_name": "N.D. Alabama",
+"citation_string": "Bankr. N.D. Ala."
+},
+{
+"id": "alsb",
+"full_name": "United States Bankruptcy Court, S.D. Alabama",
+"jurisdiction": "FB",
+"short_name": "S.D. Alabama",
+"citation_string": "Bankr. S.D. Ala."
+},
+{
+"id": "akb",
+"full_name": "United States Bankruptcy Court, D. Alaska",
+"jurisdiction": "FB",
+"short_name": "D. Alaska",
+"citation_string": "Bankr. D. Alaska"
+},
+{
+"id": "arb",
+"full_name": "United States Bankruptcy Court, D. Arizona",
+"jurisdiction": "FB",
+"short_name": "D. Arizona",
+"citation_string": "Bankr. D. Ariz."
+},
+{
+"id": "areb",
+"full_name": "United States Bankruptcy Court, E.D. Arkansas",
+"jurisdiction": "FB",
+"short_name": "E.D. Arkansas",
+"citation_string": "Bankr. E.D. Ark."
+},
+{
+"id": "arwb",
+"full_name": "United States Bankruptcy Court, W.D. Arkansas",
+"jurisdiction": "FB",
+"short_name": "W.D. Arkansas",
+"citation_string": "Bankr. W.D. Ark."
+},
+{
+"id": "cacb",
+"full_name": "United States Bankruptcy Court, C.D. California",
+"jurisdiction": "FB",
+"short_name": "C.D. California",
+"citation_string": "Bankr. C.D. Cal."
+},
+{
+"id": "caeb",
+"full_name": "United States Bankruptcy Court, E.D. California",
+"jurisdiction": "FB",
+"short_name": "E.D. California",
+"citation_string": "Bankr. E.D. Cal."
+},
+{
+"id": "canb",
+"full_name": "United States Bankruptcy Court, N.D. California",
+"jurisdiction": "FB",
+"short_name": "N.D. California",
+"citation_string": "Bankr. N.D. Cal."
+},
+{
+"id": "casb",
+"full_name": "United States Bankruptcy Court, S.D. California",
+"jurisdiction": "FB",
+"short_name": "S.D. California",
+"citation_string": "Bankr. S.D. Cal."
+},
+{
+"id": "cob",
+"full_name": "United States Bankruptcy Court, D. Colorado",
+"jurisdiction": "FB",
+"short_name": "D. Colorado",
+"citation_string": "Bankr.D. Colo."
+},
+{
+"id": "ctb",
+"full_name": "United States Bankruptcy Court, D. Connecticut",
+"jurisdiction": "FB",
+"short_name": "D. Connecticut",
+"citation_string": "Bankr. D. Conn."
+},
+{
+"id": "deb",
+"full_name": "United States Bankruptcy Court, D. Delaware",
+"jurisdiction": "FB",
+"short_name": "D. Delaware",
+"citation_string": "Bankr. D. Del."
+},
+{
+"id": "dcb",
+"full_name": "United States Bankruptcy Court, District of Columbia",
+"jurisdiction": "FB",
+"short_name": "District of Columbia",
+"citation_string": "Bankr. D.C."
+},
+{
+"id": "flmb",
+"full_name": "United States Bankruptcy Court, M.D. Florida",
+"jurisdiction": "FB",
+"short_name": "M.D. Florida",
+"citation_string": "Bankr. M.D. Fla."
+},
+{
+"id": "flnb",
+"full_name": "United States Bankruptcy Court, N.D. Florida",
+"jurisdiction": "FB",
+"short_name": "N.D. Florida",
+"citation_string": "Bankr. N.D. Fla."
+},
+{
+"id": "flsb",
+"full_name": "United States Bankruptcy Court, S.D. Florida.",
+"jurisdiction": "FB",
+"short_name": "S.D. Florida",
+"citation_string": "Bankr. S.D. Florida"
+},
+{
+"id": "gamb",
+"full_name": "United States Bankruptcy Court, M.D. Georgia",
+"jurisdiction": "FB",
+"short_name": "M.D. Georgia",
+"citation_string": "Bankr. M.D. Ga."
+},
+{
+"id": "ganb",
+"full_name": "United States Bankruptcy Court, N.D. Georgia",
+"jurisdiction": "FB",
+"short_name": "N.D. Georgia",
+"citation_string": "Bankr. N.D. Ga."
+},
+{
+"id": "gasb",
+"full_name": "United States Bankruptcy Court, S.D. Georgia",
+"jurisdiction": "FB",
+"short_name": "S.D. Georgia",
+"citation_string": "Bankr. S.D. Ga."
+},
+{
+"id": "hib",
+"full_name": "United States Bankruptcy Court, D. Hawaii",
+"jurisdiction": "FB",
+"short_name": "D. Hawaii",
+"citation_string": "Bankr. D. Haw."
+},
+{
+"id": "idb",
+"full_name": "United States Bankruptcy Court, D. Idaho",
+"jurisdiction": "FB",
+"short_name": "D. Idaho",
+"citation_string": "Bankr. D. Idaho"
+},
+{
+"id": "ilcb",
+"full_name": "United States Bankruptcy Court, C.D. Illinois",
+"jurisdiction": "FB",
+"short_name": "C.D. Illinois",
+"citation_string": "Bankr. C.D. Ill."
+},
+{
+"id": "ilnb",
+"full_name": "United States Bankruptcy Court, N.D. Illinois",
+"jurisdiction": "FB",
+"short_name": "N.D. Illinois",
+"citation_string": "Bankr. N.D. Ill."
+},
+{
+"id": "ilsb",
+"full_name": "United States Bankruptcy Court, S.D. Illinois",
+"jurisdiction": "FB",
+"short_name": "S.D. Illinois",
+"citation_string": "Bankr. S.D. Ill."
+},
+{
+"id": "innb",
+"full_name": "United States Bankruptcy Court, N.D. Indiana",
+"jurisdiction": "FB",
+"short_name": "N.D. Indiana",
+"citation_string": "Bankr. N.D. Ind."
+},
+{
+"id": "insb",
+"full_name": "United States Bankruptcy Court, S.D. Indiana",
+"jurisdiction": "FB",
+"short_name": "S.D. Indiana",
+"citation_string": "Bankr. S.D. Ind."
+},
+{
+"id": "ianb",
+"full_name": "United States Bankruptcy Court, N.D. Iowa",
+"jurisdiction": "FB",
+"short_name": "N.D. Iowa",
+"citation_string": "Bankr. D. Iowa"
+},
+{
+"id": "iasb",
+"full_name": "United States Bankruptcy Court, S.D. Iowa",
+"jurisdiction": "FB",
+"short_name": "S.D. Iowa",
+"citation_string": "Bankr. S.D. Iowa"
+},
+{
+"id": "ksb",
+"full_name": "United States Bankruptcy Court, D. Kansas",
+"jurisdiction": "FB",
+"short_name": "D. Kansas",
+"citation_string": "Bankr. D. Kan."
+},
+{
+"id": "kyeb",
+"full_name": "United States Bankruptcy Court, E.D. Kentucky",
+"jurisdiction": "FB",
+"short_name": "E.D. Kentucky",
+"citation_string": "Bankr. E.D. Ky."
+},
+{
+"id": "kywb",
+"full_name": "United States Bankruptcy Court, W.D. Kentucky",
+"jurisdiction": "FB",
+"short_name": "W.D. Kentucky",
+"citation_string": "Bankr. W.D. Ky."
+},
+{
+"id": "laeb",
+"full_name": "United States Bankruptcy Court, E.D. Louisiana",
+"jurisdiction": "FB",
+"short_name": "E.D. Louisiana",
+"citation_string": "Bankr. E.D. La."
+},
+{
+"id": "lamb",
+"full_name": "United States Bankruptcy Court, M.D. Louisiana",
+"jurisdiction": "FB",
+"short_name": "M.D. Louisiana",
+"citation_string": "Bankr. M.D. La."
+},
+{
+"id": "lawb",
+"full_name": "United States Bankruptcy Court, W.D. Louisiana",
+"jurisdiction": "FB",
+"short_name": "W.D. Louisiana",
+"citation_string": "Bankr. W.D. La."
+},
+{
+"id": "meb",
+"full_name": "United States Bankruptcy Court, D. Maine",
+"jurisdiction": "FB",
+"short_name": "D. Maine",
+"citation_string": "Bankr. D. Me."
+},
+{
+"id": "mdb",
+"full_name": "United States Bankruptcy Court, D. Maryland",
+"jurisdiction": "FB",
+"short_name": "D. Maryland",
+"citation_string": "Bankr. D. Md."
+},
+{
+"id": "mab",
+"full_name": "United States Bankruptcy Court, D. Massachusetts",
+"jurisdiction": "FB",
+"short_name": "D. Massachusetts",
+"citation_string": "Bankr. D. Mass."
+},
+{
+"id": "mieb",
+"full_name": "United States Bankruptcy Court, E.D. Michigan",
+"jurisdiction": "FB",
+"short_name": "E.D. Michigan",
+"citation_string": "Bankr. E.D. Mich."
+},
+{
+"id": "miwb",
+"full_name": "United States Bankruptcy Court, W.D. Michigan",
+"jurisdiction": "FB",
+"short_name": "W.D. Michigan",
+"citation_string": "Bankr. W.D. Mich."
+},
+{
+"id": "mnb",
+"full_name": "United States Bankruptcy Court, D. Minnesota",
+"jurisdiction": "FB",
+"short_name": "D. Minnesota",
+"citation_string": "Bankr. D. Minn."
+},
+{
+"id": "msnb",
+"full_name": "United States Bankruptcy Court, N.D. Mississippi",
+"jurisdiction": "FB",
+"short_name": "N.D. Mississippi",
+"citation_string": "Bankr. N.D. Miss."
+},
+{
+"id": "mssb",
+"full_name": "United States Bankruptcy Court, S.D. Mississippi",
+"jurisdiction": "FB",
+"short_name": "S.D. Mississippi",
+"citation_string": "Bankr. S.D. Miss."
+},
+{
+"id": "moeb",
+"full_name": "United States Bankruptcy Court, E.D. Missouri",
+"jurisdiction": "FB",
+"short_name": "E.D. Missouri",
+"citation_string": "Bankr. E.D. Mo."
+},
+{
+"id": "mowb",
+"full_name": "United States Bankruptcy Court, W.D. Missouri",
+"jurisdiction": "FB",
+"short_name": "W.D. Missouri",
+"citation_string": "Bankr. W.D. Mo."
+},
+{
+"id": "mtb",
+"full_name": "United States Bankruptcy Court, D. Montana",
+"jurisdiction": "FB",
+"short_name": "D. Montana",
+"citation_string": "Bankr. D. Mont."
+},
+{
+"id": "nebraskab",
+"full_name": "United States Bankruptcy Court, D. Nebraska",
+"jurisdiction": "FB",
+"short_name": "D. Nebraska",
+"citation_string": "Bankr. D. Neb."
+},
+{
+"id": "nvb",
+"full_name": "United States Bankruptcy Court, D. Nevada",
+"jurisdiction": "FB",
+"short_name": "D. Nevada",
+"citation_string": "Bankr. D. Nev."
+},
+{
+"id": "nhb",
+"full_name": "United States Bankruptcy Court, D. New Hampshire",
+"jurisdiction": "FB",
+"short_name": "D. New Hampshire",
+"citation_string": "Bankr. D.N.H."
+},
+{
+"id": "njb",
+"full_name": "United States Bankruptcy Court, D. New Jersey",
+"jurisdiction": "FB",
+"short_name": "D. New Jersey",
+"citation_string": "Bankr. D.N.J."
+},
+{
+"id": "nmb",
+"full_name": "United States Bankruptcy Court, D. New Mexico",
+"jurisdiction": "FB",
+"short_name": "D. New Mexico",
+"citation_string": "Bankr. D.N.M."
+},
+{
+"id": "nyeb",
+"full_name": "United States Bankruptcy Court, E.D. New York",
+"jurisdiction": "FB",
+"short_name": "E.D. New York",
+"citation_string": "Bankr. E.D.N.Y."
+},
+{
+"id": "nynb",
+"full_name": "United States Bankruptcy Court, N.D. New York",
+"jurisdiction": "FB",
+"short_name": "N.D. New York",
+"citation_string": "Bankr. N.D.N.Y."
+},
+{
+"id": "nysb",
+"full_name": "United States Bankruptcy Court, S.D. New York",
+"jurisdiction": "FB",
+"short_name": "S.D. New York",
+"citation_string": "Bankr. S.D.N.Y."
+},
+{
+"id": "nywb",
+"full_name": "United States Bankruptcy Court, W.D. New York",
+"jurisdiction": "FB",
+"short_name": "W.D. New York",
+"citation_string": "Bankr. W.D.N.Y."
+},
+{
+"id": "nceb",
+"full_name": "United States Bankruptcy Court, E.D. North Carolina",
+"jurisdiction": "FB",
+"short_name": "E.D. North Carolina",
+"citation_string": "Bankr. E.D.N.C."
+},
+{
+"id": "ncmb",
+"full_name": "United States Bankruptcy Court, M.D. North Carolina",
+"jurisdiction": "FB",
+"short_name": "M.D. North Carolina",
+"citation_string": "Bankr. M.D.N.C."
+},
+{
+"id": "ncwb",
+"full_name": "United States Bankruptcy Court, W.D. North Carolina",
+"jurisdiction": "FB",
+"short_name": "W.D. North Carolina",
+"citation_string": "Bankr. W.D.N.C."
+},
+{
+"id": "ndb",
+"full_name": "United States Bankruptcy Court, D. North Dakota",
+"jurisdiction": "FB",
+"short_name": "D. North Dakota",
+"citation_string": "Bankr. D.N.D."
+},
+{
+"id": "ohnb",
+"full_name": "United States Bankruptcy Court, N.D. Ohio",
+"jurisdiction": "FB",
+"short_name": "N.D. Ohio",
+"citation_string": "Bankr. N.D. Ohio"
+},
+{
+"id": "ohsb",
+"full_name": "United States Bankruptcy Court, S.D. Ohio",
+"jurisdiction": "FB",
+"short_name": "S.D. Ohio",
+"citation_string": "Bankr. S.D. Ohio"
+},
+{
+"id": "okeb",
+"full_name": "United States Bankruptcy Court, E.D. Oklahoma",
+"jurisdiction": "FB",
+"short_name": "E.D. Oklahoma",
+"citation_string": "Bankr. E.D. Okla."
+},
+{
+"id": "oknb",
+"full_name": "United States Bankruptcy Court, N.D. Oklahoma",
+"jurisdiction": "FB",
+"short_name": "N.D. Oklahoma",
+"citation_string": "Bankr. N.D. Okla"
+},
+{
+"id": "okwb",
+"full_name": "United States Bankruptcy Court, W.D. Oklahoma",
+"jurisdiction": "FB",
+"short_name": "W.D. Oklahoma",
+"citation_string": "Bankr. W.D. Okla."
+},
+{
+"id": "orb",
+"full_name": "United States Bankruptcy Court, D. Oregon",
+"jurisdiction": "FB",
+"short_name": "D. Oregon",
+"citation_string": "Bankr. D. Or."
+},
+{
+"id": "paeb",
+"full_name": "United States Bankruptcy Court, E.D. Pennsylvania",
+"jurisdiction": "FB",
+"short_name": "E.D. Pennsylvania",
+"citation_string": "Bankr. E.D. Pa."
+},
+{
+"id": "pamb",
+"full_name": "United States Bankruptcy Court, M.D. Pennsylvania",
+"jurisdiction": "FB",
+"short_name": "M.D. Pennsylvania",
+"citation_string": "Bankr. M.D. Penn."
+},
+{
+"id": "pawb",
+"full_name": "United States Bankruptcy Court, W.D. Pennsylvania",
+"jurisdiction": "FB",
+"short_name": "W.D. Pennsylvania",
+"citation_string": "Bankr. W.D. Pa."
+},
+{
+"id": "rib",
+"full_name": "United States Bankruptcy Court, D. Rhode Island",
+"jurisdiction": "FB",
+"short_name": "D. Rhode Island",
+"citation_string": "Bankr. D.R.I."
+},
+{
+"id": "scb",
+"full_name": "United States Bankruptcy Court, D. South Carolina",
+"jurisdiction": "FB",
+"short_name": "D. South Carolina",
+"citation_string": "Bankr. D.S.C."
+},
+{
+"id": "sdb",
+"full_name": "United States Bankruptcy Court, D. South Dakota",
+"jurisdiction": "FB",
+"short_name": "D. South Dakota",
+"citation_string": "Bankr. D.S.D."
+},
+{
+"id": "tneb",
+"full_name": "United States Bankruptcy Court, E.D. Tennessee",
+"jurisdiction": "FB",
+"short_name": "E.D. Tennessee",
+"citation_string": "Bankr. E.D. Tenn."
+},
+{
+"id": "tnmb",
+"full_name": "United States Bankruptcy Court, M.D. Tennessee",
+"jurisdiction": "FB",
+"short_name": "M.D. Tennessee",
+"citation_string": "Bankr. M.D. Tenn."
+},
+{
+"id": "tnwb",
+"full_name": "United States Bankruptcy Court, W.D. Tennessee",
+"jurisdiction": "FB",
+"short_name": "W.D. Tennessee",
+"citation_string": "Bankr. W.D. Tenn."
+},
+{
+"id": "tennesseeb",
+"full_name": "United States Bankruptcy Court, D. Tennessee",
+"jurisdiction": "FB",
+"short_name": "D. Tennessee",
+"citation_string": "Bankr. D. Tenn."
+},
+{
+"id": "txeb",
+"full_name": "United States Bankruptcy Court, E.D. Texas",
+"jurisdiction": "FB",
+"short_name": "E.D. Texas",
+"citation_string": "Bankr. E.D. Tex."
+},
+{
+"id": "txnb",
+"full_name": "United States Bankruptcy Court, N.D. Texas",
+"jurisdiction": "FB",
+"short_name": "N.D. Texas",
+"citation_string": "Bankr. N.D. Tex."
+},
+{
+"id": "txsb",
+"full_name": "United States Bankruptcy Court, S.D. Texas",
+"jurisdiction": "FB",
+"short_name": "S.D. Texas",
+"citation_string": "Bankr. S.D. Tex."
+},
+{
+"id": "txwb",
+"full_name": "United States Bankruptcy Court, W.D. Texas",
+"jurisdiction": "FB",
+"short_name": "W.D. Texas",
+"citation_string": "Bankr. W.D. Tex."
+},
+{
+"id": "utb",
+"full_name": "United States Bankruptcy Court, D. Utah",
+"jurisdiction": "FB",
+"short_name": "D. Utah",
+"citation_string": "Bankr. D. Utah"
+},
+{
+"id": "vtb",
+"full_name": "United States Bankruptcy Court, D. Vermont",
+"jurisdiction": "FB",
+"short_name": "D. Vermont",
+"citation_string": "Bankr. D. Vt."
+},
+{
+"id": "vaeb",
+"full_name": "United States Bankruptcy Court, E.D. Virginia",
+"jurisdiction": "FB",
+"short_name": "E.D. Virginia",
+"citation_string": "Bankr. E.D. Va."
+},
+{
+"id": "vawb",
+"full_name": "United States Bankruptcy Court, W.D. Virginia",
+"jurisdiction": "FB",
+"short_name": "W.D. Virginia",
+"citation_string": "Bankr. W.D. Va."
+},
+{
+"id": "waeb",
+"full_name": "United States Bankruptcy Court, E.D. Washington",
+"jurisdiction": "FB",
+"short_name": "E.D. Washington",
+"citation_string": "Bankr. E.D. Wash."
+},
+{
+"id": "wawb",
+"full_name": "United States Bankruptcy Court, W.D. Washington",
+"jurisdiction": "FB",
+"short_name": "W.D. Washington",
+"citation_string": "Bankr. W.D. Wash."
+},
+{
+"id": "wvnb",
+"full_name": "United States Bankruptcy Court, N.D. West Virginia",
+"jurisdiction": "FB",
+"short_name": "N.D. West Virginia",
+"citation_string": "Bankr. N.D.W. Va."
+},
+{
+"id": "wvsb",
+"full_name": "United States Bankruptcy Court, S.D. West Virginia",
+"jurisdiction": "FB",
+"short_name": "S.D. West Virginia",
+"citation_string": "Bankr. S.D.W. Va."
+},
+{
+"id": "wieb",
+"full_name": "United States Bankruptcy Court, E.D. Wisconsin",
+"jurisdiction": "FB",
+"short_name": "E.D. Wisconsin",
+"citation_string": "Bankr. E.D. Wis."
+},
+{
+"id": "wiwb",
+"full_name": "United States Bankruptcy Court, W.D. Wisconsin",
+"jurisdiction": "FB",
+"short_name": "W.D. Wisconsin",
+"citation_string": "Bankr. W.D. Wis."
+},
+{
+"id": "wyb",
+"full_name": "United States Bankruptcy Court, D. Wyoming",
+"jurisdiction": "FB",
+"short_name": "D. Wyoming",
+"citation_string": "Bankr. D. Wyo."
+},
+{
+"id": "gub",
+"full_name": "United States Bankruptcy Court, D. Guam",
+"jurisdiction": "FB",
+"short_name": "D. Guam",
+"citation_string": "Bankr. D. Guam"
+},
+{
+"id": "nmib",
+"full_name": "United States Bankruptcy Court, Northern Mariana Islands",
+"jurisdiction": "FB",
+"short_name": "Northern Mariana Islands",
+"citation_string": "Bankr. N. Mar. I."
+},
+{
+"id": "prb",
+"full_name": "United States Bankruptcy Court, D. Puerto Rico",
+"jurisdiction": "FB",
+"short_name": "D. Puerto Rico",
+"citation_string": "Bankr. D.P.R."
+},
+{
+"id": "vib",
+"full_name": "United States Bankruptcy Court, D. Virgin Islands",
+"jurisdiction": "FB",
+"short_name": "D. Virgin Islands",
+"citation_string": "Bankr. D.V.I."
+},
+{
+"id": "usdistct",
+"full_name": "United States District Court",
+"jurisdiction": "FD",
+"short_name": "U.S. District Court",
+"citation_string": ""
+},
+{
+"id": "dcd",
+"full_name": "District Court, District of Columbia",
+"jurisdiction": "FD",
+"short_name": "District of Columbia",
+"citation_string": "D.D.C."
+},
+{
+"id": "ald",
+"full_name": "District Court, D. Alabama",
+"jurisdiction": "FD",
+"short_name": "D. Alabama",
+"citation_string": "D. Ala."
+},
+{
+"id": "almd",
+"full_name": "District Court, M.D. Alabama",
+"jurisdiction": "FD",
+"short_name": "M.D. Alabama",
+"citation_string": "M.D. Ala."
+},
+{
+"id": "alnd",
+"full_name": "District Court, N.D. Alabama",
+"jurisdiction": "FD",
+"short_name": "N.D. Alabama",
+"citation_string": "N.D. Ala."
+},
+{
+"id": "alsd",
+"full_name": "District Court, S.D. Alabama",
+"jurisdiction": "FD",
+"short_name": "S.D. Alabama",
+"citation_string": "S.D. Ala."
+},
+{
+"id": "akd",
+"full_name": "District Court, D. Alaska",
+"jurisdiction": "FD",
+"short_name": "D. Alaska",
+"citation_string": "D. Alaska"
+},
+{
+"id": "azd",
+"full_name": "District Court, D. Arizona",
+"jurisdiction": "FD",
+"short_name": "D. Arizona",
+"citation_string": "D. Ariz."
+},
+{
+"id": "ared",
+"full_name": "District Court, E.D. Arkansas",
+"jurisdiction": "FD",
+"short_name": "E.D. Arkansas",
+"citation_string": "E.D. Ark."
+},
+{
+"id": "arwd",
+"full_name": "District Court, W.D. Arkansas",
+"jurisdiction": "FD",
+"short_name": "W.D. Arkansas",
+"citation_string": "W.D. Ark."
+},
+{
+"id": "ard",
+"full_name": "United States District Court for the District of Arkansas",
+"jurisdiction": "FD",
+"short_name": "United States District Court for the District of Arkansas",
+"citation_string": ""
+},
+{
+"id": "californiad",
+"full_name": "District Court, D. California",
+"jurisdiction": "FD",
+"short_name": "D. California",
+"citation_string": "D. Cal."
+},
+{
+"id": "cacd",
+"full_name": "District Court, C.D. California",
+"jurisdiction": "FD",
+"short_name": "C.D. California",
+"citation_string": "C.D. Cal."
+},
+{
+"id": "caed",
+"full_name": "District Court, E.D. California",
+"jurisdiction": "FD",
+"short_name": "E.D. California",
+"citation_string": "E.D. Cal."
+},
+{
+"id": "cand",
+"full_name": "District Court, N.D. California",
+"jurisdiction": "FD",
+"short_name": "N.D. California",
+"citation_string": "N.D. Cal."
+},
+{
+"id": "casd",
+"full_name": "District Court, S.D. California",
+"jurisdiction": "FD",
+"short_name": "S.D. California",
+"citation_string": "S.D. Cal."
+},
+{
+"id": "cod",
+"full_name": "District Court, D. Colorado",
+"jurisdiction": "FD",
+"short_name": "D. Colorado",
+"citation_string": "D. Colo."
+},
+{
+"id": "ctd",
+"full_name": "District Court, D. Connecticut",
+"jurisdiction": "FD",
+"short_name": "D. Connecticut",
+"citation_string": "D. Conn."
+},
+{
+"id": "ded",
+"full_name": "District Court, D. Delaware",
+"jurisdiction": "FD",
+"short_name": "D. Delaware",
+"citation_string": "D. Del."
+},
+{
+"id": "fld",
+"full_name": "District Court, D. Florida",
+"jurisdiction": "FD",
+"short_name": "D. Florida",
+"citation_string": "D. Fla."
+},
+{
+"id": "flmd",
+"full_name": "District Court, M.D. Florida",
+"jurisdiction": "FD",
+"short_name": "M.D. Florida",
+"citation_string": "M.D. Fla."
+},
+{
+"id": "flnd",
+"full_name": "District Court, N.D. Florida",
+"jurisdiction": "FD",
+"short_name": "N.D. Florida",
+"citation_string": "N.D. Fla."
+},
+{
+"id": "flsd",
+"full_name": "District Court, S.D. Florida",
+"jurisdiction": "FD",
+"short_name": "S.D. Florida",
+"citation_string": "S.D. Fla."
+},
+{
+"id": "superctsdfla",
+"full_name": "Superior Court, S. D. Florida",
+"jurisdiction": "FD",
+"short_name": "Superior Court, S. D. Florida",
+"citation_string": "Super. Ct. S.D. Fla."
+},
+{
+"id": "gad",
+"full_name": "District Court, D. Georgia",
+"jurisdiction": "FD",
+"short_name": "D. Georgia",
+"citation_string": "D. Ga."
+},
+{
+"id": "gamd",
+"full_name": "District Court, M.D. Georgia",
+"jurisdiction": "FD",
+"short_name": "M.D. Georgia",
+"citation_string": "M.D. Ga."
+},
+{
+"id": "gand",
+"full_name": "District Court, N.D. Georgia",
+"jurisdiction": "FD",
+"short_name": "N.D. Georgia",
+"citation_string": "N.D. Ga."
+},
+{
+"id": "gasd",
+"full_name": "District Court, S.D. Georgia",
+"jurisdiction": "FD",
+"short_name": "S.D. Georgia",
+"citation_string": "S.D. Ga."
+},
+{
+"id": "hid",
+"full_name": "District Court, D. Hawaii",
+"jurisdiction": "FD",
+"short_name": "D. Hawaii",
+"citation_string": "D. Haw."
+},
+{
+"id": "idd",
+"full_name": "District Court, D. Idaho",
+"jurisdiction": "FD",
+"short_name": "D. Idaho",
+"citation_string": "D. Idaho"
+},
+{
+"id": "ilcd",
+"full_name": "District Court, C.D. Illinois",
+"jurisdiction": "FD",
+"short_name": "C.D. Illinois",
+"citation_string": "C.D. Ill."
+},
+{
+"id": "ilnd",
+"full_name": "District Court, N.D. Illinois",
+"jurisdiction": "FD",
+"short_name": "N.D. Illinois",
+"citation_string": "N.D. Ill."
+},
+{
+"id": "ilsd",
+"full_name": "District Court, S.D. Illinois",
+"jurisdiction": "FD",
+"short_name": "S.D. Illinois",
+"citation_string": "S.D. Ill."
+},
+{
+"id": "illinoised",
+"full_name": "District Court, E.D. Illinois",
+"jurisdiction": "FD",
+"short_name": "E.D. Illinois",
+"citation_string": "E.D. Ill."
+},
+{
+"id": "illinoisd",
+"full_name": "District Court, D. Illinois",
+"jurisdiction": "FD",
+"short_name": "D. Illinois",
+"citation_string": "D. Ill."
+},
+{
+"id": "innd",
+"full_name": "District Court, N.D. Indiana",
+"jurisdiction": "FD",
+"short_name": "N.D. Indiana",
+"citation_string": "N.D. Ind."
+},
+{
+"id": "insd",
+"full_name": "District Court, S.D. Indiana",
+"jurisdiction": "FD",
+"short_name": "S.D. Indiana",
+"citation_string": "S.D. Ind."
+},
+{
+"id": "indianad",
+"full_name": "District Court, D. Indiana",
+"jurisdiction": "FD",
+"short_name": "D. Indiana",
+"citation_string": "D. Ind."
+},
+{
+"id": "iad",
+"full_name": "District Court, D. Iowa",
+"jurisdiction": "FD",
+"short_name": "D. Iowa",
+"citation_string": "D. Iowa"
+},
+{
+"id": "iand",
+"full_name": "District Court, N.D. Iowa",
+"jurisdiction": "FD",
+"short_name": "N.D. Iowa",
+"citation_string": "N.D. Iowa"
+},
+{
+"id": "iasd",
+"full_name": "District Court, S.D. Iowa",
+"jurisdiction": "FD",
+"short_name": "S.D. Iowa",
+"citation_string": "S.D. Iowa"
+},
+{
+"id": "ksd",
+"full_name": "District Court, D. Kansas",
+"jurisdiction": "FD",
+"short_name": "D. Kansas",
+"citation_string": "D. Kan."
+},
+{
+"id": "kyd",
+"full_name": "District Court, D. Kentucky",
+"jurisdiction": "FD",
+"short_name": "D. Kentucky",
+"citation_string": "D. Ky."
+},
+{
+"id": "kyed",
+"full_name": "District Court, E.D. Kentucky",
+"jurisdiction": "FD",
+"short_name": "E.D. Kentucky",
+"citation_string": "E.D. Ky."
+},
+{
+"id": "kywd",
+"full_name": "District Court, W.D. Kentucky",
+"jurisdiction": "FD",
+"short_name": "W.D. Kentucky",
+"citation_string": "W.D. Ky."
+},
+{
+"id": "lad",
+"full_name": "District Court, D. Louisiana",
+"jurisdiction": "FD",
+"short_name": "D. Louisiana",
+"citation_string": "D. La."
+},
+{
+"id": "laed",
+"full_name": "District Court, E.D. Louisiana",
+"jurisdiction": "FD",
+"short_name": "E.D. Louisiana",
+"citation_string": "E.D. La."
+},
+{
+"id": "lamd",
+"full_name": "District Court, M.D. Louisiana",
+"jurisdiction": "FD",
+"short_name": "M.D. Louisiana",
+"citation_string": "M.D. La."
+},
+{
+"id": "lawd",
+"full_name": "District Court, W.D. Louisiana",
+"jurisdiction": "FD",
+"short_name": "W.D. Louisiana",
+"citation_string": "W.D. La."
+},
+{
+"id": "orld",
+"full_name": "District Court, Orleans",
+"jurisdiction": "FD",
+"short_name": "Orleans District Court",
+"citation_string": "D. Orleans"
+},
+{
+"id": "med",
+"full_name": "District Court, D. Maine",
+"jurisdiction": "FD",
+"short_name": "D. Maine",
+"citation_string": "D. Me."
+},
+{
+"id": "mdd",
+"full_name": "District Court, D. Maryland",
+"jurisdiction": "FD",
+"short_name": "D. Maryland",
+"citation_string": "D. Maryland"
+},
+{
+"id": "mad",
+"full_name": "District Court, D. Massachusetts",
+"jurisdiction": "FD",
+"short_name": "D. Massachusetts",
+"citation_string": "D. Mass."
+},
+{
+"id": "michd",
+"full_name": "District Court, D. Michigan",
+"jurisdiction": "FD",
+"short_name": "D. Michigan",
+"citation_string": "D. Mich."
+},
+{
+"id": "mied",
+"full_name": "District Court, E.D. Michigan",
+"jurisdiction": "FD",
+"short_name": "E.D. Michigan",
+"citation_string": "E.D. Mich."
+},
+{
+"id": "miwd",
+"full_name": "District Court, W.D. Michigan",
+"jurisdiction": "FD",
+"short_name": "W.D. Michigan",
+"citation_string": "W.D. Mich."
+},
+{
+"id": "mnd",
+"full_name": "District Court, D. Minnesota",
+"jurisdiction": "FD",
+"short_name": "D. Minnesota",
+"citation_string": "D. Minnesota"
+},
+{
+"id": "missd",
+"full_name": "District Court, D. Mississippi",
+"jurisdiction": "FD",
+"short_name": "D. Mississippi",
+"citation_string": "D. Miss."
+},
+{
+"id": "msnd",
+"full_name": "District Court, N.D. Mississippi",
+"jurisdiction": "FD",
+"short_name": "N.D. Mississippi",
+"citation_string": "N.D. Miss."
+},
+{
+"id": "mssd",
+"full_name": "District Court, S.D. Mississippi",
+"jurisdiction": "FD",
+"short_name": "S.D. Mississippi",
+"citation_string": "S.D. Miss."
+},
+{
+"id": "mod",
+"full_name": "District Court, D. Missouri",
+"jurisdiction": "FD",
+"short_name": "D. Missouri",
+"citation_string": "D. Mo."
+},
+{
+"id": "moed",
+"full_name": "District Court, E.D. Missouri",
+"jurisdiction": "FD",
+"short_name": "E.D. Missouri",
+"citation_string": "E.D. Mo."
+},
+{
+"id": "mowd",
+"full_name": "District Court, W.D. Missouri",
+"jurisdiction": "FD",
+"short_name": "W.D. Missouri",
+"citation_string": "W.D. Mo."
+},
+{
+"id": "mtd",
+"full_name": "District Court, D. Montana",
+"jurisdiction": "FD",
+"short_name": "D. Montana",
+"citation_string": "D. Mont."
+},
+{
+"id": "ned",
+"full_name": "District Court, D. Nebraska",
+"jurisdiction": "FD",
+"short_name": "D. Nebraska",
+"citation_string": "D. Neb."
+},
+{
+"id": "nvd",
+"full_name": "District Court, D. Nevada",
+"jurisdiction": "FD",
+"short_name": "D. Nevada",
+"citation_string": "D. Nev."
+},
+{
+"id": "nhd",
+"full_name": "District Court, D. New Hampshire",
+"jurisdiction": "FD",
+"short_name": "D. New Hampshire",
+"citation_string": "D.N.H."
+},
+{
+"id": "njd",
+"full_name": "District Court, D. New Jersey",
+"jurisdiction": "FD",
+"short_name": "D. New Jersey",
+"citation_string": "D.N.J."
+},
+{
+"id": "nmd",
+"full_name": "District Court, D. New Mexico",
+"jurisdiction": "FD",
+"short_name": "D. New Mexico",
+"citation_string": "D.N.M."
+},
+{
+"id": "nyd",
+"full_name": "District Court, D. New York",
+"jurisdiction": "FD",
+"short_name": "D. New York",
+"citation_string": "D. N.Y."
+},
+{
+"id": "nyed",
+"full_name": "District Court, E.D. New York",
+"jurisdiction": "FD",
+"short_name": "E.D. New York",
+"citation_string": "E.D.N.Y"
+},
+{
+"id": "nynd",
+"full_name": "District Court, N.D. New York",
+"jurisdiction": "FD",
+"short_name": "N.D. New York",
+"citation_string": "N.D.N.Y."
+},
+{
+"id": "nysd",
+"full_name": "District Court, S.D. New York",
+"jurisdiction": "FD",
+"short_name": "S.D. New York",
+"citation_string": "S.D.N.Y."
+},
+{
+"id": "nywd",
+"full_name": "District Court, W.D. New York",
+"jurisdiction": "FD",
+"short_name": "W.D. New York",
+"citation_string": "W.D.N.Y."
+},
+{
+"id": "nced",
+"full_name": "District Court, E.D. North Carolina",
+"jurisdiction": "FD",
+"short_name": "E.D. North Carolina",
+"citation_string": "E.D.N.C."
+},
+{
+"id": "ncmd",
+"full_name": "District Court, M.D. North Carolina",
+"jurisdiction": "FD",
+"short_name": "M.D. North Carolina",
+"citation_string": "M.D.N.C."
+},
+{
+"id": "ncwd",
+"full_name": "District Court, W.D. North Carolina",
+"jurisdiction": "FD",
+"short_name": "W.D. North Carolina",
+"citation_string": "W.D.N.C."
+},
+{
+"id": "ndd",
+"full_name": "District Court, D. North Dakota",
+"jurisdiction": "FD",
+"short_name": "D. North Dakota",
+"citation_string": "D.N.D."
+},
+{
+"id": "ncd",
+"full_name": "District Court, D. North Carolina",
+"jurisdiction": "FD",
+"short_name": "D. North Carolina",
+"citation_string": "D.N.C."
+},
+{
+"id": "ohnd",
+"full_name": "District Court, N.D. Ohio",
+"jurisdiction": "FD",
+"short_name": "N.D. Ohio",
+"citation_string": "N.D. Ohio"
+},
+{
+"id": "ohsd",
+"full_name": "District Court, S.D. Ohio",
+"jurisdiction": "FD",
+"short_name": "S.D. Ohio",
+"citation_string": "S.D. Ohio"
+},
+{
+"id": "ohiod",
+"full_name": "District Court, D. Ohio",
+"jurisdiction": "FD",
+"short_name": "D. Ohio",
+"citation_string": "D. Ohio"
+},
+{
+"id": "oked",
+"full_name": "District Court, E.D. Oklahoma",
+"jurisdiction": "FD",
+"short_name": "E.D. Oklahoma",
+"citation_string": "E.D. Okla."
+},
+{
+"id": "oknd",
+"full_name": "District Court, N.D. Oklahoma",
+"jurisdiction": "FD",
+"short_name": "N.D. Oklahoma",
+"citation_string": "N.D. Okla."
+},
+{
+"id": "okwd",
+"full_name": "District Court, W.D. Oklahoma",
+"jurisdiction": "FD",
+"short_name": "W.D. Oklahoma",
+"citation_string": "W.D. Okla."
+},
+{
+"id": "ord",
+"full_name": "District Court, D. Oregon",
+"jurisdiction": "FD",
+"short_name": "D. Oregon",
+"citation_string": "D. Or."
+},
+{
+"id": "paed",
+"full_name": "District Court, E.D. Pennsylvania",
+"jurisdiction": "FD",
+"short_name": "E.D. Pennsylvania",
+"citation_string": "E.D. Pa."
+},
+{
+"id": "pamd",
+"full_name": "District Court, M.D. Pennsylvania",
+"jurisdiction": "FD",
+"short_name": "M.D. Pennsylvania",
+"citation_string": "M.D. Penn."
+},
+{
+"id": "pawd",
+"full_name": "District Court, W.D. Pennsylvania",
+"jurisdiction": "FD",
+"short_name": "W.D. Pennsylvania",
+"citation_string": "W.D. Pa."
+},
+{
+"id": "pennsylvaniad",
+"full_name": "District Court, D. Pennsylvania",
+"jurisdiction": "FD",
+"short_name": "D. Pennsylvania",
+"citation_string": "D. Pa."
+},
+{
+"id": "rid",
+"full_name": "District Court, D. Rhode Island",
+"jurisdiction": "FD",
+"short_name": "D. Rhode Island",
+"citation_string": "D.R.I."
+},
+{
+"id": "scd",
+"full_name": "District Court, D. South Carolina",
+"jurisdiction": "FD",
+"short_name": "D. South Carolina",
+"citation_string": "D.S.C."
+},
+{
+"id": "southcarolinaed",
+"full_name": "District Court, E.D. South Carolina",
+"jurisdiction": "FD",
+"short_name": "E.D. South Carolina",
+"citation_string": "E.D.S.C."
+},
+{
+"id": "southcarolinawd",
+"full_name": "District Court, W.D. South Carolina",
+"jurisdiction": "FD",
+"short_name": "W.D. South Carolina",
+"citation_string": "W.D.S.C."
+},
+{
+"id": "sdd",
+"full_name": "District Court, D. South Dakota",
+"jurisdiction": "FD",
+"short_name": "D. South Dakota",
+"citation_string": "D.S.D."
+},
+{
+"id": "tned",
+"full_name": "District Court, E.D. Tennessee",
+"jurisdiction": "FD",
+"short_name": "E.D. Tennessee",
+"citation_string": "E.D. Tenn."
+},
+{
+"id": "tnmd",
+"full_name": "District Court, M.D. Tennessee",
+"jurisdiction": "FD",
+"short_name": "M.D. Tennessee",
+"citation_string": "M.D. Tenn."
+},
+{
+"id": "tnwd",
+"full_name": "District Court, W.D. Tennessee",
+"jurisdiction": "FD",
+"short_name": "W.D. Tennessee",
+"citation_string": "W.D. Tenn."
+},
+{
+"id": "tennessed",
+"full_name": "District Court, D. Tennessee",
+"jurisdiction": "FD",
+"short_name": "D. Tennessee",
+"citation_string": "D. Tenn."
+},
+{
+"id": "texd",
+"full_name": "District Court, D. Texas",
+"jurisdiction": "FD",
+"short_name": "D. Texas",
+"citation_string": "D. Tex."
+},
+{
+"id": "txed",
+"full_name": "District Court, E.D. Texas",
+"jurisdiction": "FD",
+"short_name": "E.D. Texas",
+"citation_string": "E.D. Tex."
+},
+{
+"id": "txnd",
+"full_name": "District Court, N.D. Texas",
+"jurisdiction": "FD",
+"short_name": "N.D. Texas",
+"citation_string": "N.D. Tex."
+},
+{
+"id": "txsd",
+"full_name": "District Court, S.D. Texas",
+"jurisdiction": "FD",
+"short_name": "S.D. Texas",
+"citation_string": "S.D. Tex."
+},
+{
+"id": "txwd",
+"full_name": "District Court, W.D. Texas",
+"jurisdiction": "FD",
+"short_name": "W.D. Texas",
+"citation_string": "W.D. Tex."
+},
+{
+"id": "utd",
+"full_name": "District Court, D. Utah",
+"jurisdiction": "FD",
+"short_name": "D. Utah",
+"citation_string": "D. Utah"
+},
+{
+"id": "vtd",
+"full_name": "District Court, D. Vermont",
+"jurisdiction": "FD",
+"short_name": "D. Vermont",
+"citation_string": "D. Vt."
+},
+{
+"id": "vad",
+"full_name": "District Court, D. Virginia",
+"jurisdiction": "FD",
+"short_name": "D. Virginia",
+"citation_string": "D. Va."
+},
+{
+"id": "vaed",
+"full_name": "District Court, E.D. Virginia",
+"jurisdiction": "FD",
+"short_name": "E.D. Virginia",
+"citation_string": "E.D. Va."
+},
+{
+"id": "vawd",
+"full_name": "District Court, W.D. Virginia",
+"jurisdiction": "FD",
+"short_name": "W.D. Virginia",
+"citation_string": "W.D. Va."
+},
+{
+"id": "washd",
+"full_name": "District Court, D. Washington",
+"jurisdiction": "FD",
+"short_name": "D. Washington",
+"citation_string": "D. Wash."
+},
+{
+"id": "waed",
+"full_name": "District Court, E.D. Washington",
+"jurisdiction": "FD",
+"short_name": "E.D. Washington",
+"citation_string": "E.D. Wash."
+},
+{
+"id": "wawd",
+"full_name": "District Court, W.D. Washington",
+"jurisdiction": "FD",
+"short_name": "W.D. Washington",
+"citation_string": "W.D. Wash."
+},
+{
+"id": "wvad",
+"full_name": "District Court, D. West Virginia",
+"jurisdiction": "FD",
+"short_name": "D. West Virginia",
+"citation_string": "D. W.Va."
+},
+{
+"id": "wvnd",
+"full_name": "District Court, N.D. West Virginia",
+"jurisdiction": "FD",
+"short_name": "N.D. West Virginia",
+"citation_string": "N.D.W. Va."
+},
+{
+"id": "wvsd",
+"full_name": "District Court, S.D. West Virginia",
+"jurisdiction": "FD",
+"short_name": "S.D. West Virginia",
+"citation_string": "S.D.W. Va"
+},
+{
+"id": "wisd",
+"full_name": "District Court, D. Wisconsin",
+"jurisdiction": "FD",
+"short_name": "D. Wisconsin",
+"citation_string": "D. Wis."
+},
+{
+"id": "wied",
+"full_name": "District Court, E.D. Wisconsin",
+"jurisdiction": "FD",
+"short_name": "E.D. Wisconsin",
+"citation_string": "E.D. Wis."
+},
+{
+"id": "wiwd",
+"full_name": "District Court, W.D. Wisconsin",
+"jurisdiction": "FD",
+"short_name": "W.D. Wisconsin",
+"citation_string": "W.D. Wis."
+},
+{
+"id": "wyd",
+"full_name": "District Court, D. Wyoming",
+"jurisdiction": "FD",
+"short_name": "D. Wyoming",
+"citation_string": "D. Wyo."
+},
+{
+"id": "canalzoned",
+"full_name": "District Court, Canal Zone",
+"jurisdiction": "FD",
+"short_name": "District Court, Canal Zone",
+"citation_string": "D.C.Z."
+},
+{
+"id": "gud",
+"full_name": "District Court, D. Guam",
+"jurisdiction": "FD",
+"short_name": "D. Guam",
+"citation_string": "D. Guam"
+},
+{
+"id": "nmid",
+"full_name": "District Court, Northern Mariana Islands",
+"jurisdiction": "FD",
+"short_name": "Northern Mariana Islands",
+"citation_string": "N. Mar. I."
+},
+{
+"id": "prd",
+"full_name": "District Court, D. Puerto Rico",
+"jurisdiction": "FD",
+"short_name": "D. Puerto Rico",
+"citation_string": "D.P.R."
+},
+{
+"id": "vid",
+"full_name": "District Court, Virgin Islands",
+"jurisdiction": "FD",
+"short_name": "Virgin Islands",
+"citation_string": "D.V.I."
+},
+{
+"id": "okd",
+"full_name": "United States District Court for the District of Oklahoma",
+"jurisdiction": "FD",
+"short_name": "United States District Court for the District of Oklahoma",
+"citation_string": ""
+}
+]
