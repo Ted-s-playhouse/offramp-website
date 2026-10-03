@@ -111,7 +111,7 @@
   <div class="now-band">
     <span class="kicker">On the docket right now</span>
     <p><b>Proven live:</b> a real $149 charge went through end to end tonight — signup, checkout, webhook, and Pro upgrade all confirmed working with real money.</p>
-    <p><b>Blocking:</b> all 4 founding promo codes (FOUNDING12/6/3/FOUNDINGYEAR) come back "invalid" at checkout despite looking correctly configured on Stripe's backend — needs a dashboard look or a support ticket before founding-rate signups can actually work.</p>
+    <p><b>Fixed 9/28:</b> founding promo codes now apply — root cause was the hosted Stripe Payment Link rejecting every code (even a fresh 10%-off test); checkout now builds a Checkout Session server-side with the founding discount auto-applied while spots remain. Verified: monthly session totals $49 with FOUNDING12. </p>
     <p><b>Iris is building:</b> wiring the national auction feed into the app's actual browse screen (map + list), and the click-to-enrich flow for addresses outside the 5 AHR states.</p>
   </div>
 
@@ -139,7 +139,7 @@
       <li class="done"><div class="box"></div><span>Market-coverage claim removed from the homepage entirely — now says nationwide, no regional state callouts</span></li>
       <li class="done"><div class="box"></div><span>"Start free" fixed to create a real account instantly instead of dropping into a waitlist</span></li>
       <li class="done"><div class="box"></div><span>One real test purchase, end to end, proven with real money — signup → checkout → webhook → Pro upgrade all confirmed</span></li>
-      <li><div class="box"></div><span>Fix the founding promo codes — all 4 return "invalid" at checkout despite being active/valid on Stripe's backend</span></li>
+      <li class="done"><div class="box"></div><span>Founding promo codes fixed (9/28) — checkout builds a server-side Session with the discount pre-applied; hosted Payment Link promo box was the culprit</span></li>
       <li class="owner-ted"><div class="box"></div><span>Send the founding link to the first ~12 contacts</span><span class="owner">Ted</span></li>
     </ul>
   </div>
