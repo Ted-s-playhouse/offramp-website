@@ -1778,7 +1778,7 @@ class Handler(SimpleHTTPRequestHandler):
                                         "usage": public_user(u)["usage"]})
 
         # ---------- public lead capture (unchanged) ----------
-        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access",
+        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access", "/api/track",
                           "/api/storage-waitlist", "/api/storage-listing"):
             return self._json(404, {"error": "not found"})
         ip = self.headers.get("CF-Connecting-IP") or self.client_address[0]
