@@ -981,8 +981,8 @@ function phoneHtml(phones,emails){
   var all=(phones||[]);  // Ted 2026-10-03: every number is its own tappable row (DealMachine property sheet), no single call button; DNC listed but not dialable
   var h=all.map(function(p){var n=String(p.number||'').replace(/\D/g,'');var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n; var t=(p.dnc?'DNC':esc(p.type||'mobile'));
     return '<a class="phone'+(p.dnc?' dnc':'')+'" href="tel:'+n+'" onclick="setAction(\'contacted\',true)"><span class="num">&#128222; '+f+'</span><span class="tag'+(p.dnc?' dnc':'')+'">'+t+'</span></a>';}).join('');  // Ted 2026-10-03: DNC numbers stay dialable (one cash-offer call is not an FTC violation); the tag is information, not a block
-  var e=(emails||[]).map(function(x){return '<a class="mail" href="mailto:'+esc(x)+'">'+esc(x)+'</a>';}).join('');
-  return h+(e?'<div class="mails">'+e+'</div>':'');
+  if(emails&&emails.length){ h+='<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">'+emails.map(function(e){var em=(typeof e==='string')?e:(e.email||'');return '<a class="emailchip" href="mailto:'+esc(em)+'" style="text-decoration:none">'+esc(em)+'</a>';}).join('')+'</div>'; }
+  return h;
 }
 
 function reveal(){
