@@ -1076,7 +1076,6 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
   var pay=agree?estPayment(r):null;
   var rows=[
     unv?line('Equity','Unverified'):(ev.pct!=null?line('Equity',ev.pct+'%'):''),
-    lineIf('Why unverified',whyUnverified(r)),
     lineIf('Value',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     (r.mls_active===true||r.mls_status)?line('Listed',r.mls_list_price?('On MLS · '+money(r.mls_list_price)):'On MLS'):'',
     hasLiens?line('First lien',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):lineIf('Loan balance',mb>0?((r.mortgage_lender?r.mortgage_lender+' · ':'')+money(mb)):''),
