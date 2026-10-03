@@ -538,6 +538,9 @@ def go(qs):
     return "/"
 
 
+ON_PAGE_VIEW = None  # set by server.py (funnel): called with the handler after every 200 text/html page
+
+
 def _send(handler, code, body, ctype):
     data = body.encode("utf-8") if isinstance(body, str) else body
     handler.send_response(code)
@@ -545,6 +548,11 @@ def _send(handler, code, body, ctype):
     handler.send_header("Content-Length", str(len(data)))
     handler.end_headers()
     handler.wfile.write(data)
+    if code == 200 and ctype.startswith("text/html") and ON_PAGE_VIEW:
+        try:
+            ON_PAGE_VIEW(handler)
+        except Exception:
+            pass
 
 
 def listing_address(abbr, r):

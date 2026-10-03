@@ -27,7 +27,7 @@ Plans:
     pro  : 2000 lookups/mo, 250 skip-traces/mo, CSV export <= 2000 rows
 """
 import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets
-import functools, sys, urllib.request, urllib.error, urllib.parse
+import functools, sys, threading, urllib.request, urllib.error, urllib.parse
 import seo_pages
 sys.path.insert(0, "/home/cortextos/cortextos/services/lib")
 import court_records  # CourtListener RECAP lookup (Phase 5 #35)
@@ -169,6 +169,52 @@ def sb(method, path, body=None, headers=None):
     with urllib.request.urlopen(req, timeout=30) as r:
         raw = r.read().decode()
         return json.loads(raw) if raw else []
+
+
+# ------------------------------ funnel ---------------------------------------
+# Conversion-funnel beacons (Ted 2026-10-03). Each call writes one row to
+# crm.offramp_funnel_events from a daemon thread: a request is never slowed and
+# a DB hiccup is never surfaced. Events: public_view, app_open, signup,
+# trial_start, paid (+ lead = public lead form). Same-visitor dedupe happens at
+# query time (funnel_report.py) on session_hint = sha256(ip|user-agent)[:16];
+# obvious crawlers get a "bot:" prefix so the report can drop them.
+_BOT_UA = re.compile(r"bot|crawl|spider|slurp|facebookexternalhit|preview|headless|python|curl|wget|"
+                     r"go-http|java/|lighthouse|monitor|uptime", re.I)
+
+
+def _client_ip(handler):
+    return (handler.headers.get("CF-Connecting-IP")
+            or (handler.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+            or handler.client_address[0])
+
+
+def funnel(event, user_id=None, path=None, ref=None, handler=None):
+    row = {"event": event, "user_id": user_id, "path": path, "ref": ref}
+    try:
+        if handler is not None:
+            if path is None:
+                row["path"] = handler.path.split("?")[0][:200]
+            if ref is None:
+                r = handler.headers.get("Referer") or ""
+                row["ref"] = (urllib.parse.urlparse(r).netloc[:120] or None) if r else None
+            ua = handler.headers.get("User-Agent") or ""
+            hint = hashlib.sha256(f"{_client_ip(handler)}|{ua}".encode()).hexdigest()[:16]
+            row["session_hint"] = ("bot:" + hint) if (not ua or _BOT_UA.search(ua)) else hint
+    except Exception:
+        pass
+
+    def _post():
+        try:
+            sb("POST", "/offramp_funnel_events", body=row, headers={"Prefer": "return=minimal"})
+        except Exception as e:
+            print(f"[funnel] {event} deferred: {e}", flush=True)
+    try:
+        threading.Thread(target=_post, daemon=True).start()
+    except Exception:
+        pass
+
+
+seo_pages.ON_PAGE_VIEW = lambda h: funnel("public_view", handler=h)
 
 
 # ------------------------------- auth ----------------------------------------
@@ -862,6 +908,17 @@ class Handler(SimpleHTTPRequestHandler):
         u = get_user_by_id(data["uid"])
         return ensure_period(u) if u else None
 
+    def _session_uid(self):
+        # uid from the signed cookie only (no DB hit) -- for funnel beacons
+        try:
+            c = SimpleCookie()
+            c.load(self.headers.get("Cookie") or "")
+            tok = c.get("offramp_sess")
+            d = read_session(tok.value) if tok else None
+            return d.get("uid") if d else None
+        except Exception:
+            return None
+
     def _set_session_cookie(self, uid, email):
         tok = make_session(uid, email)
         return ("Set-Cookie",
@@ -883,6 +940,8 @@ class Handler(SimpleHTTPRequestHandler):
         elif seo_pages.serve(self, route, qs):
             return
         if not route.startswith("/api/"):
+            if route in ("/app", "/app/", "/app/index.html"):
+                funnel("app_open", user_id=self._session_uid(), handler=self)
             return super().do_GET()
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
 
@@ -890,7 +949,22 @@ class Handler(SimpleHTTPRequestHandler):
             u = self._current_user()
             if not u:
                 return self._json(401, {"error": "not signed in"})
+            funnel("app_open", user_id=u["id"], handler=self)  # PWA shell may be sw-cached; deduped per day
             return self._json(200, {"user": public_user(u)})
+
+        if route == "/api/funnel":
+            # Ted-only (or pro+founding): the same JSON funnel_report.py renders
+            u = self._current_user()
+            if not u:
+                return self._json(401, {"error": "not signed in"})
+            if not (u["email"] == "ted@americahomerestoration.com" or plan_key(u) == "pro_founding"):
+                return self._json(403, {"error": "forbidden"})
+            try:
+                import funnel_report  # lazy: a report bug must never take the site down
+                return self._json(200, funnel_report.summary(sb))
+            except Exception as ex:
+                print(f"[funnel] report error: {ex}", flush=True)
+                return self._json(500, {"error": "funnel report unavailable"})
 
         if route == "/api/founding-count":
             return self._json(200, {"spots_left": founding_spots_left()})
@@ -960,6 +1034,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "sso_provider": "google"}, headers={"Prefer": "return=minimal"})
                 u = get_user_by_email(email)
                 notify_telegram(f"NEW OffRamp SSO signup (google): {email} ({name or 'no name'})")
+                funnel("signup", user_id=u["id"], handler=self)
             sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
                body={"last_login_at": datetime.now(timezone.utc).isoformat(),
                      "sso_provider": "google"}, headers={"Prefer": "return=minimal"})
@@ -1130,12 +1205,24 @@ class Handler(SimpleHTTPRequestHandler):
                                  "stripe_subscription_id": sub, "stripe_status": "active"},
                            headers={"Prefer": "return=minimal"})
                         notify_telegram(f"OffRamp REI: {u['email']} upgraded to {plan.title()} via Stripe checkout")
+                        funnel("paid", user_id=u["id"], path="stripe:checkout.session.completed")
                     else:
                         notify_telegram(f"OffRamp REI Stripe checkout completed but no matching user "
                                          f"(client_reference_id={uid}, customer={cust}) — needs manual match")
+                elif etype == "customer.subscription.created":
+                    # trials are not built yet; record trial_start only if one ever arrives
+                    cust = obj.get("customer")
+                    u = get_user_by_stripe_customer(cust) if cust else None
+                    if u and obj.get("status") == "trialing":
+                        funnel("trial_start", user_id=u["id"], path="stripe:customer.subscription.created")
                 elif etype == "customer.subscription.updated":
                     cust = obj.get("customer")
                     u = get_user_by_stripe_customer(cust) if cust else None
+                    prev_status = ((event.get("data") or {}).get("previous_attributes") or {}).get("status")
+                    if u and obj.get("status") == "trialing" and prev_status != "trialing":
+                        funnel("trial_start", user_id=u["id"], path="stripe:customer.subscription.updated")
+                    if u and obj.get("status") == "active" and prev_status and prev_status != "active":
+                        funnel("paid", user_id=u["id"], path="stripe:customer.subscription.updated")
                     if u and obj.get("status") in ("active", "trialing"):
                         plan, founding = plan_from_price(((obj.get("items") or {}).get("data") or [{}])[0].get("price", {}).get("id"))
                         if plan and plan != u.get("plan"):
@@ -1151,6 +1238,11 @@ class Handler(SimpleHTTPRequestHandler):
                            body={"plan": "free", "stripe_status": "canceled"},
                            headers={"Prefer": "return=minimal"})
                         notify_telegram(f"OffRamp REI: {u['email']} subscription canceled, moved to Free")
+                elif etype == "invoice.paid":
+                    cust = obj.get("customer")
+                    u = get_user_by_stripe_customer(cust) if cust else None
+                    if u and obj.get("billing_reason") in ("subscription_create", "subscription_update"):
+                        funnel("paid", user_id=u["id"], path="stripe:invoice.paid")
                 elif etype == "invoice.payment_failed":
                     cust = obj.get("customer")
                     u = get_user_by_stripe_customer(cust) if cust else None
@@ -1217,6 +1309,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "plan": "free"}, headers={"Prefer": "return=minimal"})
             u = get_user_by_email(email)
             notify_telegram(f"NEW OffRamp APP signup: {email} ({name or 'no name'})")
+            funnel("signup", user_id=u["id"], handler=self)
             return self._json(200, {"user": public_user(u)},
                               extra_headers=[self._set_session_cookie(u["id"], u["email"])])
 
@@ -1548,6 +1641,7 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"[signup] db error: {e}")
             return self._json(500, {"error": "could not save"})
+        funnel("lead", handler=self)
         send_welcome(first, email)
         return self._json(200, {"ok": True})
 
