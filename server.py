@@ -28,6 +28,7 @@ Plans:
 """
 import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets
 import functools, urllib.request, urllib.error, urllib.parse
+import seo_pages
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from http.cookies import SimpleCookie
 from datetime import datetime, timezone
@@ -257,6 +258,17 @@ def get_user_by_stripe_customer(cid):
 def stripe_get(path):
     req = urllib.request.Request(f"https://api.stripe.com/v1/{path}",
         headers={"Authorization": f"Bearer {STRIPE_SECRET}"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read().decode())
+
+
+def stripe_post(path, params):
+    """POST to the Stripe API with form-encoded params (supports nested keys
+    like 'line_items[0][price]'). Returns the parsed JSON object."""
+    body = urllib.parse.urlencode(params).encode()
+    req = urllib.request.Request(f"https://api.stripe.com/v1/{path}", data=body,
+        headers={"Authorization": f"Bearer {STRIPE_SECRET}",
+                 "Content-Type": "application/x-www-form-urlencoded"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())
 
@@ -617,6 +629,14 @@ class Handler(SimpleHTTPRequestHandler):
     # ---- GET ----
     def do_GET(self):
         route = self.path.split("?")[0]
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        if route in ("/", "/index.html"):
+            try:
+                return seo_pages.serve_home(self)
+            except Exception as ex:
+                print(f"[seo] home inject failed: {ex}")
+        elif seo_pages.serve(self, route, qs):
+            return
         if not route.startswith("/api/"):
             return super().do_GET()
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -864,12 +884,36 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(401, {"error": "not signed in"})
             data = self._body() or {}
             cycle = (data.get("cycle") or "annual").strip().lower()
-            base = STRIPE_IDS.get("link_annual_url" if cycle == "annual" else "link_monthly_url")
-            if not base:
+            annual = cycle == "annual"
+            price = STRIPE_IDS.get("price_annual" if annual else "price_monthly")
+            if not price:
                 return self._json(500, {"error": "billing not configured"})
-            url = base + ("&" if "?" in base else "?") + urllib.parse.urlencode(
-                {"client_reference_id": u["id"], "prefilled_email": u["email"]})
-            return self._json(200, {"url": url})
+            # Build a Checkout Session server-side (the hosted Payment Link's
+            # promo-code box rejects our founding codes; a Session with the
+            # discount pre-applied works and auto-applies the founding rate
+            # while spots remain, so the buyer never types a code).
+            params = {
+                "mode": "subscription",
+                "line_items[0][price]": price,
+                "line_items[0][quantity]": 1,
+                "client_reference_id": u["id"],
+                "customer_email": u["email"],
+                "success_url": "https://offramprei.com/app/?upgraded=1",
+                "cancel_url": "https://offramprei.com/app/?upgrade_cancelled=1",
+            }
+            promo = STRIPE_IDS.get("promo_annual" if annual else "promo_m12")
+            if promo and founding_spots_left() > 0:
+                params["discounts[0][promotion_code]"] = promo
+            else:
+                params["allow_promotion_codes"] = "true"
+            try:
+                sess = stripe_post("checkout/sessions", params)
+            except Exception as e:
+                print(f"checkout-session error: {e}", flush=True)
+                return self._json(502, {"error": "could not start checkout"})
+            if not sess.get("url"):
+                return self._json(502, {"error": "could not start checkout"})
+            return self._json(200, {"url": sess["url"]})
 
         # ---------- app auth ----------
         if route == "/api/auth/signup":
