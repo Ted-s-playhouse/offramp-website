@@ -413,6 +413,7 @@ function enterApp(){
   }).join('');
   loadActions().then(search);
   renderAccount();
+  if(window.PENDING_CHECKOUT&&!isNativeApp()){ var pc=window.PENDING_CHECKOUT; window.PENDING_CHECKOUT=null; showScreen('acct'); doUpgrade(pc); }
 }
 function loadActions(){
   return api('/api/lead-actions').then(function(r){return r.json();}).then(function(j){ACTIONS=j.actions||{};}).catch(function(){ACTIONS={};});
@@ -758,9 +759,12 @@ function runLookup(){
 
 /* ---------- account ---------- */
 function planLabel(){ if(ME.plan==='premium')return 'Premium'; if(ME.plan==='pro')return ME.founding?'Pro · Founding':'Pro'; return 'Free'; }
+function isNativeApp(){ try{ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()); }catch(e){ return false; } }
 function planCard(key,name,price,blurb,cur){
   return '<div class="plancard'+(cur?' cur':'')+'"><div class="pn">'+name+' <span class="pp">$'+price+'<small>/mo</small></span></div><div class="pb">'+blurb+'</div>'+
-    (cur?'<div class="pcur">Your plan</div>':'<button class="btn-gold" onclick="doUpgrade(\''+key+'\')">'+(ME.paid?'Switch to ':'Upgrade to ')+name+'</button>')+'</div>';
+    (cur?'<div class="pcur">Your plan</div>':(isNativeApp()
+      ? '<a class="btn-gold" style="display:block;text-align:center;text-decoration:none" href="https://offramprei.com/app/?checkout='+key+'" target="_blank" rel="noopener">'+(ME.paid?'Switch to ':'Upgrade to ')+name+' on the web</a>'
+      : '<button class="btn-gold" onclick="doUpgrade(\''+key+'\')">'+(ME.paid?'Switch to ':'Upgrade to ')+name+'</button>'))+'</div>';
 }
 function renderAccount(){
   var u=ME.usage;
@@ -807,6 +811,7 @@ api('/api/me').then(function(r){ if(r.ok)return r.json(); throw 0; })
  .then(function(j){ ME=j.user; enterApp(); })
  .catch(function(){
    if(/[?&]signup=1\b/.test(window.location.search)) setTab('signup');
+   var co=(window.location.search.match(/[?&]checkout=(pro|premium)\b/)||[])[1]; if(co){ window.PENDING_CHECKOUT=co; }
  });
 </script>
 <script>
