@@ -305,14 +305,14 @@ def home_block():
     if not items:
         items.append('<p class="seo-empty">No auctions dated in the next 7 days in the public feed.</p>')
     links = []
-    for abbr, n in sorted(counts.items(), key=lambda kv: STATES.get(ABBR.get(kv[0].lower(), ""), ("", kv[0]))[1]):
-        sl = ABBR.get(abbr.lower())
-        if not sl:
-            continue
-        name = STATES[sl][1]
-        links.append(f'<a href="/{sl}">{e(name)} <em>{n:,}</em></a>')
+    # Every state + DC, always listed — states with no active public listings show 0, never hidden.
+    for sl, (abbr, name) in sorted(STATES.items(), key=lambda kv: kv[1][1]):
+        n = counts.get(abbr, 0)
+        cls = ' class="empty"' if not n else ""
+        links.append(f'<a href="/{sl}"{cls}>{e(name)} <em>{n:,}</em></a>')
     cards = "".join(items)
     states = "".join(links)
+    total = sum(counts.values())
     return f"""<section class="seo-live"><div class="wrap">
   <h2>Auctions this week</h2>
   <p class="seo-sub">Public sale dates from the auction feed. Owner, equity, and loan figures stay off these pages.</p>
@@ -321,7 +321,8 @@ def home_block():
     <button type="submit">Go</button>
   </form>
   <div class="seo-cards">{cards}</div>
-  <h2>States</h2>
+  <h2>All 50 states and DC</h2>
+  <p class="seo-sub">Active public listings right now. {total:,} nationwide.</p>
   <div class="seo-states">{states}</div>
 </div></section>"""
 
@@ -333,6 +334,7 @@ def home_css():
   .seo-live .wrap { max-width:1040px; margin:0 auto; padding:36px 20px 28px; }
   .seo-live h2 { margin:0 0 6px; color:#1B4332; font-size:26px; }
   .seo-sub { margin:0 0 16px; color:#5c6b63; }
+  .seo-states a.empty { opacity:.55; }
   .seo-search { display:flex; gap:8px; max-width:520px; margin:0 0 18px; }
   .seo-search input { flex:1; padding:12px 14px; border:1px solid #e3e0d8; border-radius:10px; font-size:16px; }
   .seo-search button { background:#1B4332; color:#fff; border:0; border-radius:10px; padding:0 16px; font-weight:800; }
