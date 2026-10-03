@@ -204,6 +204,14 @@
   .verdict.bad{background:#fbeae6;color:var(--danger)}
   .verdict.neutral{background:var(--bg);color:var(--sub)}
 
+  .badge.act{background:#eef3ef;color:#1B4332;border:1px solid #cfe0d6}
+  .badge.act.hid{background:#f3f3f3;color:#777;border-color:#ddd}
+  .abar{display:flex;gap:8px;margin:0 0 8px}
+  .abtn{flex:1;padding:9px 6px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--sub);font-weight:600;font-size:13px;cursor:pointer}
+  .abtn.on{background:#1B4332;color:#fff;border-color:#1B4332}
+  .anote{width:100%;box-sizing:border-box;min-height:56px;margin:0 0 12px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font:inherit;font-size:13px;resize:vertical}
+  .callbtn{display:block;text-align:center;background:#1B4332;color:#fff;font-weight:700;font-size:16px;padding:14px;border-radius:12px;text-decoration:none;margin:0 0 10px}
+  .badge.lock{background:#1B4332;color:#fff;border:0;cursor:pointer}
   .locked{background:var(--card);border:1px dashed var(--border);border-radius:12px;padding:16px;text-align:center;color:var(--sub)}
   .locked b{color:var(--accent);display:block;margin-bottom:6px}
   .cta{display:inline-block;background:var(--gold);color:#231a0c;font-weight:800;padding:10px 18px;border-radius:10px;border:0;margin-top:8px;font-size:13.5px}
@@ -244,7 +252,6 @@
       <!-- Apple Sign In deferred until Apple Developer Program is enrolled -->
     </div>
     <div class="authmsg" id="authMsg"></div>
-    <div class="demohint">Demo &mdash; Pro: <code>demo@offramprei.com</code> · Free: <code>free@offramprei.com</code><br>password <code>offramp2026</code></div>
   </div>
 </div>
 
@@ -330,6 +337,7 @@
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 var ME=null, MAP=null, MARKERS=null, ROWS=[], CUR=null, SCREEN='deals';
+var ACTIONS={}; var SHOW_HIDDEN=false;
 var STATE='UT';
 
 function money(n){ if(n===null||n===undefined||n==='')return '—'; var x=Number(n); if(isNaN(x))return '—'; return '$'+Math.round(x).toLocaleString(); }
@@ -391,8 +399,11 @@ function enterApp(){
   document.getElementById('stateChips').innerHTML=ME.markets.map(function(m){
     return '<button class="chip'+(m===STATE?' on':'')+'" onclick="pickState(\''+m+'\')">'+m+'</button>';
   }).join('');
-  search();
+  loadActions().then(search);
   renderAccount();
+}
+function loadActions(){
+  return api('/api/lead-actions').then(function(r){return r.json();}).then(function(j){ACTIONS=j.actions||{};}).catch(function(){ACTIONS={};});
 }
 function renderHeader(){
   var pill=document.getElementById('planPill');
@@ -418,7 +429,7 @@ function showScreen(name){
 function search(){
   var qs=new URLSearchParams();
   qs.set('state',STATE);
-  var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('city',c);
+  var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('q',c);
   var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);
   var e=document.getElementById('fEquity').value; if(e)qs.set('min_equity',e);
   qs.set('limit','200');
@@ -435,10 +446,23 @@ function badgeHtml(r){
   if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
   return out;
 }
+function act(r){ return ACTIONS[r.id]||{}; }
+function actChips(r){
+  var a=act(r), out='';
+  if(a.saved)out+='<span class="badge act">★ Saved</span>';
+  if(a.contacted)out+='<span class="badge act">✓ Contacted</span>';
+  if(a.note)out+='<span class="badge act">✎ Note</span>';
+  if(a.hidden)out+='<span class="badge act hid">Hidden</span>';
+  return out;
+}
+function toggleHidden(){ SHOW_HIDDEN=!SHOW_HIDDEN; renderList(); }
 function renderList(){
   var el=document.getElementById('list');
-  if(!ROWS.length){ el.innerHTML='<div class="empty">No deals match. Widen your filters or pick another state.</div>'; return; }
-  el.innerHTML=ROWS.map(function(r,i){
+  var hiddenN=ROWS.filter(function(r){return act(r).hidden;}).length;
+  var toggle=hiddenN?'<div class="loadrow"><a href="#" onclick="toggleHidden();return false;">'+(SHOW_HIDDEN?'Hide ':'Show ')+hiddenN+' hidden</a></div>':'';
+  var vis=ROWS.map(function(r,i){return [r,i];}).filter(function(p){return SHOW_HIDDEN||!act(p[0]).hidden;});
+  if(!vis.length){ el.innerHTML=toggle+'<div class="empty">No deals match. Widen your filters or pick another state.</div>'; return; }
+  el.innerHTML=toggle+vis.map(function(p){ var r=p[0], i=p[1];
     var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
     var pu=photoUrl(r);
     var fb=photoFallback(r);
@@ -453,8 +477,13 @@ function renderList(){
         '<div class="right"><div class="eq">'+(r.equity_pct!=null?r.equity_pct+'%':'—')+'</div><div class="eqk">equity</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
       '</div>'+
-      '<div class="badges">'+badgeHtml(r)+'</div></div>';
+      '<div class="badges">'+badgeHtml(r)+actChips(r)+proChip(r)+'</div></div>';
   }).join('');
+}
+/* item 7: the Pro gate lives on the card itself, not at the bottom of the detail scroll */
+function proChip(r){
+  if(ME&&ME.plan==='pro')return '';
+  return '<span class="badge lock" onclick="event.stopPropagation();showScreen(\'acct\')">🔒 Owner contact · Pro</span>';
 }
 
 /* ---------- map ---------- */
@@ -508,6 +537,7 @@ function openDetail(i){
       '</div>'+
     '</div>'+
     '<div class="dbody">'+
+      actionBar(r)+
       '<div class="kpis">'+
         '<div class="kpi"><div class="k">Est. value</div><div class="v">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
         '<div class="kpi"><div class="k">Loan balance</div><div class="v">'+money(r.mortgage_balance)+'</div></div>'+
@@ -587,15 +617,40 @@ function flagStrip(r){
 }
 function closeDetail(){ document.getElementById('detail').classList.remove('open'); }
 
+function actionBar(r){
+  var a=act(r);
+  function b(k,on,label){ return '<button class="abtn'+(on?' on':'')+'" onclick="setAction(\''+k+'\','+(!on)+')">'+label+'</button>'; }
+  return '<div class="abar" id="abar">'+b('saved',!!a.saved,(a.saved?'★ Saved':'☆ Save'))+b('contacted',!!a.contacted,(a.contacted?'✓ Contacted':'Contacted'))+b('hidden',!!a.hidden,(a.hidden?'Unhide':'Hide'))+'</div>'+
+    '<textarea class="anote" id="anote" placeholder="Your note on this lead (saved automatically)" onblur="saveNote()">'+esc(a.note||'')+'</textarea>';
+}
+function setAction(k,v){
+  var body={id:CUR.id}; body[k]=v;
+  api('/api/lead-actions',{method:'POST',body:body}).then(function(r){return r.json();}).then(function(j){
+    if(j.action){ ACTIONS[CUR.id]=j.action; var bar=document.getElementById('abar'); if(bar){ bar.outerHTML=actionBar(CUR).split('<textarea')[0]; } renderList(); if(MAP)renderPins(); }
+    else toast(j.error||'could not save');
+  }).catch(function(){toast('could not save');});
+}
+function saveNote(){
+  var t=document.getElementById('anote'); if(!t)return; var v=t.value;
+  var cur=(ACTIONS[CUR.id]||{}).note||''; if(v===cur)return;
+  api('/api/lead-actions',{method:'POST',body:{id:CUR.id,note:v}}).then(function(r){return r.json();}).then(function(j){ if(j.action){ACTIONS[CUR.id]=j.action; renderList();} }).catch(function(){toast('note not saved');});
+}
 function renderContacts(){
   var el=document.getElementById('contacts'); var r=CUR;
   if(ME.plan!=='pro'){
     el.innerHTML='<div class="locked"><b>🔒 Owner phones &amp; emails are a Pro feature</b>Skip-traced mobile numbers (DNC-flagged) + emails unlock on Pro.<br><button class="cta" onclick="showScreen(\'acct\');closeDetail()">See Pro</button></div>';
     return;
   }
-  if(r.phones&&r.phones.length){ el.innerHTML=phoneHtml(r.phones,r.emails); return; }
+  if(r.phones&&r.phones.length){ el.innerHTML=callButton(r.phones)+phoneHtml(r.phones,r.emails); return; }
   el.innerHTML='<button class="revealbtn" onclick="reveal()">☎ Reveal owner contact (skip-trace)</button>'+
     '<div style="font-size:11.5px;color:var(--sub);margin-top:8px;text-align:center">Uses 1 of your '+ME.usage.skiptraces.limit+' monthly skip-traces · mobile numbers only</div>';
+}
+function callButton(phones){
+  var mob=(phones||[]).filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});
+  var p=(mob.length?mob:(phones||[]))[0]; if(!p)return '';
+  var n=String(p.number||'').replace(/\D/g,''); if(!n)return '';
+  var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n;
+  return '<a class="callbtn" href="tel:'+n+'" onclick="setAction(\'contacted\',true)">📞 Call owner · '+f+'</a>';
 }
 function phoneHtml(phones,emails){
   var mob=(phones||[]).filter(function(p){var t=(p.type||'').toLowerCase();return t.indexOf('wireless')>=0||t.indexOf('mobile')>=0||t.indexOf('cell')>=0;});
@@ -611,7 +666,7 @@ function reveal(){
    .then(function(res){
      if(!res.ok){ el.innerHTML='<div class="locked"><b>'+esc(res.j.error||'Skip-trace failed')+'</b></div>'; return; }
      CUR.phones=res.j.mobiles; CUR.emails=res.j.emails;
-     el.innerHTML=(res.j.mobiles&&res.j.mobiles.length)?phoneHtml(res.j.mobiles,res.j.emails):'<div class="locked">No mobile numbers found for this owner.</div>';
+     el.innerHTML=(res.j.mobiles&&res.j.mobiles.length)?(callButton(res.j.mobiles)+phoneHtml(res.j.mobiles,res.j.emails)):'<div class="locked">No mobile numbers found for this owner.</div>';
      if(res.j.usage){ME.usage=res.j.usage;renderHeader();}
    }).catch(function(){el.innerHTML='<div class="locked">Network error</div>';});
 }
@@ -698,7 +753,7 @@ function renderAccount(){
 function doExport(){
   if(ME.plan!=='pro'){ toast('CSV export is a Pro feature'); return; }
   var qs=new URLSearchParams(); qs.set('state',STATE);
-  var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('city',c);
+  var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('q',c);
   var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);
   var e=document.getElementById('fEquity').value; if(e)qs.set('min_equity',e);
   window.location.href='/api/export?'+qs.toString();

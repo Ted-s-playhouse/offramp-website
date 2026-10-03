@@ -515,12 +515,18 @@ def build_search_query(qs, limit):
     state = (qs.get("state") or [""])[0].upper().strip()
     if state:
         parts.append(f"property_state=eq.{state}")
-    city = (qs.get("city") or [""])[0].strip()
-    if city:
-        # Match on city name OR county so a search like "Salt Lake County"
-        # (a county, not a city) still finds real results instead of ~0.
-        q = urllib.parse.quote(city)
-        parts.append(f"or=(property_city.ilike.*{q}*,county.ilike.*{q}*)")
+    text = (qs.get("q") or qs.get("city") or [""])[0].strip()
+    if text:
+        # Real search: owner name, street, city, zip, county - one box. A bare
+        # 5-digit term matches zip exactly; everything else is a substring match.
+        q = urllib.parse.quote(text)
+        ors = [f"owner_full.ilike.*{q}*", f"owner_last.ilike.*{q}*", f"property_street.ilike.*{q}*",
+               f"property_city.ilike.*{q}*", f"county.ilike.*{q}*"]
+        if text.isdigit() and len(text) == 5:
+            ors.insert(0, f"property_zip.eq.{q}")
+        else:
+            ors.append(f"property_zip.ilike.{q}*")
+        parts.append("or=(" + ",".join(ors) + ")")
     status = (qs.get("status") or [""])[0].strip()
     if status:
         parts.append(f"foreclosure_status=eq.{urllib.parse.quote(status)}")
@@ -788,6 +794,15 @@ class Handler(SimpleHTTPRequestHandler):
         if not u:
             return self._json(401, {"error": "not signed in"})
 
+        if route == "/api/lead-actions":
+            # Item 11: per-user lead state so leads stick between logins.
+            try:
+                rows = sb("GET", f"/offramp_lead_actions?select=lead_id,saved,hidden,contacted,note,updated_at"
+                                 f"&user_id=eq.{urllib.parse.quote(str(u['id']))}&limit=5000")
+            except urllib.error.HTTPError as e:
+                return self._json(500, {"error": e.read().decode()[:200]})
+            return self._json(200, {"actions": {r["lead_id"]: r for r in rows}})
+
         if route == "/api/search":
             try:
                 limit = min(int((qs.get("limit") or ["100"])[0]), 500)
@@ -989,13 +1004,33 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(200, {"ok": True}, extra_headers=[self._clear_cookie()])
 
         # ---------- app data (session required) ----------
-        if route in ("/api/analyze", "/api/lookup", "/api/skiptrace"):
+        if route in ("/api/analyze", "/api/lookup", "/api/skiptrace", "/api/lead-actions"):
             u = self._current_user()
             if not u:
                 return self._json(401, {"error": "not signed in"})
             data = self._body()
             if data is None:
                 return self._json(400, {"error": "bad request"})
+
+            if route == "/api/lead-actions":
+                lead_id = str(data.get("id") or "").strip()
+                if not lead_id or len(lead_id) > 120:
+                    return self._json(400, {"error": "lead id required"})
+                body = {"user_id": u["id"], "lead_id": lead_id,
+                        "updated_at": datetime.now(timezone.utc).isoformat()}
+                for k in ("saved", "hidden", "contacted"):
+                    if k in data:
+                        body[k] = bool(data[k])
+                if "note" in data:
+                    note = data.get("note")
+                    body["note"] = (str(note)[:4000] if note not in (None, "") else None)
+                try:
+                    rows = sb("POST", "/offramp_lead_actions?on_conflict=user_id,lead_id", body=body,
+                              headers={"Prefer": "resolution=merge-duplicates,return=representation"})
+                except urllib.error.HTTPError as e:
+                    return self._json(500, {"error": e.read().decode()[:200]})
+                r = rows[0] if rows else body
+                return self._json(200, {"action": {k: r.get(k) for k in ("lead_id", "saved", "hidden", "contacted", "note", "updated_at")}})
 
             if route == "/api/analyze":
                 return self._json(200, {"analysis": analyze(
