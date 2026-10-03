@@ -900,7 +900,7 @@ function lineRaw(k,v){ return '<div class="rowline"><span class="k">'+k+'</span>
 function lienText(r,n){ if(r.lien_count==null||r.lien_count<n)return '';
   if(n===1){ var a=r.lien_first_amount?'$'+Math.round(r.lien_first_amount).toLocaleString():''; var t=(r.lien_first_type&&!/^unknown$/i.test(r.lien_first_type))?' · '+r.lien_first_type:''; return ((r.lien_first_lender||'Lender not on record')+(a?' · '+a:'')+t).trim(); }
   var b=r.lien_second_amount?'$'+Math.round(r.lien_second_amount).toLocaleString():''; return b||'On record'; }
-function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)return 'None recorded'+(r.free_and_clear?' (REAPI: free and clear)':'');
+function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)return 'None recorded'+(r.free_and_clear?' · free and clear':'');
   var f=r.lien_first_lender?(r.lien_first_position||'First')+': '+r.lien_first_lender+(r.lien_first_amount?' $'+Math.round(r.lien_first_amount).toLocaleString():'')+((r.lien_first_type&&!/^unknown$/i.test(r.lien_first_type))?' ('+r.lien_first_type+')':''):'';
   var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
   return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
@@ -1102,10 +1102,10 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
 function lockedTile(title,sub,kind){ return '<div class="vtile none lockt" onclick="openUpgradeSheet(\''+kind+'\')"><div class="ico">🔒</div><div><div class="title">'+title+'</div><div class="word">CLEAR</div><div class="proof">'+sub+' · unlocks on '+(kind==='premium'?'Premium':'Pro')+'</div></div></div>'; }
 function lienTile(r){
   if(r.lien_count==null)return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Liens on record</div><div class="word">NO RECORD</div><div class="proof">No recorded lien sheet on file for this property yet.</div></div></div>';
-  if(r.lien_count===0)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Liens on record</div><div class="word">CLEAR</div><div class="detail">No liens recorded'+(r.free_and_clear?' · free and clear':'')+'</div><div class="proof">County record via REAPI.</div></div></div>';
+  if(r.lien_count===0)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Liens on record</div><div class="word">CLEAR</div><div class="detail">No liens recorded'+(r.free_and_clear?' · free and clear':'')+'</div><div class="proof">OffRamp county record.</div></div></div>';
   var tot=r.lien_total_amount||((Number(r.lien_first_amount)||0)+(Number(r.lien_second_amount)||0));
   var parts=[]; if(r.lien_first_amount)parts.push('First '+money(r.lien_first_amount)+(r.lien_first_lender?' '+r.lien_first_lender:'')); if(r.lien_second_amount)parts.push('Second '+money(r.lien_second_amount)); if(r.tax_lien)parts.push('Tax lien'); if(r.judgment_flag)parts.push('Judgment');
-  return '<div class="vtile flag"><div class="ico">&#9873;</div><div><div class="title">Liens on record</div><div class="word">'+r.lien_count+(r.lien_count===1?' LIEN':' LIENS')+'</div>'+(tot?'<div class="detail">'+money(tot)+' ahead of you</div>':'')+'<div class="proof">'+esc(parts.join(' · '))+(parts.length?' · ':'')+'county record via REAPI</div></div></div>';
+  return '<div class="vtile flag"><div class="ico">&#9873;</div><div><div class="title">Liens on record</div><div class="word">'+r.lien_count+(r.lien_count===1?' LIEN':' LIENS')+'</div>'+(tot?'<div class="detail">'+money(tot)+' ahead of you</div>':'')+'<div class="proof">'+esc(parts.join(' · '))+(parts.length?' · ':'')+'OffRamp county record</div></div></div>';
 }
 function nokTile(r){
   if(r.next_of_kin)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Next of kin</div><div class="word">ON FILE</div><div class="detail">'+esc(r.next_of_kin)+'</div><div class="proof">Family and relative records for the owner.</div></div></div>';
@@ -1142,7 +1142,7 @@ function factsRows(r,f){
     lineIf('Corporate owned',f.corporate_owned===true?'Yes':''),
     mail?lineRaw('Owner mailing',esc(mail)+'<small>'+(same?'same as property':'absentee · mail goes elsewhere')+'</small>'):'',
     lineIf('APN',r.apn),
-    f.est_value?line('REAPI est. value',money(f.est_value)):''
+    f.est_value?line('Market estimate',money(f.est_value)):''
   ];
 }
 var FACTS_PRO=['Type','Lot','Zoning','Last sale','Years owned','Owner mailing'], FACTS_FREE=['Type','Lot'];
@@ -1163,7 +1163,7 @@ function loadFacts(r){
       el2.innerHTML=basic+'<div class="hint">No county record came back for this address.</div>'; return;
     }
     var f=j.facts, rows=factsTiered(r,f);
-    el2.innerHTML=(rows||basic)+'<div class="hint">County record via REAPI'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
+    el2.innerHTML=(rows||basic)+'<div class="hint">OffRamp county record'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
   }).catch(function(){ var el2=document.getElementById('facts'); if(el2&&CUR===r)el2.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; });
 }
 function premiumSection(r){
