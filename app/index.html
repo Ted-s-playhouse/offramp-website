@@ -788,14 +788,14 @@ function openDetail(i){
   // ---- Evaluation (Revive order: equity %, equity $, AVM, loan balance). Free: $ rows grayed.
   var evalRows=[
     lineIf('Equity',r.equity_unverified?'Unverified':(r.equity_pct!=null?pct(r.equity_pct):'')),
-    lineIf('Why unverified',r.equity_unverified?(r.equity_verify_note||''):''),
+    lineIf('Why unverified',whyUnverified(r)),
     lineIf('Liens on record',lienLine(r)),
     lineIf('Tax lien',r.tax_lien?'Yes':''),
     lineIf('Judgment',r.judgment_flag?'Yes':''),
-    paid?lineIf('Equity $',r.equity_dollars!=null?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
+    paid?lineIf('Equity $',(r.equity_dollars!=null&&!r.equity_unverified)?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
     lineIf('AVM',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     paid?lineIf('Loan balance',r.mortgage_balance!=null?money(r.mortgage_balance):''):lockedRow('Loan balance','pro'),
-    lineIf('Loan-to-value',r.ltv_pct!=null?pct(r.ltv_pct):''),
+    lineIf('Loan-to-value',(r.ltv_pct!=null&&!r.equity_unverified)?pct(r.ltv_pct):''),
     lineIf('Lender',r.mortgage_lender)
   ];
   // ---- Contact (phone, email, next of kin). Free: all three grayed. Pro: phone row runs skip-trace. Next of kin: Premium.
@@ -886,8 +886,13 @@ function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)retur
   return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
 function statusLabel(r){ var st=(r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,'');  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
   if(/^postponed/i.test(st))return 'Postponed';                       // Ted 2026-10-03: plain Postponed tag; dates go to the 'Sale moved' line
-  if(r.auction_date&&/pre.?foreclosure|notice of|^foreclosure$/i.test(st))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
+  if(r.auction_date&&(!st||/pre.?foreclosure|notice of|^foreclosure$/i.test(st)))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
   return st; }
+function whyUnverified(r){ var n=(r.equity_verify_note||'').toLowerCase(); if(!r.equity_unverified)return '';
+  if(/no recorded open loan/.test(n))return 'No loan found on record. The foreclosing lien is private, tax or HOA.';
+  if(/detail sheet lists/.test(n))return 'Loan balance unknown. Recorded mortgages exist but no balance.';
+  if(/open-lien estimate|senior|usda/.test(n))return 'Loan balance is an estimate. A senior lien may be missing.';
+  return 'Equity could not be verified from recorded loans.'; }
 function saleMoved(r){ var m=/postponed.*?from\s*([\d\/\-]+)\s*to\s*([\d\/\-]+)/i.exec(r.foreclosure_status||''); return m?(m[1]+' → '+m[2]):''; }
 function trusteeMark(r){ var v=r.sale_verified_source||''; return (v && !/realestateapi/i.test(v)) ? '<span class="badge vmark" title="Sale date verified on the trustee page">&#10003; Trustee verified</span>' : ''; }
 function pct(x){ return (x===null||x===undefined||x==='')?'':(Math.round(Number(x))+'%'); }  // Ted 2026-10-03: never a decimal on a percent
