@@ -70,39 +70,86 @@
 
   /* ---------- APP TOP BAR ---------- */
   header.top{background:var(--accent);color:#fff;display:flex;align-items:center;gap:10px;
-    padding:0 15px;height:54px;position:sticky;top:0;z-index:40;padding-top:env(safe-area-inset-top)}
+    padding:0 15px;padding-top:env(safe-area-inset-top);height:calc(44px + env(safe-area-inset-top));position:relative;z-index:1}
   header.top .logo{display:flex;align-items:center;gap:7px;font-weight:900;font-size:16px}
   header.top .logo img{width:24px;height:24px}
   header.top .logo span{color:#b7e4c7}
   header.top .grow{flex:1}
   .plan-pill{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 9px;border-radius:20px}
   .plan-pill.pro{background:var(--gold);color:#231a0c}
-  .plan-pill.free{background:rgba(255,255,255,.16);color:#fff}
-  .meterchip{font-size:11px;color:#cfe6d8}
-  .meterchip b{color:#fff}
+  .plan-pill.free{background:#e6e4dc;color:var(--sub)}
+  .meterchip{font-size:12px;color:var(--sub);font-weight:600;white-space:nowrap}
+  .meterchip b{color:var(--text)}
 
   /* ---------- SCREENS ---------- */
-  main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:74px}
+  main{flex:1;overflow:visible;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   .screen{display:none}
   .screen.on{display:block}
 
-  /* search + filter chips */
-  .searchbar{padding:11px 12px 6px}
-  .searchbox{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 12px}
+  /* ---------- PINNED SEARCH TOOLBAR (A) ---------- */
+  /* sticks to the viewport top once the brand bar scrolls away; the env() gradient paints the
+     iOS status-bar band brand-green so white status text stays readable in standalone mode */
+  .toolbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:8px;padding:8px 12px;
+    padding-top:calc(8px + env(safe-area-inset-top));border-bottom:1px solid var(--border);
+    background:linear-gradient(to bottom,var(--accent) env(safe-area-inset-top),var(--bg) env(safe-area-inset-top))}
+  .searchbox{display:flex;align-items:center;flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 10px;height:40px}
+  .searchbox:focus-within{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(45,106,79,.15)}
   .searchbox svg{width:18px;height:18px;color:var(--sub);flex:none}
-  .searchbox input{flex:1;border:0;outline:none;padding:11px 8px;font-size:15px;background:transparent;color:var(--text)}
+  .searchbox input{flex:1;min-width:0;border:0;outline:none;padding:0 6px;font-size:15px;background:transparent;color:var(--text)}
+  .tchip{flex:none;max-width:124px;height:40px;padding:0 12px;border-radius:20px;border:1px solid var(--border);background:var(--card);
+    font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .tchip .car{font-size:10px;opacity:.7;margin-left:3px}
+  .tbtn{flex:none;position:relative;display:flex;align-items:center;gap:5px;height:40px;padding:0 11px;border-radius:12px;border:1px solid var(--border);
+    background:var(--card);color:var(--accent);font-size:13px;font-weight:800}
+  .tbtn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .tbtn.on{border-color:var(--accent);background:var(--accentSoft)}
+  .fbadge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--hot);color:#fff;
+    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
+  .countrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 16px 8px}
+  .metaline{display:flex;align-items:center;gap:7px;margin-left:auto}
+  .countline{font-size:12px;color:var(--sub);font-weight:700}
+
   .empty b{display:block;margin-bottom:6px;color:var(--text)}.empty .chip em{font-style:normal;color:var(--sub);margin-left:4px}
-  .browse{padding:2px 0 0}
-  .browsehead{display:flex;align-items:center;justify-content:space-between;padding:4px 12px 0;font-size:12px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
-  .browsehead select{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);max-width:60%}
   .chiprow{display:flex;gap:8px;overflow-x:auto;padding:8px 12px 4px;scrollbar-width:none}
   .chiprow::-webkit-scrollbar{display:none}
   .chip{flex:none;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);
     font-size:13px;font-weight:700;color:var(--text)}
   .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .subfilter{display:flex;gap:8px;padding:2px 12px 6px}
-  .subfilter select{flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:13.5px;background:var(--card);color:var(--text)}
-  .countline{font-size:12px;color:var(--sub);font-weight:700;padding:2px 16px 8px}
+
+  /* ---------- BOTTOM SHEET (B state picker, C filters) ---------- */
+  #sheet{position:fixed;inset:0;z-index:66}
+  .sheet-bg{position:absolute;inset:0;background:rgba(11,31,22,.45);opacity:0;transition:opacity .2s}
+  .sheet{position:absolute;left:50%;bottom:0;width:100%;max-width:var(--maxw);transform:translate(-50%,100%);transition:transform .25s ease;
+    background:var(--bg);border-radius:18px 18px 0 0;max-height:80vh;max-height:80dvh;display:flex;flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+  #sheet.open .sheet-bg{opacity:1}
+  #sheet.open .sheet{transform:translate(-50%,0)}
+  .sheet .grab{width:40px;height:4px;border-radius:2px;background:#cfcdc5;margin:10px auto 8px;flex:none}
+  .sheethead{display:flex;align-items:center;justify-content:space-between;padding:0 16px 8px;flex:none}
+  .sheethead b{font-size:17px;font-weight:900;color:var(--accent)}
+  .sheetx{border:0;background:#ebe9e2;color:var(--sub);width:30px;height:30px;border-radius:50%;font-size:20px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center}
+  .sheetbody{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 12px 16px}
+  .sheetq{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 10px;height:42px;margin:2px 0 4px}
+  .sheetq svg{width:18px;height:18px;color:var(--sub);flex:none}
+  .sheetq input{flex:1;min-width:0;border:0;outline:none;padding:0 6px;font-size:15px;background:transparent;color:var(--text)}
+  .sgroup{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);padding:12px 4px 6px}
+  .slist{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .srow{display:flex;align-items:center;gap:8px;width:100%;border:0;border-bottom:1px solid var(--border);background:transparent;padding:12px 12px;font-size:15px;color:var(--text);text-align:left}
+  .srow:last-child{border-bottom:0}
+  .srow:active{background:var(--accentSoft)}
+  .srow .nm{flex:1;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .srow .cnt{color:var(--sub);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .srow .chk{width:20px;text-align:right;color:var(--accent);font-weight:900;visibility:hidden}
+  .srow.on .chk{visibility:visible}
+  .srow.on .nm{color:var(--accent);font-weight:800}
+  .snone{padding:22px;text-align:center;color:var(--sub);font-size:14px}
+  .fblock{margin:4px 0 12px}
+  .fblock label{display:block;font-size:11.5px;font-weight:700;color:var(--sub);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+  .fblock select{width:100%;padding:12px 10px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--card);color:var(--text)}
+  .fbtns{display:flex;gap:8px;margin-top:4px}
+  .fbtns .btn-ghost,.fbtns .btn-primary{margin:0;flex:1}
+  body.sheet-open{overflow:hidden}
 
   /* lead card (mirrors CRM LeadCard) */
   .lead{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--sub);border-radius:14px;
@@ -131,7 +178,7 @@
   .loadrow{padding:26px;text-align:center;color:var(--sub)}
 
   /* map screen */
-  #mapScreen{height:calc(100dvh - 54px - 62px)}
+  #mapScreen{height:calc(100dvh - 44px - env(safe-area-inset-top) - 57px - env(safe-area-inset-bottom))}
   #map{width:100%;height:100%}
 
   /* lookup + account cards */
@@ -159,8 +206,8 @@
   /* ---------- BOTTOM NAV ---------- */
   nav.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:var(--maxw);
     background:var(--card);border-top:1px solid var(--border);display:flex;z-index:50;
-    padding-bottom:env(safe-area-inset-bottom)}
-  nav.bottom button{flex:1;background:transparent;border:0;padding:9px 0 8px;display:flex;flex-direction:column;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  nav.bottom button{flex:1;background:transparent;border:0;padding:8px 0 2px;display:flex;flex-direction:column;
     align-items:center;gap:3px;color:var(--sub);font-size:11px;font-weight:700}
   nav.bottom button svg{width:23px;height:23px;stroke:var(--sub);fill:none;stroke-width:2}
   nav.bottom button.on{color:var(--accent)}
@@ -228,7 +275,7 @@
   .revealbtn.inline{display:inline-block;width:auto;padding:6px 10px;font-size:12px;margin-left:8px}
   #upsheet{display:none;position:fixed;inset:0;z-index:60}
   .upsheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
-  .upsheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg,#fff);border-radius:18px 18px 0 0;padding:10px 16px 24px;max-height:85vh;overflow:auto}
+  .upsheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg,#fff);border-radius:18px 18px 0 0;padding:10px 16px calc(24px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto}
   .upsheet .grab{width:40px;height:4px;border-radius:2px;background:#ccc;margin:0 auto 12px}.upt{font-weight:800;font-size:16px;margin:4px 0 10px}
   .badge.act{background:#eef3ef;color:#1B4332;border:1px solid #cfe0d6}
   .badge.act.hid{background:#f3f3f3;color:#777;border-color:#ddd}
@@ -248,7 +295,7 @@
   .phone .tag.dnc{background:#fbeae6;color:var(--danger)}
   .emailchip{display:inline-block;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin:6px 6px 0 0;font-size:13px}
 
-  .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none}
+  .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none}
 </style>
 </head>
 <body>
@@ -286,39 +333,24 @@
   <header class="top">
     <div class="logo"><img src="/brand/mark_ramp.png" alt="">OffRamp <span>REI</span></div>
     <div class="grow"></div>
-    <span class="meterchip" id="meterChip"></span>
-    <span class="plan-pill" id="planPill"></span>
   </header>
 
   <main>
     <!-- DEALS -->
     <section class="screen on" id="s-deals">
-      <div class="searchbar">
+      <!-- A: pinned toolbar = search + state chip (opens state sheet) + Filter (opens filter sheet) -->
+      <div class="toolbar" id="toolbar">
         <div class="searchbox">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="fSearch" type="text" placeholder="Search any owner, street, city, zip or state…" onkeydown="if(event.key==='Enter')search()">
+          <input id="fSearch" type="text" enterkeyhint="search" placeholder="Owner, street, city, zip…" onkeydown="if(event.key==='Enter')search()">
         </div>
+        <button class="tchip" id="stateChipBtn" onclick="openStateSheet()" aria-haspopup="dialog" title="All states">All states<span class="car">▾</span></button>
+        <button class="tbtn" id="filterBtn" onclick="openFilterSheet()" aria-haspopup="dialog" aria-label="Filters">
+          <svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5z"/></svg>Filter<span class="fbadge hidden" id="filterBadge"></span>
+        </button>
       </div>
-      <div class="browse" id="browseState">
-        <div class="browsehead"><span>Browse by state</span><select id="stateSelect" onchange="pickState(this.value)"><option value="">All states</option></select></div>
-        <div class="chiprow" id="stateChips"></div>
-      </div>
-      <div class="subfilter">
-        <select id="fStatus" onchange="search()">
-          <option value="">All statuses</option>
-          <option>Pre-Foreclosure</option>
-          <option>Auction</option>
-          <option>Notice of Default</option>
-          <option>Notice of Trustee's Sale</option>
-        </select>
-        <select id="fEquity" onchange="search()">
-          <option value="">Any equity</option>
-          <option value="50000">$50k+ equity</option>
-          <option value="100000">$100k+ equity</option>
-          <option value="200000">$200k+ equity</option>
-        </select>
-      </div>
-      <div class="countline" id="countLine"></div>
+      <div class="countrow"><div class="countline" id="countLine"></div>
+        <div class="metaline"><span class="meterchip" id="meterChip"></span><span class="plan-pill" id="planPill"></span></div></div>
       <div id="list"><div class="loadrow">Loading deals…</div></div>
     </section>
 
@@ -355,6 +387,40 @@
     <button id="n-acct" onclick="showScreen('acct')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Account</button>
   </nav>
+</div>
+
+<!-- ============ BOTTOM SHEET (B state picker / C filters) ============ -->
+<div id="sheet" class="hidden" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-bg" onclick="closeSheet()"></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheethead"><b id="sheetTitle">Browse by state</b><button class="sheetx" onclick="closeSheet()" aria-label="Close">×</button></div>
+    <div class="sheetbody" id="sheetState">
+      <div class="sheetq">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="stateQ" type="text" placeholder="Find a state" autocomplete="off" oninput="renderStateList()">
+      </div>
+      <div id="stateList"></div>
+    </div>
+    <div class="sheetbody hidden" id="sheetFilter">
+      <div class="fblock"><label for="fStatus">Status</label>
+        <select id="fStatus">
+          <option value="">All statuses</option>
+          <option>Pre-Foreclosure</option>
+          <option>Auction</option>
+          <option>Notice of Default</option>
+          <option>Notice of Trustee's Sale</option>
+        </select></div>
+      <div class="fblock"><label for="fEquity">Minimum equity</label>
+        <select id="fEquity">
+          <option value="">Any equity</option>
+          <option value="50000">$50k+ equity</option>
+          <option value="100000">$100k+ equity</option>
+          <option value="200000">$200k+ equity</option>
+        </select></div>
+      <div class="fbtns"><button class="btn-ghost" onclick="clearFilterSheet()">Clear</button><button class="btn-primary" onclick="applyFilters()">Apply</button></div>
+    </div>
+  </div>
 </div>
 
 <!-- ============ DETAIL ============ -->
@@ -461,18 +527,81 @@ function pickState(m){ STATE=m||null;
   try{ if(STATE)localStorage.setItem('offramp_state',STATE); else localStorage.removeItem('offramp_state'); }catch(e){}
   renderStateBrowse(); search();
 }
+/* A/B: the toolbar state chip reflects STATE; the full picker lives in the bottom sheet */
 function renderStateBrowse(){
-  var sel=document.getElementById('stateSelect');
-  var opts='<option value="">All states</option>'+Object.keys(STATE_NAMES).sort(function(a,b){return STATE_NAMES[a]<STATE_NAMES[b]?-1:1;}).map(function(k){
-    var n=(COUNTS.total||{})[k]||0; return '<option value="'+k+'"'+(k===STATE?' selected':'')+'>'+STATE_NAMES[k]+(n?' ('+n+')':'')+'</option>';
-  }).join('');
-  sel.innerHTML=opts;
-  // quick-tap shortcuts: the enriched markets first, then the busiest national states
-  var quick=ME.markets.slice();
+  var b=document.getElementById('stateChipBtn');
+  var n=STATE?((COUNTS.total||{})[STATE]||0):0;
+  b.innerHTML=esc(STATE?(STATE+(n?' · '+n:'')):'All states')+'<span class="car">▾</span>';
+  b.title=STATE?(STATE_NAMES[STATE]||STATE):'All states';
+  b.classList.toggle('on',!!STATE);
+  if(SHEET==='state')renderStateList();
+}
+// quick-tap shortcuts: the enriched markets first, then the busiest national states (same rule as the old chip row)
+function quickStates(){
+  var quick=(ME&&ME.markets?ME.markets:[]).slice();
   Object.keys(COUNTS.total||{}).sort(function(a,b){return (COUNTS.total[b]||0)-(COUNTS.total[a]||0);}).forEach(function(k){ if(quick.length<9&&quick.indexOf(k)<0)quick.push(k); });
-  document.getElementById('stateChips').innerHTML='<button class="chip'+(STATE?'':' on')+'" onclick="pickState(\'\')">All</button>'+quick.map(function(m){
-    return '<button class="chip'+(m===STATE?' on':'')+'" onclick="pickState(\''+m+'\')">'+m+'</button>';
-  }).join('');
+  return quick;
+}
+
+/* ---------- bottom sheet (shared by the state picker and the filter panel) ---------- */
+var SHEET=null, FILTER_SNAP=null, SHEET_TIMER=null;
+function openSheet(which,title){
+  var w=document.getElementById('sheet');
+  if(SHEET_TIMER){clearTimeout(SHEET_TIMER);SHEET_TIMER=null;}
+  SHEET=which;
+  document.getElementById('sheetTitle').textContent=title;
+  document.getElementById('sheetState').classList.toggle('hidden',which!=='state');
+  document.getElementById('sheetFilter').classList.toggle('hidden',which!=='filter');
+  w.classList.remove('hidden'); document.body.classList.add('sheet-open');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ w.classList.add('open'); }); });
+}
+function closeSheet(){
+  var w=document.getElementById('sheet');
+  if(SHEET==='filter'&&FILTER_SNAP){ // dismissed without Apply: put the selects back to what the list is showing
+    document.getElementById('fStatus').value=FILTER_SNAP[0]; document.getElementById('fEquity').value=FILTER_SNAP[1]; FILTER_SNAP=null;
+  }
+  SHEET=null; w.classList.remove('open'); document.body.classList.remove('sheet-open');
+  SHEET_TIMER=setTimeout(function(){ w.classList.add('hidden'); SHEET_TIMER=null; },260);
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&SHEET)closeSheet(); });
+// swipe-down on the grab handle / header closes the sheet
+(function(){ var y0=null; var sh=document.getElementById('sheet');
+  sh.addEventListener('touchstart',function(e){ var t=e.target; y0=(t.closest&&(t.closest('.grab')||t.closest('.sheethead')))?e.touches[0].clientY:null; },{passive:true});
+  sh.addEventListener('touchend',function(e){ if(y0!==null&&e.changedTouches[0].clientY-y0>60)closeSheet(); y0=null; },{passive:true});
+})();
+
+/* B: state picker sheet */
+function openStateSheet(){ document.getElementById('stateQ').value=''; renderStateList(); openSheet('state','Browse by state'); }
+function stateRow(k,n){
+  var on=(k||null)===STATE;
+  return '<button class="srow'+(on?' on':'')+'" onclick="chooseState(\''+k+'\')"><span class="nm">'+esc(k?STATE_NAMES[k]:'All states')+'</span>'+
+    '<span class="cnt">'+(n?n:'')+'</span><span class="chk">✓</span></button>';
+}
+function renderStateList(){
+  var q=(document.getElementById('stateQ').value||'').trim().toLowerCase();
+  var tot=COUNTS.total||{};
+  var total=Object.keys(tot).reduce(function(a,k){return a+(tot[k]||0);},0);
+  var match=function(k){ return !q||k.toLowerCase().indexOf(q)===0||STATE_NAMES[k].toLowerCase().indexOf(q)>=0; };
+  var html='';
+  if(!q){
+    var quick=quickStates().filter(function(k){return STATE_NAMES[k];});
+    html+='<div class="sgroup">Your states</div><div class="slist">'+stateRow('',total)+quick.map(function(k){return stateRow(k,tot[k]||0);}).join('')+'</div>';
+  }
+  var all=Object.keys(STATE_NAMES).sort(function(a,b){return STATE_NAMES[a]<STATE_NAMES[b]?-1:1;}).filter(match);
+  if(all.length) html+='<div class="sgroup">'+(q?'Matching states':'All states')+'</div><div class="slist">'+all.map(function(k){return stateRow(k,tot[k]||0);}).join('')+'</div>';
+  else if(q) html+='<div class="snone">No state matches "'+esc(q)+'"</div>';
+  document.getElementById('stateList').innerHTML=html;
+}
+function chooseState(v){ closeSheet(); pickState(v); }
+
+/* C: filter sheet (status + equity). Apply runs the same search() the selects used to trigger. */
+function openFilterSheet(){ FILTER_SNAP=[document.getElementById('fStatus').value,document.getElementById('fEquity').value]; openSheet('filter','Filters'); }
+function applyFilters(){ FILTER_SNAP=null; closeSheet(); search(); }
+function clearFilterSheet(){ document.getElementById('fStatus').value=''; document.getElementById('fEquity').value=''; FILTER_SNAP=null; closeSheet(); search(); }
+function updateFilterBadge(){
+  var n=(document.getElementById('fStatus').value?1:0)+(document.getElementById('fEquity').value?1:0);
+  var b=document.getElementById('filterBadge'); b.textContent=n; b.classList.toggle('hidden',!n);
+  document.getElementById('filterBtn').classList.toggle('on',!!n);
 }
 function showScreen(name){
   SCREEN=name;
@@ -491,6 +620,7 @@ function stateFromText(t){
   return null;
 }
 function search(){
+  updateFilterBadge();
   var c=document.getElementById('fSearch').value.trim();
   var typedState=stateFromText(c);
   if(typedState){ STATE=typedState; c=''; document.getElementById('fSearch').value=''; try{localStorage.setItem('offramp_state',STATE);}catch(e){} renderStateBrowse(); }
