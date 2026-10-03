@@ -152,7 +152,7 @@
   body.sheet-open{overflow:hidden}
 
   /* lead card (mirrors CRM LeadCard) */
-  .lead{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--sub);border-radius:14px;
+  .lead{background:var(--card);border:1px solid var(--border);border-left:4px solid #1B4332;border-radius:14px;
     margin:0 12px 12px;padding:13px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s}
   .lead:active{transform:scale(.985)}
   .lead .top{display:flex;align-items:center;gap:12px}
@@ -176,6 +176,7 @@
 .fgroup-locked{opacity:.45}
 .frow{display:flex;gap:8px}.frow select{flex:1}
 .fcheck{display:flex;align-items:center;gap:10px;padding:9px 2px;font-size:14.5px}.fcheck input{width:18px;height:18px}
+.badge.status{background:#1B4332;color:#fff}
 .badge.vmark{background:#e7f3ec;color:#1f6f43;border:1px solid #b7dcc6}
 .badge.status{color:#fff}
   .badge.soon{background:var(--danger);color:#fff}
@@ -683,7 +684,7 @@ function search(){
 }
 function badgeHtml(r){
   var out='';
-  if(statusLabel(r)){ out+='<span class="badge status" style="background:'+tempColor(r.temperature||'')+'">'+esc(statusLabel(r))+'</span>'; }
+  if(statusLabel(r)){ out+='<span class="badge status">'+esc(statusLabel(r))+'</span>'; }  // Ted 2026-10-03: one color, badges are confidence tokens
   out+=trusteeMark(r);
   var d=r.days_to_auction;
   if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
@@ -712,7 +713,7 @@ function renderList(){
     var thumb=pu
       ? '<div class="thumb"><img loading="lazy" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.parentNode.classList.add(\'noimg\');this.remove()"></div>'
       : '<div class="thumb noimg"></div>';
-    return '<div class="lead" style="border-left-color:'+tempColor(r.temperature)+'" onclick="openDetail('+i+')">'+
+    return '<div class="lead" onclick="openDetail('+i+')">'+
       '<div class="top">'+thumb+
         '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
           '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
@@ -741,7 +742,7 @@ function renderPins(){
   MARKERS.clearLayers(); var pts=[];
   ROWS.forEach(function(r,i){
     if(r.latitude&&r.longitude){
-      var m=L.circleMarker([r.latitude,r.longitude],{radius:7,color:'#1B4332',weight:2,fillColor:tempColor(r.temperature),fillOpacity:.85});
+      var m=L.circleMarker([r.latitude,r.longitude],{radius:7,color:'#1B4332',weight:2,fillColor:'#1B4332',fillOpacity:.85});
       m.on('click',function(){openDetail(i);});
       m.bindTooltip((r.property_street||'')+' · '+(r.equity_unverified?'equity unverified':(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'')),{direction:'top'});
       m.addTo(MARKERS); pts.push([r.latitude,r.longitude]);
@@ -776,7 +777,7 @@ function openDetail(i){
   var fb=photoFallback(r);
   var hero=pu?'<img class="dhero" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.style.display=\'none\'">':'';
   var hbadges='';
-  if(r.temperature)hbadges+='<span class="badge hbadge" style="background:'+tempColor(r.temperature)+';border:0">'+esc(r.temperature.toUpperCase())+'</span>';
+  // temperature is an internal CRM field — not a consumer token (Ted 2026-10-03)
   if(statusLabel(r))hbadges+='<span class="badge hbadge">'+esc(statusLabel(r))+'</span>';
   hbadges+=trusteeMark(r);
   if(r.days_to_auction!=null&&r.days_to_auction>=0)hbadges+='<span class="badge hbadge">auction '+r.days_to_auction+'d</span>';
