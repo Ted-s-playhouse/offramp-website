@@ -29,6 +29,8 @@ Plans:
 import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets
 import functools, urllib.request, urllib.error, urllib.parse
 import seo_pages
+sys.path.insert(0, "/home/cortextos/cortextos/services/lib")
+import skiptrace_router  # waterfall: cache -> DM 40711 -> Tracerfy -> REAPI -> DM 23501 (2026-10-03)
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from http.cookies import SimpleCookie
 from datetime import datetime, timezone
@@ -1298,7 +1300,7 @@ class Handler(SimpleHTTPRequestHandler):
                 pid = (data.get("id") or "").strip()
                 parts = None
                 if pid:
-                    rows = sb("GET", f"/hit_list?select=property_street,property_city,property_state,property_zip,phones,emails,skip_traced_at&id=eq.{pid}&limit=1")
+                    rows = sb("GET", f"/hit_list?select=id,property_street,property_city,property_state,property_zip,phones,emails,skip_traced_at,owner_first,owner_last,owner_full,skiptrace_attempts&id=eq.{pid}&limit=1")
                     if rows:
                         r = rows[0]
                         # enrich-once: already skip-traced in our DB -> serve from cache, no vendor call, no user credit
@@ -1317,18 +1319,27 @@ class Handler(SimpleHTTPRequestHandler):
                     parts = {"street": m.group(1), "city": m.group(2), "state": m.group(3).upper(), "zip": m.group(4)}
                 if parts is None:
                     return self._json(400, {"error": "id or address required"})
-                dm, src = dm_skiptrace(parts)
-                if dm is None:
-                    if src == "vendor-credits":
-                        return self._json(503, {"error": "Skip-trace is temporarily unavailable (data vendor limit). You were not charged. Try again after the 7th."})
-                    return self._json(502, {"error": f"Skip-trace failed ({src}). You were not charged."})
-                contacts = dm_contacts(dm)
-                mobiles = extract_mobiles(dm)
-                emails = []
-                for c in contacts:
-                    for ea in c["emails"]:
-                        if ea not in emails:
-                            emails.append(ea)
+                row_for_router = dict(parts and {"property_street": parts["street"], "property_city": parts["city"],
+                                                 "property_state": parts["state"], "property_zip": parts["zip"]} or {})
+                if pid and rows:
+                    row_for_router.update({k: rows[0].get(k) for k in ("owner_first", "owner_last", "owner_full")})
+                attempts = (rows[0].get("skiptrace_attempts") if (pid and rows) else None) or []
+                res = skiptrace_router.trace(row_for_router, attempts)
+                if pid:
+                    try:
+                        sb("PATCH", f"/hit_list?id=eq.{pid}", {"skiptrace_attempts": attempts}, {"Prefer": "return=minimal"})
+                    except Exception as e:
+                        print(f"[skiptrace] attempts write failed for {pid}: {e}", file=sys.stderr, flush=True)
+                if res is None:
+                    st = skiptrace_router.status()
+                    down = [v for v, x in st.items() if x.get("benched_until")]
+                    if down and len(down) >= sum(1 for x in st.values() if x["configured"]):
+                        return self._json(503, {"error": "Skip-trace is temporarily unavailable at every data vendor. You were not charged."})
+                    return self._json(200, {"source": "live", "mobiles": [], "emails": [], "nohit": True,
+                                            "usage": public_user(u)["usage"]})
+                contacts = [{"name": c["name"], "type": c["contact_type"], "phones": c["phones"], "emails": c["emails"]} for c in res["contacts"]]
+                mobiles = res["mobiles"]
+                emails = res["emails"]
                 # cache the result on the row so the next viewer costs nothing (enrich-once)
                 if pid:
                     try:
@@ -1338,7 +1349,7 @@ class Handler(SimpleHTTPRequestHandler):
                         owner = next((c["name"] for c in contacts if c["type"] == "owner" and c["name"]), None)
                         patch = {"phones": all_phones, "emails": emails,
                                  "skip_traced_at": datetime.now(timezone.utc).isoformat(),
-                                 "enrichment_source": "dealmachine"}
+                                 "enrichment_source": {"dm40711": "dealmachine", "dm23501": "dealmachine", "tracerfy": "tracerfy", "reapi": "reapi-skiptrace"}.get(res["vendor"], res["vendor"])}
                         if nok:
                             patch["next_of_kin"] = nok
                         if owner:
