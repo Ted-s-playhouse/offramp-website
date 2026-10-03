@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>OffRamp REI · Final UAT and Go-Live Plan · 2026-10-03</title>
+<style>
+:root{--bg:#f6f7f4;--card:#fff;--ink:#17201b;--sub:#5b665f;--line:#dde3dd;--green:#1B4332;--gold:#b08d2a;--red:#a3362d;--amber:#9a6a00;--pass:#e8f3ea;--fail:#fbe9e7;--chip:#eef2ee}
+@media (prefers-color-scheme:dark){:root{--bg:#121613;--card:#1a211c;--ink:#e9eee9;--sub:#a3ada5;--line:#2b342e;--green:#9ad0ae;--gold:#e0c266;--red:#f0958a;--amber:#e3b55a;--pass:#1e2f23;--fail:#3a2320;--chip:#232b25}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px 14px 60px}
+header{background:var(--green);color:#fff;padding:18px 14px}
+header .wrap{padding:0}
+h1{margin:0;font-size:22px;letter-spacing:.2px}
+header p{margin:6px 0 0;opacity:.9;font-size:13px}
+h2{font-size:18px;margin:28px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+h3{font-size:15px;margin:18px 0 6px}
+p{margin:6px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:6px 7px;text-align:left;vertical-align:top}
+th{background:var(--chip);font-weight:600}
+.tw{overflow-x:auto;margin:8px 0;border-radius:10px;border:1px solid var(--line)}
+.tw table{border:0}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--chip);color:var(--ink);white-space:nowrap}
+.pill.ted{background:var(--gold);color:#1b1500}.pill.iris{background:var(--green);color:#fff}.pill.block{background:var(--red);color:#fff}.pill.nice{background:var(--chip)}.pill.done{background:var(--pass);color:var(--green)}
+.cell{width:62px;text-align:center}
+.pf{display:inline-block;width:46px;text-align:center;border-radius:6px;padding:1px 0;font-size:11.5px;border:1px dashed var(--line);color:var(--sub)}
+ul{margin:6px 0 6px 18px;padding:0}li{margin:3px 0}
+.small{font-size:12.5px;color:var(--sub)}
+.k{color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--chip);padding:1px 5px;border-radius:5px}
+.toc a{color:var(--green);text-decoration:none;margin-right:10px;font-size:13px}
+.warn{border-left:4px solid var(--amber);padding-left:10px}
+.hard{border-left:4px solid var(--red);padding-left:10px}
+.ok{border-left:4px solid var(--green);padding-left:10px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>OffRamp REI · Final UAT and Go-Live Plan</h1>
+<p>Prepared Fri 2026-10-03, 3:00 PM Denver. Owner tags: <span class="pill ted">Ted</span> human taps, enrollments, approvals · <span class="pill iris">Iris</span> builds, scripts, checks. Target: web go-live Sun 10/5, iOS TestFlight within the week, store listings behind Apple and Google review.</p>
+</div></header>
+<div class="wrap">
+<p class="toc"><a href="#now">Status now</a><a href="#gates">Go-live gates</a><a href="#uat">UAT checklist</a><a href="#native">iOS · Android · Desktop</a><a href="#sched">48-hour schedule</a><a href="#runbook">Launch runbook</a><a href="#decide">Decisions for Ted</a></p>
+
+<h2 id="now">1. Status now (end of day Fri 10/3)</h2>
+<div class="card ok">
+<p><strong>Shipped today and live on offramprei.com</strong></p>
+<div class="tw"><table>
+<tr><th>Item</th><th>State</th><th>Proof</th></tr>
+<tr><td>Auctions-only feed. Pre-foreclosure rows without a sale date retired.</td><td>Live</td><td>36,025 active rows. 34,574 with a future sale date.</td></tr>
+<tr><td>Address-key dedupe with unique index and QA gate page.</td><td>Live</td><td>QA page shows WARN only. 49 near-matches held for review.</td></tr>
+<tr><td>Tiered filters. Free where and when. Pro how much. Premium who and why. Server enforces the tier.</td><td>Live</td><td>Params above tier are ignored and reported back to the app.</td></tr>
+<tr><td>Lien lines on detail. First lien, second lien, more liens. Lender hidden when liens exist.</td><td>Live</td><td>32,303 rows backfilled from cached detail sheets. Zero API spend.</td></tr>
+<tr><td>Equity unverified when the balance is zero and no lien is on record.</td><td>Live</td><td>5,759 rows. Card shows n/a. Detail explains why.</td></tr>
+<tr><td>Card tokens. Scheduled or Postponed. Trustee verified check. Days to auction. One color.</td><td>Live</td><td>Temperature cue removed from consumer views.</td></tr>
+<tr><td>Search outage fixed. Every search threw after the status dropdown was removed at 12:50 PM.</td><td>Live</td><td>Commit 6aaeb6e. Service worker v14. Verified against 200 live Arizona rows.</td></tr>
+<tr><td>Daily feed cron. Pull, ingest, merge, QA in one chain. Alerts Ted on FAIL.</td><td>Live</td><td>12:00 PM Denver. Once per day guard.</td></tr>
+</table></div>
+<p class="small">Pricing live in Stripe: Pro $49, Premium $99, legacy $149 kept. Founding Pro = 2,000 lookups and 250 skip traces a month. All 4 Pro users today are Ted's own accounts.</p>
+</div>
+
+<h2 id="gates">2. Go-live gates</h2>
+<div class="grid two">
+<div class="card hard">
+<p><strong>Hard blockers for web go-live</strong> <span class="pill block">must close</span></p>
+<ul>
+<li><strong>Final UAT pass</strong> on real devices. Section 3. <span class="pill ted">Ted</span> taps, <span class="pill iris">Iris</span> fixes same day.</li>
+<li><strong>Stripe past_due keeps access.</strong> Today a failed renewal leaves Pro features on. Decision needed: 3-day grace then downgrade to Free, or immediate downgrade. One webhook branch. <span class="pill iris">Iris</span> builds after <span class="pill ted">Ted</span> picks.</li>
+<li><strong>Per-lead URL.</strong> Add <code>#lead=&lt;id&gt;</code> so a card can be shared, opened from Telegram, and deep-linked from the native shell. Without it every link lands on the list. <span class="pill iris">Iris</span></li>
+<li><strong>Ted's "another API call before we push live."</strong> Asked twice, not answered. If it means the per-card Get property details button (1 credit, enrich once) say so and it ships Saturday. <span class="pill ted">Ted</span></li>
+<li><strong>Smoke test in the push path.</strong> <code>scripts/app_smoke.mjs</code> runs the real app JavaScript against live rows before any app push. Added today. Must run clean before every push. <span class="pill iris">Iris</span></li>
+<li><strong>Live trial switch.</strong> The 7-day trial button stays hidden in live mode until the live webhook sends subscription.created and invoice.paid. Enable the two events in the Stripe dashboard, then set the flag. <span class="pill ted">Ted</span> for the dashboard, <span class="pill iris">Iris</span> for the flag and a test-clock run.</li>
+</ul>
+</div>
+<div class="card warn">
+<p><strong>Nice to have. Do not hold launch for these.</strong> <span class="pill nice">after</span></p>
+<ul>
+<li>361 dated rows with no owner. Proposed: show Owner not on record and offer the 1-credit lookup. Awaiting Ted.</li>
+<li>Service worker refresh. Shell is network-first and APIs are never cached, so a stale screen only persists while a tab stays open. Add a Reload banner when a new version activates.</li>
+<li>Crawler load on county SEO pages. About 50 hits a minute today. Add a rate limit per IP on <code>/&lt;state&gt;/&lt;county&gt;/</code> pages.</li>
+<li>Desktop two-pane layout. Section 4c. Worth doing before the Product Hunt or email push, not before the web switch.</li>
+<li>Push notifications. Needs the native shell plus an APNs key. Phase after TestFlight.</li>
+</ul>
+</div>
+</div>
+
+<h2 id="uat">3. Final UAT checklist</h2>
+<p>Fill the cells with P or F. One row per screen and case. Ted taps on his iPhone in Safari, then installed as a PWA, then an Android phone, then desktop. Iris runs the scripted column from the server. Any F opens a fix the same hour. Launch needs every Ted cell at P on iPhone Safari and iPhone PWA. Android and desktop can carry known Fs if they are listed in the release note.</p>
+<div class="tw"><table>
+<tr><th>Screen · case</th><th>Expected</th><th>Owner</th><th class="cell">iPhone Safari</th><th class="cell">iPhone PWA</th><th class="cell">Android Chrome</th><th class="cell">Desktop</th><th class="cell">Scripted</th></tr>
+<tr><td>Sign-in · Google OAuth</td><td>Tap Continue with Google, land on Deals signed in, name shows on Account.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">n/a</span></td></tr>
+<tr><td>Sign-in · email + password and logout</td><td>Signup, login, logout each work. Wrong password shows a plain error.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Deals list · default</td><td>Opens on the last state or all states. Cards show owner, street, city, equity or n/a, value, badges. Never a blank list.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Deals list · state chip and typed state</td><td>Typing Utah jumps to UT. Chip counts match the header count line.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Deals list · empty state</td><td>A state with no deals says no auctions right now and links nearby states.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Filters · Free tier</td><td>Within days, sale type, property type apply. Pro and Premium rows show a lock. Tapping a lock opens the upgrade sheet.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Filters · Pro tier</td><td>Min equity, value range, beds, year, absentee, lender apply. Premium rows locked. Server ignores anything above tier and the app toasts it.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Filters · Premium tier</td><td>Deceased, bankruptcy, reverse, out of state, multi, next of kin, surplus apply.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Detail · layout and gray-out</td><td>Owner and address, beds baths sqft, Contact, Evaluation, Engage. Free sees blurred phone, email, next of kin, equity $, balance with a Pro label. Pro sees values.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Detail · liens and equity</td><td>First lien, second lien, more liens lines. Lender hidden when liens exist. Unverified equity shows one plain sentence and no equity $ or LTV.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Detail · badges</td><td>Scheduled or Postponed. Trustee verified check only when a trustee page confirmed the date. Auction in N days. Postponed rows carry a Sale moved line.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Detail · notes and hide</td><td>Add a note, hide a lead, Show hidden toggle restores it. Survives reload.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Map</td><td>Pins for rows with coordinates. Tap a pin opens the detail. Fit bounds on load.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">n/a</span></td></tr>
+<tr><td>Search · one box</td><td>Owner, street, city, zip, county all match. National rows merge in when no filter is set and dedupe against enriched rows.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Search tab · address lookup</td><td>Any address returns owner and value. Charges 1 credit once. Second lookup of the same address is free. Credit meter drops by 1.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Skip trace · credit flow</td><td>Pro taps Skip trace on the phone row. 1 credit. Mobile numbers only. Repeat is free. Free user gets the upgrade sheet instead.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Account · plan and meter</td><td>Header reads N credits left or the plan name. Account shows plan, renewal, founding badge if any.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Upgrade · Stripe checkout live</td><td>Free account upgrades to Pro with a real card. Returns to the app as Pro within 10 seconds. Webhook flips the plan. Portal link opens Stripe billing.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Upgrade · overage</td><td>Past the monthly cap each lookup adds a $0.35 invoice item. Ledger row written. Visible on the next Stripe invoice.</td><td><span class="pill iris">Iris</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Billing · failed renewal</td><td>Test clock advances a month with a declining card. Access follows the decision in section 2. Ted gets the Telegram.</td><td><span class="pill iris">Iris</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Trial · 7 days</td><td>Card on file, Premium access, converts to Pro $49 on day 8. Only after the live webhook events are enabled.</td><td><span class="pill iris">Iris</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>PWA · install</td><td>Add to Home Screen. Icon and name OffRamp. Opens full screen in portrait. Status bar green.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">n/a</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">n/a</span></td></tr>
+<tr><td>PWA · offline and refresh</td><td>Airplane mode opens the shell with a clear offline message. Back online, pull to refresh loads live data. New version activates without a stuck screen.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">n/a</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">n/a</span></td><td><span class="pf">n/a</span></td></tr>
+<tr><td>Export</td><td>Pro export downloads the capped row count. Free gets the upgrade sheet.</td><td><span class="pill ted">Ted</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+<tr><td>Legal pages</td><td>Privacy, terms, refund, unsubscribe load from the app footer and from the store listing URLs.</td><td><span class="pill iris">Iris</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td><td><span class="pf">·</span></td></tr>
+</table></div>
+<p class="small">Scripted column today: <code>node scripts/app_smoke.mjs</code> (search renders), server boot check on a spare port, curl 200 on both hostnames, Stripe test-clock run, and a Supabase query that every active row has a future sale date.</p>
+
+<h2 id="native">4. Getting it into the app stores and onto desktop</h2>
+<div class="card">
+<h3>4a. iOS. Honest picture.</h3>
+<div class="tw"><table>
+<tr><th>Step</th><th>Status</th><th>Owner</th><th>Effort</th></tr>
+<tr><td>PWA installable from Safari. Manifest, icons, service worker, standalone portrait.</td><td><span class="pill done">Done</span></td><td><span class="pill iris">Iris</span></td><td>0</td></tr>
+<tr><td>Capacitor 6 shell that loads offramprei.com/app. Scaffolded in <code>ios-wrapper/</code>. Not built or uploaded.</td><td>Scaffolded</td><td><span class="pill iris">Iris</span></td><td>2 h once signing exists</td></tr>
+<tr><td>Apple Developer Program enrollment. $99 a year. Individual account approves in about 48 hours. Organization account needs a D-U-N-S number and takes 1 to 2 weeks.</td><td><span class="pill block">Blocked</span></td><td><span class="pill ted">Ted</span></td><td>15 min to apply. Up to 2 days to approve.</td></tr>
+<tr><td>Build machine. The Mac has Command Line Tools only, no Xcode, and macOS 15.7 cannot run the current Xcode. Cloud build is already written: GitHub Actions on a macOS runner with fastlane, uploads to TestFlight.</td><td>Ready to run</td><td><span class="pill iris">Iris</span></td><td>1 h after the 6 repo secrets exist</td></tr>
+<tr><td>App Store Connect API key, Team ID, match certificates repo. The 6 repo secrets.</td><td>Needs the account</td><td><span class="pill ted">Ted</span> creates the key, <span class="pill iris">Iris</span> wires it</td><td>30 min</td></tr>
+<tr><td>TestFlight build on Ted's phone.</td><td>After first green cloud build</td><td><span class="pill ted">Ted</span> installs</td><td>Processing 10 to 30 min</td></tr>
+<tr><td>Listing assets. 1024 icon. Screenshots at 6.7 inch and 6.5 inch and 5.5 inch. Description. Keywords. Support URL. Privacy policy URL. Privacy nutrition labels. App Review notes with a demo login that already has Pro.</td><td>To build</td><td><span class="pill iris">Iris</span> drafts, <span class="pill ted">Ted</span> approves</td><td>3 h</td></tr>
+<tr><td>Submit for review. Typical turnaround 24 to 48 hours. First submissions often get one rejection.</td><td>After TestFlight</td><td><span class="pill ted">Ted</span> presses submit</td><td>1 to 4 days wall clock</td></tr>
+</table></div>
+<p class="warn"><strong>Two Apple risks to plan for now.</strong> Guideline 4.2 rejects thin web wrappers. The shell must add something native: push alerts for new auctions in saved states and a native share sheet are enough. Guideline 3.1.1 requires in-app purchase for digital subscriptions. OffRamp sells data access, which Apple treats as digital. Options: ship the native app as sign-in only with no upgrade button and buy on the web, or request the External Link Account entitlement, or add StoreKit subscriptions mirroring Pro and Premium and accept the 15 percent small business rate. Recommendation for launch: native app = sign-in and use only, upgrade lives on the web, no payment mention inside the app. Item 19 in the master file already points the native upgrade screen at a web link. Remove that link for the first review build.</p>
+<h3>4b. Android</h3>
+<div class="tw"><table>
+<tr><th>Step</th><th>Owner</th><th>Effort</th></tr>
+<tr><td>Google Play Console developer account. $25 once. Identity verification can take 1 to 3 days.</td><td><span class="pill ted">Ted</span></td><td>20 min to apply</td></tr>
+<tr><td>Trusted Web Activity package from the existing PWA with PWABuilder. Digital Asset Links file served at <code>/.well-known/assetlinks.json</code>.</td><td><span class="pill iris">Iris</span></td><td>2 h</td></tr>
+<tr><td>Listing. Icon, feature graphic, phone screenshots, data safety form, privacy URL.</td><td><span class="pill iris">Iris</span> drafts, <span class="pill ted">Ted</span> approves</td><td>2 h</td></tr>
+<tr><td>Internal testing track first, then production. Review 1 to 7 days. New accounts must run a closed test with 12 testers for 14 days before production access.</td><td><span class="pill ted">Ted</span></td><td>Wall clock up to 3 weeks for a new account</td></tr>
+</table></div>
+<p class="small">The master file had Android skipped until revenue. Ted reopened it today. The 14-day closed test rule for new Play accounts is the long pole, so apply for the account on Saturday even if the build comes later. Google also allows web payment links, so the Stripe flow can stay as is on Android.</p>
+<h3>4c. Desktop pass list</h3>
+<ul>
+<li>Container max width 1200 px. Content centered. No edge-to-edge cards on a 27 inch screen.</li>
+<li>Two panes at 1024 px and up. List left at 420 px. Detail right. Selecting a card never leaves the list.</li>
+<li>Map as a right panel on Deals when wide. Full screen only on phones.</li>
+<li>Filter sheet becomes a left drawer or inline panel. No bottom sheet on desktop.</li>
+<li>Keyboard. Tab order through cards. Enter opens. Escape closes detail. Slash focuses search.</li>
+<li>Hover states on cards, chips, and buttons. Cursor pointer everywhere clickable.</li>
+<li>Bottom nav becomes a top bar on desktop. Account and credits on the right.</li>
+<li>Check at 1280, 1440, 1920 in Chrome and Safari. Screenshots into the UAT table.</li>
+</ul>
+<p class="small">Estimate 6 to 8 hours of Iris build plus one Ted review. The mockup at <code>_desktop-dealroom-mockup-6b1e</code> is the reference. Scope locked to that mockup.</p>
+</div>
+
+<h2 id="sched">5. 48-hour schedule. Denver time.</h2>
+<div class="tw"><table>
+<tr><th>When</th><th>What</th><th>Owner</th></tr>
+<tr><td colspan="3"><strong>Fri 10/3 night</strong></td></tr>
+<tr><td>8 PM to 2 AM</td><td>Smoke test wired. Per-lead URL. past_due branch built behind a flag. Reload banner. County page rate limit. Store listing copy and screenshot script drafted.</td><td><span class="pill iris">Iris</span></td></tr>
+<tr><td colspan="3"><strong>Sat 10/4</strong></td></tr>
+<tr><td>7:00 AM</td><td>Overnight report to Ted. Links to everything above on staging.</td><td><span class="pill iris">Iris</span></td></tr>
+<tr><td>7:30 AM</td><td>Apply for Apple Developer Program as an individual. Apply for Google Play Console. Both from the Mac, 35 minutes total.</td><td><span class="pill ted">Ted</span></td></tr>
+<tr><td>8:00 AM</td><td>Answer the 6 decisions in section 7. One message.</td><td><span class="pill ted">Ted</span></td></tr>
+<tr><td>8:00 AM to noon</td><td>Build the decided items. Get property details button if that is the API call. Enable the trial flag once the webhook events are on.</td><td><span class="pill iris">Iris</span></td></tr>
+<tr><td>Noon</td><td>Daily feed runs and QA page passes. Freeze data changes after this.</td><td><span class="pill iris">Iris</span></td></tr>
+<tr><td>1:00 PM to 3:00 PM</td><td>UAT round 1. iPhone Safari then PWA. Fill the table. Send screenshots of every F.</td><td><span class="pill ted">Ted</span></td></tr>
+<tr><td>3:00 PM to 7:00 PM</td><td>Fix every F. Rerun smoke test. Redeploy with a service worker bump. Stripe test-clock run for renewal failure and trial.</td><td><span class="pill iris">Iris</span></td></tr>
+<tr><td>7:00 PM</td><td>UAT round 2 on the fixes. Android phone if one is in the house.</td><td><span class="pill ted">Ted</span></td></tr>
+<tr><td>Overnight</td><td>Desktop two-pane layout on staging. Android TWA package. Assetlinks file.</td><td><span class="pill iris">Iris</span></td></tr>
+<tr><td colspan="3"><strong>Sun 10/5</strong></td></tr>
+<tr><td>8:00 AM</td><td>Desktop review on the Mac at 1440. Approve or list changes.</td><td><span class="pill ted">Ted</span></td></tr>
+<tr><td>9:00 AM to 11:00 AM</td><td>Desktop fixes. Final smoke test. Tag the release.</td><td><span class="pill iris">Iris</span></td></tr>
+<tr><td>11:00 AM</td><td>Web go-live. Runbook in section 6. Founders email to the waitlist and the 4 Pro accounts.</td><td><span class="pill iris">Iris</span> executes, <span class="pill ted">Ted</span> says go</td></tr>
+<tr><td>Afternoon</td><td>If Apple approved the account: create the App Store Connect API key, send the 6 secrets, Iris runs the cloud build, TestFlight invite lands on the phone.</td><td><span class="pill ted">Ted</span> then <span class="pill iris">Iris</span></td></tr>
+<tr><td colspan="3"><strong>Day 3 and after</strong></td></tr>
+<tr><td>Mon 10/6</td><td>TestFlight on Ted's phone. Push alerts wired for saved states. Listing assets final. Submit to App Review as sign-in only.</td><td>both</td></tr>
+<tr><td>Tue 10/7 to Fri 10/10</td><td>Apple review. Fix one rejection if it comes. Play internal test track live. Closed test clock starts for the 14-day rule.</td><td>both</td></tr>
+<tr><td>Week of 10/20</td><td>Play production submission once the closed test window closes.</td><td><span class="pill ted">Ted</span></td></tr>
+</table></div>
+
+<h2 id="runbook">6. Launch-day runbook</h2>
+<div class="card">
+<ol>
+<li><strong>Freeze.</strong> No data merges or schema changes from Sat noon until Sun 1 PM. Feed cron may run. Nothing else touches hit_list.</li>
+<li><strong>Backup.</strong> Supabase snapshot of hit_list, offramp_users, offramp_credit_ledger, offramp_lead_actions before the switch. Keep the file in the vault.</li>
+<li><strong>Smoke test.</strong> <code>node scripts/app_smoke.mjs</code> against 200 live rows. Must print PASS.</li>
+<li><strong>Server boot check.</strong> Boot server.py on a spare port for 6 seconds and read the exit code. Then restart pm2, confirm online, curl 200 on offramprei.com and offramp-staging. Same as the 10/3 outage rule.</li>
+<li><strong>Service worker bump.</strong> Every app push bumps the shell version so installed phones pick up the new file on next open.</li>
+<li><strong>Watch 30 minutes.</strong> Tail the pm2 log for 5xx and tracebacks. Open the app on two phones. Run one paid lookup and one skip trace on Ted's founding account.</li>
+<li><strong>Rollback.</strong> <code>git revert</code> the release commit, bump the service worker, restart pm2, boot check, curl 200. Under 5 minutes. No data rollback needed because the app push carries no schema change.</li>
+<li><strong>Tell people.</strong> Telegram Ted first. Founders email to the waitlist and the 4 Pro accounts with the install steps for iPhone and Android and the desktop link. Scout partners get one line in their channels.</li>
+<li><strong>Day-after report.</strong> Signups, upgrades, lookups, skip traces, errors, and the UAT table with every cell filled.</li>
+</ol>
+</div>
+
+<h2 id="decide">7. Decisions Ted must make now</h2>
+<div class="card">
+<ul>
+<li>Failed renewal: 3-day grace then downgrade to Free, or downgrade the same day.</li>
+<li>Is the "another API call before we push live" the per-card Get property details button, and does it ship Saturday.</li>
+<li>Native iOS app for the first review: sign-in only with upgrades on the web, or wait for the external link entitlement, or build StoreKit subscriptions and accept the delay.</li>
+<li>Apple account type: individual now in about 2 days, or organization with a D-U-N-S number in 1 to 2 weeks.</li>
+<li>Android now with the 14-day closed test clock starting this week, or after iOS ships.</li>
+<li>Go-live moment: Sunday 11 AM web switch with the founders email, or hold for the desktop two-pane layout.</li>
+<li>The 361 dated rows with no owner: show Owner not on record with the lookup button, or hide them.</li>
+</ul>
+</div>
+<p class="small">Source of truth for this plan: <code>orgs/AHR/sites/offramp/_launch-plan-2026-10-03/index.html</code>. Master task file and phase tracker stay where they are. Cell values in section 3 get filled in this file as UAT runs.</p>
+</div>
+</body>
+</html>
