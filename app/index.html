@@ -916,8 +916,11 @@ function statusLabel(r){ if(r.surplus_amount!=null&&r.surplus_amount!=='')return
   if(/cured|reinstat|cancel/i.test(st)){ return trusteeLive(r)?'Scheduled':'Cured'; }  // Ted 2026-10-03: a trustee-verified live sale beats stale feed text; a real cure is a red stop sign
   if(r.auction_date&&(!st||/pre.?foreclosure|notice of|^foreclosure$/i.test(st)))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
   return st; }
+function dupLien(r){ return !!(r.lien_count>=2&&r.lien_first_amount!=null&&r.lien_second_amount!=null&&Number(r.lien_first_amount)===Number(r.lien_second_amount)); }  // Ted 2026-10-03 rule: identical first and second = a double recording, count it once
+function lienTotal(r){ var t=Number(r.lien_total_amount||0); if(dupLien(r))return Number(r.lien_first_amount)||t; return t; }
+function lienCount(r){ return dupLien(r)?Math.max(1,(r.lien_count||2)-1):r.lien_count; }
 function equityView(r){  // Ted 2026-10-03 (two screenshots): equity must net EVERY recorded lien, and must go Unverified when the lien sheet and the loan on file disagree.
-  var v=Number(r.avm||r.market_value||0), tot=Number(r.lien_total_amount||0), mb=Number(r.mortgage_balance||0), first=Number(r.lien_first_amount||0);
+  var v=Number(r.avm||r.market_value||0), tot=lienTotal(r), mb=Number(r.mortgage_balance||0), first=Number(r.lien_first_amount||0);
   var hasLiens=(r.lien_count>0&&tot>0);
   if(r.equity_unverified)return {unv:true,why:'',pct:null,dollars:null,net:false};
   if(hasLiens&&v>0&&tot>=v)return {unv:false,neg:true,why:'',pct:Math.round((v-tot)/v*100),dollars:Math.round(v-tot),net:true};  // Ted 2026-10-03: liens over value = negative equity. Say that. Keep it simple.
@@ -1080,8 +1083,8 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
     lineIf('Value',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     (r.mls_active===true||r.mls_status)?line('Listed',r.mls_list_price?('On MLS · '+money(r.mls_list_price)):'On MLS'):'',
     hasLiens?line('First lien',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):lineIf('Loan balance',mb>0?((r.mortgage_lender?r.mortgage_lender+' · ':'')+money(mb)):''),
-    lineIf('Second lien',r.lien_second_amount?money(r.lien_second_amount):''),
-    (hasLiens&&r.lien_count>1&&r.lien_total_amount)?line('Total debt',money(r.lien_total_amount)):'',
+    lineIf('Second lien',(r.lien_second_amount&&!dupLien(r))?money(r.lien_second_amount):''),
+    (hasLiens&&lienCount(r)>1&&lienTotal(r))?line('Total debt',money(lienTotal(r))):'',
     lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
     r.reverse_mortgage===true?line('Reverse mortgage','Yes'):'',
     paid?lineIf('Equity $',(ev.dollars!=null&&!unv&&!ev.neg)?money(ev.dollars):''):lockedRow('Equity $','pro'),
@@ -1102,7 +1105,8 @@ function lockedTile(title,sub,kind){ var tag=(kind==='premium'?'Premium':'Pro');
 function lienTile(r){
   if(r.lien_count==null)return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Liens on record</div><div class="word">NO RECORD</div><div class="proof">No recorded lien sheet on file for this property yet.</div></div></div>';
   if(r.lien_count===0)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Liens on record</div><div class="word">CLEAR</div><div class="detail">No liens recorded'+(r.free_and_clear?' · free and clear':'')+'</div><div class="proof">OffRamp county record.</div></div></div>';
-  var tot=r.lien_total_amount||((Number(r.lien_first_amount)||0)+(Number(r.lien_second_amount)||0));
+  var tot=lienTotal(r)||((Number(r.lien_first_amount)||0)+(dupLien(r)?0:(Number(r.lien_second_amount)||0)));
+  if(dupLien(r))r=Object.assign({},r,{lien_count:lienCount(r),lien_second_amount:null});
   // Ted 2026-10-03: one lien is just the loan being foreclosed — never 'ahead of you', never a red flag. Two or more is the flag.
   if(r.lien_count===1)return '<div class="vtile none"><div class="ico">1</div><div><div class="title">Liens on record</div><div class="word">1 LIEN</div><div class="detail">'+(tot?money(tot):'')+(r.lien_first_lender?' · '+esc(r.lien_first_lender):'')+'</div><div class="proof">The loan being foreclosed. OffRamp county record.</div></div></div>';
   var parts=[]; if(r.lien_first_amount)parts.push('First '+money(r.lien_first_amount)+(r.lien_first_lender?' '+r.lien_first_lender:'')); if(r.lien_second_amount)parts.push('Second '+money(r.lien_second_amount)); if(r.tax_lien)parts.push('Tax lien'); if(r.judgment_flag)parts.push('Judgment');
