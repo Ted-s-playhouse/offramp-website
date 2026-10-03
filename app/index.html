@@ -301,7 +301,7 @@
   .revealbtn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:0;padding:13px;border-radius:11px;font-weight:800;font-size:14.5px}
   .phone{display:flex;align-items:center;justify-content:space-between;padding:13px 12px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-top:8px;text-decoration:none}
   a.phone:active{background:var(--accentSoft)}
-  .phone.dnc{opacity:.75}
+  .phone.dnc{opacity:1}
   .phone .num{font-weight:800;font-size:16px;color:var(--accent)}
   .phone .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;background:var(--accentSoft);color:var(--accent2)}
   .phone .tag.dnc{background:#fbeae6;color:var(--danger)}
@@ -980,8 +980,7 @@ function callButton(phones){ return '';
 function phoneHtml(phones,emails){
   var all=(phones||[]);  // Ted 2026-10-03: every number is its own tappable row (DealMachine property sheet), no single call button; DNC listed but not dialable
   var h=all.map(function(p){var n=String(p.number||'').replace(/\D/g,'');var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n; var t=(p.dnc?'DNC':esc(p.type||'mobile'));
-    if(p.dnc) return '<div class="phone dnc"><span class="num">'+f+'</span><span class="tag dnc">DNC · do not call</span></div>';
-    return '<a class="phone" href="tel:'+n+'" onclick="setAction(\'contacted\',true)"><span class="num">&#128222; '+f+'</span><span class="tag">'+t+'</span></a>';}).join('');
+    return '<a class="phone'+(p.dnc?' dnc':'')+'" href="tel:'+n+'" onclick="setAction(\'contacted\',true)"><span class="num">&#128222; '+f+'</span><span class="tag'+(p.dnc?' dnc':'')+'">'+t+'</span></a>';}).join('');  // Ted 2026-10-03: DNC numbers stay dialable (one cash-offer call is not an FTC violation); the tag is information, not a block
   var e=(emails||[]).map(function(x){return '<a class="mail" href="mailto:'+esc(x)+'">'+esc(x)+'</a>';}).join('');
   return h+(e?'<div class="mails">'+e+'</div>':'');
 }
