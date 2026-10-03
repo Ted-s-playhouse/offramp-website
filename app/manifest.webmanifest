@@ -1,0 +1,17 @@
+{
+  "name": "OffRamp REI Deal Room",
+  "short_name": "OffRamp",
+  "description": "Pre-foreclosure, auction and probate deals with owner contact and a deal analyzer.",
+  "id": "/app/",
+  "start_url": "/app/?source=pwa",
+  "scope": "/app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B4332",
+  "theme_color": "#1B4332",
+  "icons": [
+    {"src": "/app/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/app/icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "/app/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
