@@ -91,6 +91,11 @@ Source: Ted 2026-10-03 10:30–10:45Z Telegram ("develop the next phase: the UI/
 ### 5E. iOS
 33. Apple Developer enrollment (human). Two routes: (a) Individual under Ted — $99/yr, no entity paperwork, approved in ~1-2 days, app can be transferred to an org account later; (b) Organization under the LLC — needs a D-U-N-S number for the legal entity (free from Dun & Bradstreet via Apple's D-U-N-S lookup, up to 30 days), legal-entity verification, and Ted as the account holder. Recommendation: enroll Individual now to unblock TestFlight, start the D-U-N-S request for the LLC in parallel. Then items 17/18 resume (Xcode on the Mac, Capacitor build, Small Business Program).
 
+### 5F. Added 2026-10-03 11:05Z (Ted, Telegram)
+34. Skip-trace router (`services/lib/skiptrace_router.py`): cache-first (phones or traced <90d → 0 calls) → DealMachine org 40711 → Tracerfy $0.02 → REAPI $0.05 → DealMachine org 23501 after reset; per-vendor stamp on the row so a miss is never re-billed at the same vendor; vendor benched 1h on 401/402 + Telegram ping; mobile-only, DNC kept. Used by /api/skiptrace and the enrichment worker. Verify: bench one vendor by key and the button still returns numbers.
+35. CourtListener on the card: free API token (5,000/day); on every append run one RECAP search on the owner name scoped to the property state's bankruptcy + district courts, cache on the row (court_records jsonb); Pro "Court records" row shows chapter / filed / docket link. "Advanced search" tap = nationwide name search. Liens & judgments stay REAPI $0.75 Premium on tap.
+36. Obituary → owner match daily cron: Echovita + Legacy national pulls already land in offramp-scout/storage/obits (~4.5k/day); match name + city/state against hit_list owners and contacts, set deceased_flag + deceased_source='obituary' + obit_url + date_of_death, lead type "deceased pre-probate". Verify: daily count of new matches in heartbeat.
+
 ### Timeline
 - 5A #22 finishes today; #23/#24 by 2026-10-04.
 - 5B #26/#27 by 2026-10-05; #28 mockup by 2026-10-06.
