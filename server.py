@@ -530,10 +530,22 @@ def build_search_query(qs, limit):
     return "/hit_list?" + "&".join(parts)
 
 
-NATIONAL_COLS = ("id,listing_id,state,county,city,zip,street,address,detail_url,"
+NATIONAL_COLS = ("id,listing_id,state,county,county_norm,county_slug,city,zip,street,address,detail_url,"
                   "primary_photo,status,status_group,auction_window,product_type,"
                   "asset_type,occupancy,trustee_sale,beds,baths,sqft,lot_size,"
-                  "year_built,est_value")
+                  "year_built,est_value,apn,latitude,longitude,auction_date,auction_time_local,"
+                  "opening_bid,trustee_sale_number,foreclosing_attorney,foreclosing_attorney_phone,"
+                  "venue_name,venue_address")
+
+
+def national_public_url(r):
+    """Canonical public SEO page for a national row (deal room -> public page link).
+    Uses the same slug rules as seo_pages so the link always resolves."""
+    st = (r.get("state") or "").lower()
+    slug_st = seo_pages.ABBR.get(st)
+    if not slug_st:
+        return None
+    return f"/{slug_st}/{seo_pages.row_county_slug(r)}/{seo_pages.listing_slug(r)}"
 
 
 def build_national_query(qs, limit):
@@ -562,9 +574,9 @@ def normalize_national_row(r):
         "owner_full": None, "owner_first": None, "owner_last": None,
         "property_street": r.get("street"), "property_city": r.get("city"),
         "property_state": r.get("state"), "property_zip": r.get("zip"),
-        "county": r.get("county"), "foreclosure_status": r.get("status"),
+        "county": r.get("county_norm") or r.get("county"), "foreclosure_status": r.get("status"),
         "lead_status": None,
-        "auction_date": r.get("auction_window"), "auction_time": None,
+        "auction_date": r.get("auction_window"), "auction_time": r.get("auction_time_local"),
         "days_to_auction": None,
         "market_value": r.get("est_value"), "avm": r.get("est_value"), "arv": None,
         "equity_dollars": None, "equity_pct": None, "ltv_pct": None,
@@ -572,10 +584,10 @@ def normalize_national_row(r):
         "beds": r.get("beds"), "baths": r.get("baths"),
         "living_area_sqft": r.get("sqft"), "year_built": r.get("year_built"),
         "occupancy": r.get("occupancy"), "property_type": r.get("structure_type"),
-        "apn": None, "latitude": None, "longitude": None, "temperature": None,
-        "trustee_file_no": None, "nod_case_number": None, "is_judicial": None,
-        "foreclosing_attorney": None, "attorney_phone": None,
-        "trustee_opening_bid": None, "auction_est_value": r.get("est_value"),
+        "apn": r.get("apn"), "latitude": r.get("latitude"), "longitude": r.get("longitude"), "temperature": None,
+        "trustee_file_no": r.get("trustee_sale_number"), "nod_case_number": None, "is_judicial": None,
+        "foreclosing_attorney": r.get("foreclosing_attorney"), "attorney_phone": r.get("foreclosing_attorney_phone"),
+        "trustee_opening_bid": r.get("opening_bid"), "auction_est_value": r.get("est_value"),
         "notice_url": r.get("detail_url"), "mailing_address": None,
         "mortgage_lender": None, "mortgage_interest_rate": None,
         "mortgage_loan_type": None, "mortgage_recording_date": None,
@@ -585,6 +597,8 @@ def normalize_national_row(r):
         "skip_traced_at": None, "phones": None, "emails": None,
         "contacts_locked": True, "source": "auction.com",
         "primary_photo": r.get("primary_photo"),
+        "venue_name": r.get("venue_name"), "venue_address": r.get("venue_address"),
+        "public_url": national_public_url(r),
     }
 
 
