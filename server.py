@@ -429,6 +429,25 @@ def _google_get(url, timeout=20):
         return r.status, r.read(), r.headers.get("Content-Type", "")
 
 
+def photo_public_path(address):
+    addr = (address or "").strip().lower()
+    if not addr:
+        return None
+    ck = hashlib.md5(addr.encode()).hexdigest()
+    return f"/cache/photos/{ck}.jpg"
+
+
+def remember_photo(row_id, address):
+    url = photo_public_path(address)
+    if not url or not row_id or str(row_id).startswith("nat:"):
+        return
+    try:
+        sb("PATCH", f"/hit_list?id=eq.{urllib.parse.quote(str(row_id))}",
+           body={"photo_url": url}, headers={"Prefer": "return=minimal"})
+    except Exception as e:
+        print(f"[photo] cache write {e}")
+
+
 def fetch_photo(address):
     """Address-based property image: Street View where a pano exists, else a
     satellite aerial (matches the CRM's photos.ts). Cached on disk."""
@@ -481,8 +500,8 @@ SEARCH_COLS = ("id,owner_full,owner_first,owner_last,property_street,property_ci
                "auction_est_value,notice_url,mailing_address,mortgage_lender,"
                "mortgage_interest_rate,mortgage_loan_type,mortgage_recording_date,"
                "mortgage_maturity_date,reverse_mortgage,mls_active,mls_status,"
-               "mls_list_price,bankruptcy_flag,bankruptcy_chapter,deceased_flag,"
-               "skip_traced_at,phones,emails")
+                "mls_list_price,bankruptcy_flag,bankruptcy_chapter,deceased_flag,"
+                "skip_traced_at,phones,emails,photo_url")
 
 
 def build_search_query(qs, limit):
@@ -737,9 +756,11 @@ class Handler(SimpleHTTPRequestHandler):
             if not tok or not read_session(tok.value):
                 return self._json(401, {"error": "not signed in"})
             addr = (qs.get("address") or [""])[0]
+            row_id = (qs.get("id") or [""])[0]
             b, ct = fetch_photo(addr)
             if not b:
                 return self._json(404, {"error": "no image"})
+            remember_photo(row_id, addr)
             self.send_response(200)
             self.send_header("Content-Type", ct)
             self.send_header("Cache-Control", "public, max-age=1209600")

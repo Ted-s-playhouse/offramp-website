@@ -337,7 +337,17 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){retur
 function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(function(){t.style.display='none';},2600); }
 function api(path,opts){ opts=opts||{}; opts.credentials='include'; if(opts.body&&typeof opts.body!=='string'){opts.headers=Object.assign({'Content-Type':'application/json'},opts.headers||{});opts.body=JSON.stringify(opts.body);} return fetch(path,opts); }
 function fullAddr(r){ return [r.property_street,r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '); }
-function photoUrl(r){ var a=fullAddr(r); return a?('/api/photo?address='+encodeURIComponent(a)):''; }
+  function photoUrl(r){
+    if(r.photo_url) return r.photo_url;
+    var a=fullAddr(r);
+    if(!a) return '';
+    return '/api/photo?id='+encodeURIComponent(r.id||'')+'&address='+encodeURIComponent(a);
+  }
+  function photoFallback(r){
+    var a=fullAddr(r);
+    if(!a) return '';
+    return '/api/photo?id='+encodeURIComponent(r.id||'')+'&address='+encodeURIComponent(a);
+  }
 function tempColor(t){ t=(t||'').toLowerCase(); return t==='hot'?'#E4572E':t==='warm'?'#E9A620':t==='cold'?'#4A7BA6':'#5C6B62'; }
 
 /* ---------- auth ---------- */
@@ -431,8 +441,9 @@ function renderList(){
   el.innerHTML=ROWS.map(function(r,i){
     var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
     var pu=photoUrl(r);
+    var fb=photoFallback(r);
     var thumb=pu
-      ? '<div class="thumb"><img loading="lazy" src="'+pu+'" alt="" onerror="this.parentNode.classList.add(\'noimg\');this.remove()"></div>'
+      ? '<div class="thumb"><img loading="lazy" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.parentNode.classList.add(\'noimg\');this.remove()"></div>'
       : '<div class="thumb noimg"></div>';
     return '<div class="lead" style="border-left-color:'+tempColor(r.temperature)+'" onclick="openDetail('+i+')">'+
       '<div class="top">'+thumb+
@@ -450,7 +461,7 @@ function renderList(){
 function ensureMap(){
   if(MAP)return;
   MAP=L.map('map',{zoomControl:true}).setView([39.3,-111.7],6);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(MAP);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(MAP);
   MARKERS=L.layerGroup().addTo(MAP);
 }
 function renderPins(){
@@ -473,7 +484,8 @@ function openDetail(i){
   var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
   var addr=fullAddr(r);
   var pu=photoUrl(r);
-  var hero=pu?'<img class="dhero" src="'+pu+'" alt="" onerror="this.style.display=\'none\'">':'';
+  var fb=photoFallback(r);
+  var hero=pu?'<img class="dhero" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.style.display=\'none\'">':'';
   var hbadges='';
   if(r.temperature)hbadges+='<span class="badge hbadge" style="background:'+tempColor(r.temperature)+';border:0">'+esc(r.temperature.toUpperCase())+'</span>';
   if(r.foreclosure_status)hbadges+='<span class="badge hbadge">'+esc(r.foreclosure_status)+'</span>';
