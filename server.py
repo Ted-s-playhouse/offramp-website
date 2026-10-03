@@ -648,7 +648,7 @@ def fetch_photo(address):
 
 
 # ---------------------------- search / rows ----------------------------------
-SEARCH_COLS = ("sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
+SEARCH_COLS = ("equity_unverified,equity_verify_note,lien_count,lien_first_position,lien_first_lender,lien_first_amount,lien_first_type,lien_second_amount,lien_total_amount,tax_lien,judgment_flag,free_and_clear,sale_verified_source,verified,id,owner_full,owner_first,owner_last,property_street,property_city,"
                "property_state,property_zip,county,foreclosure_status,lead_status,"
                "auction_date,auction_time,days_to_auction,market_value,avm,arv,"
                "equity_dollars,equity_pct,ltv_pct,mortgage_balance,beds,baths,"
@@ -665,7 +665,7 @@ SEARCH_COLS = ("sale_verified_source,verified,id,owner_full,owner_first,owner_la
 
 
 def build_search_query(qs, limit):
-    parts = [f"select={SEARCH_COLS}", "active=eq.true", f"limit={limit}",
+    parts = [f"select={SEARCH_COLS}", "active=eq.true", "auction_date=not.is.null", f"limit={limit}",  # Ted 2026-10-03: auctions only
              "order=days_to_auction.asc.nullslast"]
     # Deal room defaults to live inventory: hide auctions that already passed
     # (days_to_auction very negative) unless caller explicitly opts in with
@@ -755,7 +755,7 @@ def state_counts():
     if _STATE_COUNTS["val"] and time.time() - _STATE_COUNTS["at"] < 600:
         return _STATE_COUNTS["val"]
     hit, nat = {}, {}
-    for r in sb_all("/hit_list?select=property_state&active=eq.true&or=(days_to_auction.gte.-3,days_to_auction.is.null)"):
+    for r in sb_all("/hit_list?select=property_state&active=eq.true&auction_date=not.is.null&days_to_auction=gte.-3"):
         st = (r.get("property_state") or "").upper()
         if st:
             hit[st] = hit.get(st, 0) + 1
@@ -892,6 +892,8 @@ def strip_contacts(row):
     r["contacts_locked"] = True
     r["equity_dollars"] = None
     r["mortgage_balance"] = None
+    for c in ("lien_first_lender", "lien_first_amount", "lien_second_amount", "lien_total_amount"):
+        r[c] = None
     r["evaluation_locked"] = True
     return r
 

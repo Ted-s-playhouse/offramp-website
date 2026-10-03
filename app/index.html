@@ -169,7 +169,8 @@
   .lead .right .val{font-size:12px;color:var(--sub);margin-top:4px}
   .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
   .badge{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:20px;border:1px solid transparent}
-  .badge.vmark{background:#e7f3ec;color:#1f6f43;border:1px solid #b7dcc6}
+  .eq.eq-unv{color:#8a949c;font-size:15px}
+.badge.vmark{background:#e7f3ec;color:#1f6f43;border:1px solid #b7dcc6}
 .badge.status{color:#fff}
   .badge.soon{background:var(--danger);color:#fff}
   .badge.auc{background:var(--warm);color:#3a2a06}
@@ -685,7 +686,7 @@ function renderList(){
         '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
           '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
           '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+'</div></div>'+
-        '<div class="right"><div class="eq">'+(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'—')+'</div><div class="eqk">equity</div>'+
+        '<div class="right"><div class="eq'+(r.equity_unverified?' eq-unv':'')+'">'+(r.equity_unverified?'n/a':(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'—'))+'</div><div class="eqk">'+(r.equity_unverified?'equity unverified':'equity')+'</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
       '</div>'+
       '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div></div>';
@@ -711,7 +712,7 @@ function renderPins(){
     if(r.latitude&&r.longitude){
       var m=L.circleMarker([r.latitude,r.longitude],{radius:7,color:'#1B4332',weight:2,fillColor:tempColor(r.temperature),fillOpacity:.85});
       m.on('click',function(){openDetail(i);});
-      m.bindTooltip((r.property_street||'')+' · '+(r.equity_pct!=null?Math.round(r.equity_pct)+'%':''),{direction:'top'});
+      m.bindTooltip((r.property_street||'')+' · '+(r.equity_unverified?'equity unverified':(r.equity_pct!=null?Math.round(r.equity_pct)+'%':'')),{direction:'top'});
       m.addTo(MARKERS); pts.push([r.latitude,r.longitude]);
     }
   });
@@ -755,7 +756,11 @@ function openDetail(i){
 
   // ---- Evaluation (Revive order: equity %, equity $, AVM, loan balance). Free: $ rows grayed.
   var evalRows=[
-    lineIf('Equity',r.equity_pct!=null?pct(r.equity_pct):''),
+    lineIf('Equity',r.equity_unverified?'Unverified':(r.equity_pct!=null?pct(r.equity_pct):'')),
+    lineIf('Why unverified',r.equity_unverified?(r.equity_verify_note||''):''),
+    lineIf('Liens on record',lienLine(r)),
+    lineIf('Tax lien',r.tax_lien?'Yes':''),
+    lineIf('Judgment',r.judgment_flag?'Yes':''),
     paid?lineIf('Equity $',r.equity_dollars!=null?money(r.equity_dollars):''):lockedRow('Equity $','pro'),
     lineIf('AVM',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     paid?lineIf('Loan balance',r.mortgage_balance!=null?money(r.mortgage_balance):''):lockedRow('Loan balance','pro'),
@@ -843,6 +848,10 @@ function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div cla
 function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
 function lineIf(k,v){ return (v===null||v===undefined||v===''||v==='—')?'':line(k,v); }
 function lineRaw(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)return 'None recorded'+(r.free_and_clear?' (REAPI: free and clear)':'');
+  var f=r.lien_first_lender?(r.lien_first_position||'First')+': '+r.lien_first_lender+(r.lien_first_amount?' $'+Math.round(r.lien_first_amount).toLocaleString():'')+(r.lien_first_type?' ('+r.lien_first_type+')':''):'';
+  var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
+  return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
 function statusLabel(r){ return (r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,''); }  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
 function trusteeMark(r){ var v=r.sale_verified_source||''; return (v && !/realestateapi/i.test(v)) ? '<span class="badge vmark" title="Sale date verified on the trustee page">&#10003; Trustee verified</span>' : ''; }
 function pct(x){ return (x===null||x===undefined||x==='')?'':(Math.round(Number(x))+'%'); }  // Ted 2026-10-03: never a decimal on a percent
