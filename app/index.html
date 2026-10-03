@@ -1019,9 +1019,10 @@ function meterBars(m){ return '<span class="bars"><i class="on"></i><i'+(m!=='lo
 function sigBadges(r){
   // list cards: at most ONE badge, paid users only, and only a strong call (Ted 2026-10-03: extremely sparingly). Ramp Bid never rides on a card.
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); if(!paid)return '';
-  var s=surplusChaser(r); if(s&&prem)return '<div class="mbrow"><span class="mb surplus">'+SIG_ICON.coin+'Surplus Chaser <span class="mv">'+moneyK(s.v)+'</span></span></div>';
+  // UT check 2026-10-03: pre-sale surplus room + Reversion Low fired on 42% of cards (high-equity market). Cards get only what already happened or cannot be argued:
+  var s=surplusChaser(r); if(s&&s.sold&&prem)return '<div class="mbrow"><span class="mb surplus">'+SIG_ICON.coin+'Surplus Chaser <span class="mv">'+moneyK(s.v)+'</span></span></div>';
   var g=gavelOdds(r); if(g==='high')return '<div class="mbrow"><span class="mb gavel high">'+SIG_ICON.gavel+'Gavel Odds <span class="mv">High</span></span></div>';
-  var m=reversion(r); if(m)return '<div class="mbrow"><span class="mb meter">'+meterBars(m)+'Reversion <span class="mv">'+LVL[m]+'</span></span></div>';
+  var m=reversion(r); if(m==='high')return '<div class="mbrow"><span class="mb meter">'+meterBars(m)+'Reversion <span class="mv">High</span></span></div>';
   return '';
 }
 function signalsSection(r){
