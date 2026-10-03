@@ -73,12 +73,29 @@ GOOGLE_OAUTH_SECRET = _read(os.path.join(SEC, "google-oauth-revivebuyers-client-
 # them into the app. Test-mode files (stripe-secret-offramp-test etc.) are
 # kept on disk untouched as a rollback reference, not read anymore.
 SEO_FLUSH_TOKEN = _read(os.path.join(SEC, "offramp-seo-flush-token"))
-STRIPE_SECRET = _read(os.path.join(SEC, "stripe-secret-offramp-live"))
-STRIPE_WEBHOOK_SECRET = _read(os.path.join(SEC, "stripe-webhook-offramp-secret-live"))
+# OFFRAMP_STRIPE_MODE=test runs a sandbox instance against the Stripe TEST
+# account (used to verify billing changes such as the 7-day trial, item 37)
+# without touching live prices, webhooks or customers. pm2 never sets it.
+STRIPE_MODE = "test" if os.environ.get("OFFRAMP_STRIPE_MODE", "").strip().lower() == "test" else "live"
+if STRIPE_MODE == "test":
+    STRIPE_SECRET = _read(os.path.join(SEC, "stripe-secret-offramp-test"))
+    STRIPE_WEBHOOK_SECRET = _read(os.path.join(SEC, "stripe-webhook-offramp-secret"))
+    _STRIPE_IDS_FILE = "stripe-offramp-ids.json"
+else:
+    STRIPE_SECRET = _read(os.path.join(SEC, "stripe-secret-offramp-live"))
+    STRIPE_WEBHOOK_SECRET = _read(os.path.join(SEC, "stripe-webhook-offramp-secret-live"))
+    _STRIPE_IDS_FILE = "stripe-offramp-ids-live.json"
 try:
-    STRIPE_IDS = json.load(open(os.path.join(SEC, "stripe-offramp-ids-live.json")))
+    STRIPE_IDS = json.load(open(os.path.join(SEC, _STRIPE_IDS_FILE)))
 except Exception:
     STRIPE_IDS = {}
+# 7-day free trial (Phase 5 item 37): card on file, Premium features during the
+# trial, converts to Pro $49/mo on day 8. Always on in test mode; live needs
+# OFFRAMP_TRIAL_LIVE=1 once Ted has enabled customer.subscription.created +
+# invoice.paid on the live webhook endpoint (until then the button stays hidden
+# and /api/billing/checkout-link {plan:"trial"} answers 409).
+TRIAL_DAYS = 7
+TRIAL_ENABLED = STRIPE_MODE == "test" or os.environ.get("OFFRAMP_TRIAL_LIVE", "").strip() == "1"
 
 # on-disk cache for proxied property imagery (Street View / satellite)
 PHOTO_CACHE = os.path.join(DIR, "cache", "photos")
@@ -104,8 +121,11 @@ PLAN_LIMITS = {
     "pro":          {"lookups": 200,  "skiptraces": 200, "export_rows": 2000, "premium_data": False, "overage": True},
     "premium":      {"lookups": 200,  "skiptraces": 200, "export_rows": 5000, "premium_data": True,  "overage": True},
     "pro_founding": {"lookups": 2000, "skiptraces": 250, "export_rows": 2000, "premium_data": False, "overage": False},
+    # 7-day trial = Premium-level access; no overage billing while trialing
+    "trial":        {"lookups": 200,  "skiptraces": 200, "export_rows": 5000, "premium_data": True,  "overage": False},
 }
 PAID_PLANS = ("pro", "premium")
+TRIAL_PLAN = "trial"
 PREMIUM_COLS = ("next_of_kin", "deceased_party", "probate_case_number", "bankruptcy_case",
                 "bankruptcy_case_title", "bankruptcy_case_link", "bankruptcy_active_stay")
 
@@ -121,7 +141,12 @@ def limits_for(u):
 
 
 def is_paid(u):
-    return u.get("plan") in PAID_PLANS
+    return u.get("plan") in PAID_PLANS or u.get("plan") == TRIAL_PLAN
+
+
+def trial_eligible(u):
+    """One trial per customer ever: free plan, never trialed, feature switched on."""
+    return bool(TRIAL_ENABLED and u.get("plan") == "free" and not u.get("trial_used_at"))
 
 
 def has_premium(u):
@@ -401,6 +426,9 @@ def public_user(u):
         "email": u["email"], "full_name": u.get("full_name"), "plan": u["plan"],
         "plan_key": plan_key(u), "founding": bool(u.get("founding")),
         "paid": is_paid(u), "premium": has_premium(u),
+        "trial": u.get("plan") == TRIAL_PLAN, "trial_ends_at": u.get("trial_ends_at"),
+        "trial_eligible": trial_eligible(u), "trial_days": TRIAL_DAYS,
+        "billing_portal": bool(u.get("stripe_customer_id")),
         "usage": {
             "lookups": {"used": int(u.get("lookups_used") or 0), "limit": lim["lookups"]},
             "credits": {"used": int(u.get("lookups_used") or 0), "limit": lim["lookups"]},
@@ -807,6 +835,53 @@ def plan_from_session(sess):
     return "pro", False
 
 
+def _ts_iso(epoch):
+    try:
+        return datetime.fromtimestamp(int(epoch), tz=timezone.utc).isoformat()
+    except Exception:
+        return None
+
+
+def apply_subscription(u, sub, source, prev_status=None):
+    """Mirror a Stripe subscription object onto the user row (webhook path).
+    trialing -> plan 'trial' (Premium-level features), active -> plan from the
+    price (pro/premium), canceled/unpaid/incomplete_expired -> free. Funnel
+    events trial_start / paid fire on the transitions."""
+    status = sub.get("status")
+    price_id = (((sub.get("items") or {}).get("data") or [{}])[0].get("price") or {}).get("id")
+    body = {"stripe_status": status}
+    if sub.get("id"):
+        body["stripe_subscription_id"] = sub["id"]
+    if status == "trialing":
+        body["plan"] = TRIAL_PLAN
+        body["trial_ends_at"] = _ts_iso(sub.get("trial_end"))
+        if not u.get("trial_used_at"):
+            body["trial_used_at"] = datetime.now(timezone.utc).isoformat()
+        if u.get("plan") != TRIAL_PLAN:
+            funnel("trial_start", user_id=u["id"], path=f"stripe:{source}")
+            notify_telegram(f"OffRamp REI: {u['email']} started the {TRIAL_DAYS}-day trial (Premium features, then Pro $49)")
+    elif status == "active":
+        plan, founding = plan_from_price(price_id)
+        plan = plan or "pro"
+        body.update({"plan": plan, "founding": founding})
+        if u.get("plan") == TRIAL_PLAN or (prev_status and prev_status != "active"):
+            funnel("paid", user_id=u["id"], path=f"stripe:{source}")
+        if plan != u.get("plan"):
+            notify_telegram(f"OffRamp REI: {u['email']} is now on {plan.title()}"
+                            + (" (trial converted)" if u.get("plan") == TRIAL_PLAN else ""))
+    elif status in ("canceled", "unpaid", "incomplete_expired"):
+        body["plan"] = "free"
+        if u.get("plan") != "free":
+            notify_telegram(f"OffRamp REI: {u['email']} subscription {status}, moved to Free")
+    elif status == "past_due":
+        pass  # keep access; invoice.payment_failed already pinged Ted
+    else:
+        return u  # incomplete / paused: nothing to mirror yet
+    sb("PATCH", f"/offramp_users?id=eq.{u['id']}", body=body, headers={"Prefer": "return=minimal"})
+    u.update(body)
+    return u
+
+
 def strip_contacts(row):
     """Free tier: owner phones/emails and the Evaluation dollar figures (equity $, loan balance)
     are withheld server-side; the app renders those rows grayed with a Pro label. Equity %,
@@ -1198,6 +1273,20 @@ class Handler(SimpleHTTPRequestHandler):
                     cust = obj.get("customer")
                     sub = obj.get("subscription")
                     u = get_user_by_id(uid) if uid else None
+                    sub_obj = None
+                    if u and sub and ((obj.get("metadata") or {}).get("plan") == TRIAL_PLAN
+                                      or (obj.get("subscription_data") or {}).get("trial_period_days")):
+                        try:
+                            sub_obj = stripe_get(f"subscriptions/{sub}")
+                        except Exception as e:
+                            print(f"trial subscription fetch failed: {e}", flush=True)
+                    if u and sub_obj and sub_obj.get("status") == "trialing":
+                        if cust and u.get("stripe_customer_id") != cust:
+                            sb("PATCH", f"/offramp_users?id=eq.{u['id']}", body={"stripe_customer_id": cust},
+                               headers={"Prefer": "return=minimal"})
+                            u["stripe_customer_id"] = cust
+                        apply_subscription(u, sub_obj, "checkout.session.completed")
+                        return self._json(200, {"received": True})
                     plan, founding = plan_from_session(obj)
                     if u:
                         sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
@@ -1210,26 +1299,16 @@ class Handler(SimpleHTTPRequestHandler):
                         notify_telegram(f"OffRamp REI Stripe checkout completed but no matching user "
                                          f"(client_reference_id={uid}, customer={cust}) — needs manual match")
                 elif etype == "customer.subscription.created":
-                    # trials are not built yet; record trial_start only if one ever arrives
                     cust = obj.get("customer")
                     u = get_user_by_stripe_customer(cust) if cust else None
                     if u and obj.get("status") == "trialing":
-                        funnel("trial_start", user_id=u["id"], path="stripe:customer.subscription.created")
+                        apply_subscription(u, obj, "customer.subscription.created")
                 elif etype == "customer.subscription.updated":
                     cust = obj.get("customer")
                     u = get_user_by_stripe_customer(cust) if cust else None
                     prev_status = ((event.get("data") or {}).get("previous_attributes") or {}).get("status")
-                    if u and obj.get("status") == "trialing" and prev_status != "trialing":
-                        funnel("trial_start", user_id=u["id"], path="stripe:customer.subscription.updated")
-                    if u and obj.get("status") == "active" and prev_status and prev_status != "active":
-                        funnel("paid", user_id=u["id"], path="stripe:customer.subscription.updated")
-                    if u and obj.get("status") in ("active", "trialing"):
-                        plan, founding = plan_from_price(((obj.get("items") or {}).get("data") or [{}])[0].get("price", {}).get("id"))
-                        if plan and plan != u.get("plan"):
-                            sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
-                               body={"plan": plan, "founding": founding, "stripe_status": "active"},
-                               headers={"Prefer": "return=minimal"})
-                            notify_telegram(f"OffRamp REI: {u['email']} plan changed to {plan.title()}")
+                    if u and (u.get("stripe_subscription_id") in (None, "", obj.get("id"))):
+                        apply_subscription(u, obj, "customer.subscription.updated", prev_status=prev_status)
                 elif etype == "customer.subscription.deleted":
                     cust = obj.get("customer")
                     u = get_user_by_stripe_customer(cust) if cust else None
@@ -1261,8 +1340,17 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(401, {"error": "not signed in"})
             data = self._body() or {}
             plan = (data.get("plan") or "pro").strip().lower()
-            if plan not in PAID_PLANS:
+            if plan not in PAID_PLANS and plan != TRIAL_PLAN:
                 return self._json(400, {"error": "unknown plan"})
+            if plan == TRIAL_PLAN:
+                if not TRIAL_ENABLED:
+                    return self._json(409, {"error": "free trial is not open yet"})
+                if u.get("plan") == TRIAL_PLAN:
+                    return self._json(409, {"error": "your free trial is already running"})
+                if u.get("trial_used_at"):
+                    return self._json(409, {"error": "you have already used your free trial - pick Pro or Premium to continue"})
+                if u.get("plan") != "free":
+                    return self._json(409, {"error": "you are already on a paid plan"})
             price = STRIPE_IDS.get("price_premium99_monthly" if plan == "premium" else "price_pro49_monthly")
             annual = False  # new tiers are monthly only; the $149/$1,490 founding prices stay for existing members
             if not price:
@@ -1283,6 +1371,18 @@ class Handler(SimpleHTTPRequestHandler):
             params["allow_promotion_codes"] = "true"
             params["metadata[plan]"] = plan
             params["subscription_data[metadata][plan]"] = plan
+            if plan == TRIAL_PLAN:
+                # card required up front; no card by day 8 -> Stripe cancels the sub
+                params["subscription_data[trial_period_days]"] = TRIAL_DAYS
+                params["payment_method_collection"] = "always"
+                params["subscription_data[trial_settings][end_behavior][missing_payment_method]"] = "cancel"
+                params["success_url"] = "https://offramprei.com/app/?trial_started=1"
+                params["metadata[plan]"] = TRIAL_PLAN
+                params["subscription_data[metadata][plan]"] = "pro"
+                params["subscription_data[metadata][trial]"] = "1"
+                if u.get("stripe_customer_id"):  # same Stripe customer, so one trial per customer holds in Stripe too
+                    params["customer"] = u["stripe_customer_id"]
+                    params.pop("customer_email", None)
             try:
                 sess = stripe_post("checkout/sessions", params)
             except Exception as e:
@@ -1291,6 +1391,23 @@ class Handler(SimpleHTTPRequestHandler):
             if not sess.get("url"):
                 return self._json(502, {"error": "could not start checkout"})
             return self._json(200, {"url": sess["url"]})
+
+        # ---------- billing: Stripe customer portal (manage card / cancel trial) ----------
+        if route == "/api/billing/portal":
+            u = self._current_user()
+            if not u:
+                return self._json(401, {"error": "not signed in"})
+            if not u.get("stripe_customer_id"):
+                return self._json(404, {"error": "no billing account yet"})
+            try:
+                ps = stripe_post("billing_portal/sessions", {"customer": u["stripe_customer_id"],
+                                                             "return_url": "https://offramprei.com/app/"})
+            except Exception as e:
+                print(f"billing-portal error: {e}", flush=True)
+                return self._json(502, {"error": "billing portal unavailable"})
+            if not ps.get("url"):
+                return self._json(502, {"error": "billing portal unavailable"})
+            return self._json(200, {"url": ps["url"]})
 
         # ---------- app auth ----------
         if route == "/api/auth/signup":

@@ -510,6 +510,8 @@ function enterApp(){
   api('/api/state-counts').then(function(r){return r.json();}).then(function(j){ COUNTS=j||COUNTS; renderStateBrowse(); }).catch(function(){});
   loadActions().then(search);
   renderAccount();
+  if(!window.PENDING_CHECKOUT){ var co0=(window.location.search.match(/[?&]checkout=(pro|premium|trial)\b/)||[])[1]; if(co0)window.PENDING_CHECKOUT=co0; }
+  if(/[?&]trial_started=1\b/.test(window.location.search)){ toast('Your free trial is on. Premium features are unlocked.'); }
   if(window.PENDING_CHECKOUT&&!isNativeApp()){ var pc=window.PENDING_CHECKOUT; window.PENDING_CHECKOUT=null; showScreen('acct'); doUpgrade(pc); }
 }
 function loadActions(){
@@ -725,6 +727,7 @@ function openUpgradeSheet(kind){
   var isPrem=kind==='premium';
   el.innerHTML='<div class="upsheet-bg" onclick="closeUpgradeSheet()"></div><div class="upsheet"><div class="grab"></div>'+
     '<div class="upt">'+(isPrem?'Next of kin &amp; PACER tracking are on Premium':'Owner contact and the numbers are on Pro')+'</div>'+
+    trialCard()+
     '<div class="plangrid">'+planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, equity and loan figures, CSV export.',ME.plan==='pro')+
     planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',ME.plan==='premium')+'</div>'+
     '<button class="btn-ghost" onclick="closeUpgradeSheet()">Not now</button></div>';
@@ -1001,11 +1004,34 @@ function runLookup(){
 }
 
 /* ---------- account ---------- */
-function planLabel(){ if(ME.plan==='premium')return 'Premium'; if(ME.plan==='pro')return ME.founding?'Pro · Founding':'Pro'; return 'Free'; }
+function planLabel(){ if(ME.plan==='trial')return 'Trial · Premium features'; if(ME.plan==='premium')return 'Premium'; if(ME.plan==='pro')return ME.founding?'Pro · Founding':'Pro'; return 'Free'; }
+function fmtDay(iso){ try{ var d=new Date(iso); if(isNaN(d))return ''; return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return ''; } }
+/* item 37: 7-day free trial, card on file, Premium features during the trial, converts to Pro $49/mo on day 8. One per customer. */
+function trialCard(){
+  if(!(ME&&ME.trial_eligible))return '';
+  var days=ME.trial_days||7;
+  return '<div class="plancard cur" style="margin-bottom:10px"><div class="pn">Free trial <span class="pp">$0<small> for '+days+' days</small></span></div>'+
+    '<div class="pb">Every Premium feature for '+days+' days: owner phones &amp; emails, skip-trace, next of kin, PACER tracking, CSV export. Card required. Converts to Pro at $'+ME.prices.pro+'/mo on day '+(days+1)+'. Cancel anytime before then and you pay nothing.</div>'+
+    (isNativeApp()
+      ? '<a class="btn-gold" style="display:block;text-align:center;text-decoration:none" href="https://offramprei.com/app/?checkout=trial" target="_blank" rel="noopener">Start '+days+'-day free trial on the web</a>'
+      : '<button class="btn-gold" onclick="doUpgrade(\'trial\')">Start '+days+'-day free trial</button>')+'</div>';
+}
+function trialStatusCard(){
+  if(!(ME&&ME.trial))return '';
+  var ends=fmtDay(ME.trial_ends_at);
+  return '<div class="infocard"><div class="inner" style="font-size:13px">⏳ Trial ends '+(ends||'in 7 days')+' · then Pro $'+ME.prices.pro+'/mo · Cancel anytime'+
+    (ME.billing_portal?'<div><button class="btn-ghost" style="margin-top:8px" onclick="openBillingPortal()">Manage billing</button></div>':'')+'</div></div>';
+}
+function openBillingPortal(){
+  fetch('/api/billing/portal',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:'{}'})
+    .then(function(r){return r.json();}).then(function(d){ if(d.url) location.href=d.url; else toast(d.error||'billing portal unavailable'); })
+    .catch(function(){ toast('billing portal unavailable'); });
+}
 function isNativeApp(){ try{ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()); }catch(e){ return false; } }
 function planCard(key,name,price,blurb,cur){
-  return '<div class="plancard'+(cur?' cur':'')+'"><div class="pn">'+name+' <span class="pp">$'+price+'<small>/mo</small></span></div><div class="pb">'+blurb+'</div>'+
-    (cur?'<div class="pcur">Your plan</div>':(isNativeApp()
+  var afterTrial=(ME.plan==='trial'&&key==='pro');
+  return '<div class="plancard'+((cur||afterTrial)?' cur':'')+'"><div class="pn">'+name+' <span class="pp">$'+price+'<small>/mo</small></span></div><div class="pb">'+blurb+'</div>'+
+    (cur?'<div class="pcur">Your plan</div>':afterTrial?'<div class="pcur">Your plan after the trial</div>':(isNativeApp()
       ? '<a class="btn-gold" style="display:block;text-align:center;text-decoration:none" href="https://offramprei.com/app/?checkout='+key+'" target="_blank" rel="noopener">'+(ME.paid?'Switch to ':'Upgrade to ')+name+' on the web</a>'
       : '<button class="btn-gold" onclick="doUpgrade(\''+key+'\')">'+(ME.paid?'Switch to ':'Upgrade to ')+name+'</button>'))+'</div>';
 }
@@ -1027,6 +1053,7 @@ function renderAccount(){
       (!isPaid?'<div style="font-size:12px;color:var(--sub);margin-top:6px">Free includes '+u.lookups.limit+' property lookups a month.</div>':'')+
     '</div></div>';
   if(ME.founding){ html+='<div class="infocard"><div class="inner" style="font-size:13px">🏅 Founding member. Your founding price and allowance are locked for your term.</div></div>'; }
+  html+=trialStatusCard()+trialCard();
   html+='<div class="plangrid">'+
     planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, CSV export. Overage $0.35 a credit.',ME.plan==='pro')+
     planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',isPrem)+
@@ -1034,6 +1061,7 @@ function renderAccount(){
   html+='<div style="color:var(--sub);font-size:12.5px;margin:14px 2px 4px">Markets with live inventory</div>'+
     '<div class="chiprow" style="padding-left:0">'+ME.markets.map(function(m){return '<span class="chip">'+m+'</span>';}).join('')+'</div>';
   if(isPaid){ html+='<button class="btn-ghost" onclick="doExport()">⬇ Export current search (CSV)</button>'; }
+  if(isPaid&&!ME.trial&&ME.billing_portal){ html+='<button class="btn-ghost" onclick="openBillingPortal()">Manage billing</button>'; }
   html+='<button class="btn-ghost" id="installBtn" style="display:'+(window.deferredInstall?'block':'none')+'" onclick="installApp()">⬇ Install OffRamp on this device</button>';
   if(/iPhone|iPad/.test(navigator.userAgent)&&!window.navigator.standalone){ html+='<div style="font-size:12px;color:var(--sub);margin:4px 2px 10px">On iPhone: tap Share, then <b>Add to Home Screen</b> to install OffRamp.</div>'; }
   html+='<button class="btn-ghost" onclick="doLogout()">Log out</button>';
@@ -1054,7 +1082,7 @@ api('/api/me').then(function(r){ if(r.ok)return r.json(); throw 0; })
  .then(function(j){ ME=j.user; enterApp(); })
  .catch(function(){
    if(/[?&]signup=1\b/.test(window.location.search)) setTab('signup');
-   var co=(window.location.search.match(/[?&]checkout=(pro|premium)\b/)||[])[1]; if(co){ window.PENDING_CHECKOUT=co; }
+   var co=(window.location.search.match(/[?&]checkout=(pro|premium|trial)\b/)||[])[1]; if(co){ window.PENDING_CHECKOUT=co; }
  });
 </script>
 <script>
