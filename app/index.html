@@ -230,6 +230,7 @@
   .sig.locked .big{filter:blur(6px);user-select:none}
   .siglock{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px dashed var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--sub)}
   .badge.outline{background:transparent;border-color:var(--border);color:var(--sub)}
+  .dhead .badge.outline{border-color:rgba(255,255,255,.4);color:#e6f1ea}
 
   .empty{padding:48px 24px;text-align:center;color:var(--sub);font-size:14px}
   .loadrow{padding:26px;text-align:center;color:var(--sub)}
@@ -733,12 +734,15 @@ function search(){
     document.getElementById('countLine').textContent=ROWS.length?(ROWS.length+' deals in '+where+(enriched.length&&extra.length?' · '+enriched.length+' with owner data':'')):'';
   });
 }
+function basicsChips(r){  // Ted 2026-10-03: everybody needs the basics — listed, deceased
+  var o=''; if(r.mls_active===true||!!r.mls_status)o+='<span class="badge outline">Listed on MLS</span>'; if(r.deceased_flag===true)o+='<span class="badge outline">Deceased owner</span>'; return o; }
 function badgeHtml(r){
   var out='';
   if(statusLabel(r)){ var _sl=statusLabel(r); out+='<span class="badge status'+(_sl==='Cured'?' stop':'')+'">'+esc(_sl)+'</span>'; }  // Ted 2026-10-03: one color, badges are confidence tokens
   out+=trusteeMark(r);
   var d=r.days_to_auction;
   if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
+  out+=basicsChips(r);
   return out;
 }
 function act(r){ return ACTIONS[r.id]||{}; }
@@ -851,7 +855,7 @@ function openDetail(i){
       '<div class="owner">'+esc(owner)+'</div>'+
       '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
       '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
-      '<div class="badges">'+hbadges+occupancyChip(r)+'</div>'+
+      '<div class="badges">'+hbadges+occupancyChip(r)+basicsChips(r)+'</div>'+
       '<div class="dkv">'+
         cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
         cell('Sq ft',r.living_area_sqft?Number(r.living_area_sqft).toLocaleString():'—')+
@@ -936,9 +940,7 @@ function fmtDate(d){ if(!d)return ''; var s=String(d).slice(0,10); var p=s.split
 function section(title,rows){ var body=rows.filter(Boolean).join(''); return body?('<div class="sec">'+title+'</div><div class="card2">'+body+'</div>'):''; }
 function flagStrip(r){
   var f=[];
-  if(r.deceased_flag===true) f.push(['probate','Probate / deceased owner']);
   if(r.bankruptcy_flag===true) f.push(['bk','Bankruptcy'+(r.bankruptcy_chapter?(' Ch. '+r.bankruptcy_chapter):'')]);
-  if(r.mls_active===true||r.mls_status) f.push(['mls','Listed on MLS'+(r.mls_list_price?(' · '+money(r.mls_list_price)):'')]);
   if(r.reverse_mortgage===true) f.push(['rev','Reverse mortgage']);
   var mail=(r.mailing_address||'').toLowerCase(), street=(r.property_street||'').toLowerCase();
   if(!f.length) return '';
@@ -1076,24 +1078,23 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
     unv?line('Equity','Unverified'):(ev.pct!=null?line('Equity',ev.pct+'%'):''),
     lineIf('Why unverified',whyUnverified(r)),
     lineIf('Value',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
+    (r.mls_active===true||r.mls_status)?line('Listed',r.mls_list_price?('On MLS · '+money(r.mls_list_price)):'On MLS'):'',
+    hasLiens?line('First lien',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):lineIf('Loan balance',mb>0?((r.mortgage_lender?r.mortgage_lender+' · ':'')+money(mb)):''),
+    lineIf('Second lien',r.lien_second_amount?money(r.lien_second_amount):''),
+    (hasLiens&&r.lien_count>1&&r.lien_total_amount)?line('Total debt',money(r.lien_total_amount)):'',
+    lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
+    r.reverse_mortgage===true?line('Reverse mortgage','Yes'):'',
     paid?lineIf('Equity $',(ev.dollars!=null&&!unv)?money(ev.dollars):''):lockedRow('Equity $','pro'),
-    paid?lineIf('Loan balance',bal>0?money(bal):''):lockedRow('Loan balance','pro'),
     paid?(pay?line('Est. payment',money(pay)+' /mo'):''):lockedRow('Est. payment','pro')
   ];
-  if(prem){  // Ted 2026-10-03: on a loan show only the lender and the balance (DealMachine property sheet style). No terms, no dates, no types.
+  if(prem){  // Ted 2026-10-03: everybody gets lien + value + listed + deceased basics; Premium keeps the rest
     rows=rows.concat([
-      hasLiens?line('First lien',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):'',
-      (!hasLiens)?lineIf('Lender',r.mortgage_lender):'',
-      lineIf('Second lien',r.lien_second_amount?money(r.lien_second_amount):''),
       lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
-      (hasLiens&&r.lien_total_amount)?line('Total debt',money(r.lien_total_amount)):'',
-      lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
       lineIf('Tax lien',r.tax_lien?'Yes':''),
-      lineIf('Judgment',r.judgment_flag?'Yes':''),
-      r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
+      lineIf('Judgment',r.judgment_flag?'Yes':'')
     ]);
-  } else if(hasLiens||r.lien_count===0){
-    rows.push(lockedRow('Liens on record','premium'));
+  } else if(r.lien_count>2||r.tax_lien||r.judgment_flag){
+    rows.push(lockedRow('More liens & judgments','premium'));
   }
   return rows;
 }
@@ -1112,7 +1113,7 @@ function nokTile(r){
 function checksSection(r,paid,prem){
   var h='<div class="sec">Checks</div><div class="vgrid">';
   h+=paid?('<div id="courtrec">'+courtTile(r)+'</div>'):lockedTile('Court records','Bankruptcy and federal cases',' pro'.trim());
-  h+=prem?lienTile(r):lockedTile('Liens on record','Every recorded lien with lender and amount','premium');
+  h+=lienTile(r);
   h+=prem?nokTile(r):lockedTile('Next of kin','Family and relative records','premium');
   return h+'</div>';
 }
