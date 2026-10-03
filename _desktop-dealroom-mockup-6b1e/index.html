@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>OffRamp REI — Desktop deal room mockup (Phase 5 #28)</title>
+<style>
+  /* ---- Palette copied verbatim from app/index.html (Revive/OffRamp brand, matches CRM theme.ts) ---- */
+  :root{
+    --bg:#F6F5F1; --card:#FFFFFF; --text:#15221B; --sub:#5C6B62; --border:#E3E1D9;
+    --accent:#1B4332; --accent2:#2D6A4F; --accentSoft:#DDE9E1; --danger:#C0392B;
+    --gold:#B8894A; --hot:#E4572E; --warm:#E9A620; --cold:#4A7BA6;
+    --shadow:0 2px 6px rgba(11,31,22,.06),0 8px 24px rgba(11,31,22,.05);
+    --rail:60px; --listw:400px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:#e9e7e0;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent2);text-decoration:none}
+  button,input,select,textarea{font-family:inherit}
+  button{cursor:pointer}
+
+  /* ================= MOCKUP WRAPPER (not part of the app) ================= */
+  .wrap{max-width:1400px;margin:0 auto;padding:18px 20px 40px}
+  .brief{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .brief h1{margin:0 0 4px;font-size:18px;color:var(--accent)}
+  .brief .tag{display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--gold);color:#231a0c;padding:3px 8px;border-radius:12px;margin-left:8px;vertical-align:middle}
+  .brief p{margin:0 0 8px;font-size:13px;color:var(--sub)}
+  .brief .cols{display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+  .brief h2{margin:6px 0 4px;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub)}
+  .brief ul,.brief ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.45}
+  .brief li{margin-bottom:3px}
+  .brief b{color:var(--accent)}
+  .seclabel{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:22px 2px 8px}
+  .seclabel span{font-weight:600;text-transform:none;letter-spacing:0;margin-left:8px}
+
+  /* ================= DESKTOP DEAL ROOM FRAME ================= */
+  .frame{height:760px;background:var(--bg);border:1px solid #d6d4cc;border-radius:12px;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,.12);display:flex;flex-direction:column;position:relative}
+  header.top{background:var(--accent);color:#fff;display:flex;align-items:center;gap:10px;padding:0 15px;height:44px;flex:none}
+  header.top .logo{display:flex;align-items:center;gap:7px;font-weight:900;font-size:16px}
+  header.top .logo span{color:#b7e4c7}
+  header.top .grow{flex:1}
+  .mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#b7e4c7,#52b788);position:relative}
+  .mark:after{content:"";position:absolute;left:5px;right:5px;bottom:6px;height:3px;background:var(--accent);border-radius:2px;transform:rotate(-28deg)}
+  .plan-pill{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 9px;border-radius:20px}
+  .plan-pill.pro{background:var(--gold);color:#231a0c}
+  .plan-pill.free{background:#e6e4dc;color:var(--sub)}
+  .meterchip{font-size:12px;color:var(--sub);font-weight:600;white-space:nowrap}
+  .meterchip b{color:var(--text)}
+
+  .body{flex:1;min-height:0;display:flex}
+
+  /* ---- slim left rail (replaces nav.bottom on desktop) ---- */
+  nav.rail{width:var(--rail);flex:none;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:stretch;padding-top:6px}
+  nav.rail button{background:transparent;border:0;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--sub);font-size:10.5px;font-weight:700;border-left:3px solid transparent}
+  nav.rail button svg{width:22px;height:22px;stroke:var(--sub);fill:none;stroke-width:2}
+  nav.rail button.on{color:var(--accent);border-left-color:var(--accent);background:var(--accentSoft)}
+  nav.rail button.on svg{stroke:var(--accent)}
+
+  /* ---- left column: toolbar + list ---- */
+  .listpane{width:var(--listw);flex:none;display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--border);background:var(--bg)}
+  .toolbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg);flex:none}
+  .searchbox{display:flex;align-items:center;flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 10px;height:40px}
+  .searchbox svg{width:18px;height:18px;color:var(--sub);flex:none}
+  .searchbox input{flex:1;min-width:0;border:0;outline:none;padding:0 6px;font-size:15px;background:transparent;color:var(--text)}
+  .tchip{flex:none;max-width:124px;height:40px;padding:0 12px;border-radius:20px;border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap}
+  .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .tchip .car{font-size:10px;opacity:.7;margin-left:3px}
+  .tbtn{flex:none;position:relative;display:flex;align-items:center;gap:5px;height:40px;padding:0 11px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--accent);font-size:13px;font-weight:800}
+  .tbtn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .countrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 16px 8px;flex:none}
+  .metaline{display:flex;align-items:center;gap:7px;margin-left:auto}
+  .countline{font-size:12px;color:var(--sub);font-weight:700}
+  .list{flex:1;min-height:0;overflow-y:auto;padding-top:2px}
+
+  /* lead card (verbatim from mobile; .sel = selected on desktop) */
+  .lead{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--sub);border-radius:14px;margin:0 12px 12px;padding:13px;box-shadow:var(--shadow);cursor:pointer}
+  .lead.sel{outline:2px solid var(--accent2);outline-offset:-1px;background:#fbfcfa}
+  .lead .top{display:flex;align-items:center;gap:12px}
+  .thumb{width:88px;height:88px;border-radius:11px;overflow:hidden;background:var(--border);flex:none;position:relative}
+  .lead .mid{flex:1;min-width:0}
+  .lead .owner{font-size:15.5px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lead .street{font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lead .csz{font-size:12px;color:var(--sub);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lead .right{text-align:right;flex:none}
+  .lead .right .eq{font-size:17px;font-weight:800;color:var(--text)}
+  .lead .right .eqk{font-size:11px;color:var(--sub)}
+  .lead .right .val{font-size:12px;color:var(--sub);margin-top:4px}
+  .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+  .badge{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:20px;border:1px solid transparent}
+  .badge.status{color:#fff;background:var(--sub)}
+  .badge.soon{background:var(--danger);color:#fff}
+  .badge.auc{background:var(--warm);color:#3a2a06}
+  .badge.act{background:#eef3ef;color:#1B4332;border:1px solid #cfe0d6}
+  .badge.hbadge{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.24)}
+
+  /* CSS-only photo placeholders (no external assets) */
+  .ph{position:absolute;inset:0;background:linear-gradient(to bottom,#cfe3ef 0%,#dcebf3 52%,#b9c7a3 52%,#9fb48a 100%)}
+  .ph:before{content:"";position:absolute;left:50%;bottom:28%;width:40%;max-width:220px;height:26%;transform:translateX(-50%);background:#e9e2d2;border:1px solid #c9bda4}
+  .ph:after{content:"";position:absolute;left:50%;bottom:54%;transform:translateX(-50%);border-left:22px solid transparent;border-right:22px solid transparent;border-bottom:14px solid #8a5a3b}
+  .dhero .ph:before{bottom:22%;height:34%;width:220px}
+  .dhero .ph:after{bottom:56%;border-left:124px solid transparent;border-right:124px solid transparent;border-bottom:52px solid #8a5a3b}
+  .ph.b{background:linear-gradient(to bottom,#cfe3ef 0%,#dcebf3 48%,#d7c9a8 48%,#c4b48f 100%)}
+  .ph.b:before{background:#f1ebdc;width:50%}
+  .ph.c{background:linear-gradient(to bottom,#dbe6ec 0%,#e7eef2 55%,#a9b89a 55%,#8da37c 100%)}
+  .ph.c:after{border-bottom-color:#5c6b62}
+  .ph .lbl{position:absolute;right:6px;bottom:4px;font-size:9.5px;color:rgba(21,34,27,.55);font-weight:700}
+
+  /* ---- right column: detail ---- */
+  .detail{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+  .dscroll{flex:1;min-height:0;overflow-y:auto}
+  .dhero{position:relative;height:240px;background:var(--border)}
+  .dhero .ph .lbl{font-size:11px}
+  .dhead{background:var(--accent);color:#fff;padding:14px 20px 16px}
+  .dhead .owner{font-size:23px;font-weight:900;line-height:1.2}
+  .dhead .street{font-size:15px;font-weight:600;margin-top:3px}
+  .dhead .csz{font-size:12.5px;opacity:.82;margin-top:1px}
+  .dhead .badges{margin-top:11px}
+  .dkv{display:flex;flex-wrap:wrap;margin-top:8px}
+  .dkv .cell{width:25%;padding:6px 8px 0 0}
+  .dkv .cell .k{font-size:11px;opacity:.75}
+  .dkv .cell .v{font-size:16px;font-weight:700}
+  .dbody{padding:4px 20px 28px;max-width:860px}
+  .sec{margin:20px 2px 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub)}
+  .card2{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px 12px}
+  .rowline{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:14px}
+  .rowline:last-child{border-bottom:0}
+  .rowline .k{color:var(--sub)}
+  .rowline .v{font-weight:700;text-align:right}
+  .rowline .v small{font-weight:500;color:var(--sub)}
+  .locked-row{cursor:pointer}
+  .locked-row .v{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+  .locked-row .blur{filter:blur(5px);user-select:none;color:var(--sub)}
+  .locked-row .lock{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--gold);color:#231a0c;padding:3px 7px;border-radius:12px}
+  .hint{font-size:11.5px;color:var(--sub);padding:6px 0 4px}
+  .anote{width:100%;min-height:56px;margin:0 0 12px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font:inherit;font-size:13px;resize:vertical;background:var(--card)}
+  .maplinks{display:flex;gap:9px;margin-top:2px}
+  .maplinks a{flex:1;text-align:center;background:var(--accentSoft);border:1px solid rgba(27,67,50,.25);color:var(--accent);font-weight:800;font-size:13.5px;padding:10px;border-radius:11px}
+  .flagstrip{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .flag{font-size:11px;font-weight:800;letter-spacing:.02em;padding:4px 10px;border-radius:20px;border:1px solid transparent}
+  .flag.probate{background:#efe7f7;color:#5b3a86;border-color:#d9c8ee}
+  .flag.abs{background:var(--accentSoft);color:var(--accent2);border-color:rgba(45,106,79,.25)}
+  .flag.rev{background:#fff4e0;color:#8a5a12;border-color:#f0d9a8}
+  .analyzer{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .analyzer .ins{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .analyzer label{font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase}
+  .analyzer input{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:3px;background:var(--bg)}
+  .analyzer .out{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .analyzer .out .box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px}
+  .analyzer .out .box .k{font-size:10.5px;color:var(--sub);text-transform:uppercase}
+  .analyzer .out .box .v{font-size:16px;font-weight:900;color:var(--accent)}
+  .verdict{margin-top:11px;padding:10px 12px;border-radius:9px;font-weight:800;font-size:13.5px;text-align:center}
+  .verdict.neutral{background:var(--bg);color:var(--sub)}
+
+  /* sticky Engage action bar at the bottom of the right pane */
+  .engagebar{flex:none;position:sticky;bottom:0;z-index:30;display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--card);border-top:1px solid var(--border);box-shadow:0 -6px 20px rgba(11,31,22,.07)}
+  .engagebar .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin-right:4px}
+  .abtn{padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--sub);font-weight:600;font-size:13px}
+  .abtn.on{background:#1B4332;color:#fff;border-color:#1B4332}
+  .engagebar .grow{flex:1}
+  .callbtn{display:inline-flex;align-items:center;gap:8px;background:#1B4332;color:#fff;font-weight:700;font-size:14px;padding:10px 16px;border-radius:12px}
+  .callbtn .lock{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--gold);color:#231a0c;padding:3px 7px;border-radius:12px}
+
+  /* ================= STATE SHEET AS CENTERED MODAL (section 2) ================= */
+  .modal-bg{position:absolute;inset:0;background:rgba(11,31,22,.45);z-index:66;display:flex;align-items:center;justify-content:center}
+  .modal{width:440px;max-height:620px;background:var(--bg);border-radius:18px;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden}
+  .sheethead{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;flex:none}
+  .sheethead b{font-size:17px;font-weight:900;color:var(--accent)}
+  .sheetx{border:0;background:#ebe9e2;color:var(--sub);width:30px;height:30px;border-radius:50%;font-size:20px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center}
+  .sheetbody{flex:1;min-height:0;overflow-y:auto;padding:0 12px 16px}
+  .sheetq{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 10px;height:42px;margin:2px 0 4px}
+  .sheetq svg{width:18px;height:18px;color:var(--sub);flex:none}
+  .sheetq input{flex:1;min-width:0;border:0;outline:none;padding:0 6px;font-size:15px;background:transparent;color:var(--text)}
+  .sgroup{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);padding:12px 4px 6px}
+  .slist{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .srow{display:flex;align-items:center;gap:8px;width:100%;border:0;border-bottom:1px solid var(--border);background:transparent;padding:12px 12px;font-size:15px;color:var(--text);text-align:left}
+  .srow:last-child{border-bottom:0}
+  .srow .nm{flex:1;font-weight:600}
+  .srow .cnt{color:var(--sub);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .srow .chk{width:20px;text-align:right;color:var(--accent);font-weight:900;visibility:hidden}
+  .srow.on .chk{visibility:visible}
+  .srow.on .nm{color:var(--accent);font-weight:800}
+  .frame.dim .body,.frame.dim header.top{filter:saturate(.85)}
+
+  @media (max-width:1100px){ .wrap{min-width:1100px} } /* mockup is desktop-only; app itself collapses to mobile below 900px */
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== BRIEF ===== -->
+  <div class="brief">
+    <h1>OffRamp REI — Desktop deal room <span class="tag">Mockup for sign-off · Phase 5 #28</span></h1>
+    <p>Static mockup, no app changes. Same palette, cards, toolbar, sheets and section order as the live mobile deal room (<code>/app/</code>). Approve and we build it 1:1; below 900px the app keeps the existing mobile layout untouched.</p>
+    <div class="cols">
+      <div>
+        <h2>What you are approving</h2>
+        <ul>
+          <li><b>Two independent panes at ≥1100px.</b> Left: the pinned toolbar (search · state chip · Filter) over a scrolling lead list. Right: the selected lead's detail, scrolling on its own, in the mobile order Contact → Evaluation → Court records → Engage → Foreclosure → Property → Analyzer, with free-tier lock rows kept.</li>
+          <li><b>Engage action bar is sticky at the bottom of the detail pane</b> (Save · Contacted · Hide · Call owner) so it never scrolls away; note, map links and flags stay in the Engage section.</li>
+          <li><b>Nav moves to a slim left rail</b> (Deals · Map · Search · Account). Why the rail and not the toolbar: the toolbar's right side is already taken by the state chip and Filter, and a rail keeps all four destinations in one fixed spot at every width without crowding search.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Two open questions before building</h2>
+        <ol>
+          <li><b>Default selection on load:</b> auto-open the first lead in the right pane, or show an empty "pick a deal" panel until you click one? (Auto-open costs one lead fetch per list load.)</li>
+          <li><b>Map on desktop:</b> should Map replace the detail pane (list stays on the left, pins on the right, click a pin to open detail in place) or stay a full-width screen like mobile?</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 1: DEAL ROOM ===== -->
+  <div class="seclabel">1 · Deal room at 1280px <span>— Utah selected, lead B open, free plan (lock rows visible)</span></div>
+  <div class="frame">
+    <header class="top">
+      <div class="logo"><span class="mark"></span>OffRamp <span>REI</span></div>
+      <div class="grow"></div>
+    </header>
+    <div class="body">
+      <!-- slim left rail -->
+      <nav class="rail">
+        <button class="on"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Deals</button>
+        <button><svg viewBox="0 0 24 24"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>Map</button>
+        <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search</button>
+        <button><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Account</button>
+      </nav>
+
+      <!-- LEFT: toolbar + list -->
+      <section class="listpane">
+        <div class="toolbar">
+          <div class="searchbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" placeholder="Owner, street, city, zip…">
+          </div>
+          <button class="tchip on">UT · 1824<span class="car">▾</span></button>
+          <button class="tbtn"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5z"/></svg>Filter</button>
+        </div>
+        <div class="countrow"><div class="countline">232 deals in Utah · 200 with owner data</div>
+          <div class="metaline"><span class="meterchip"><b>0</b> credits</span><span class="plan-pill free">Free</span></div></div>
+        <div class="list">
+          <div class="lead" style="border-left-color:#5C6B62">
+            <div class="top"><div class="thumb"><div class="ph"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner A</div><div class="street">1234 Example Ave</div><div class="csz">Payson, UT, 84651</div></div>
+              <div class="right"><div class="eq">31%</div><div class="eqk">equity</div><div class="val">$353,100</div></div></div>
+            <div class="badges"><span class="badge status">Unconfirmed: Pre-Foreclosure</span></div>
+          </div>
+          <div class="lead sel" style="border-left-color:#E4572E">
+            <div class="top"><div class="thumb"><div class="ph b"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner B</div><div class="street">4765 Placeholder Dr</div><div class="csz">St. George, UT, 84790</div></div>
+              <div class="right"><div class="eq">46%</div><div class="eqk">equity</div><div class="val">$520,200</div></div></div>
+            <div class="badges"><span class="badge status">Scheduled</span><span class="badge soon">auction 2d</span><span class="badge act">★ Saved</span></div>
+          </div>
+          <div class="lead" style="border-left-color:#4A7BA6">
+            <div class="top"><div class="thumb"><div class="ph c"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner C</div><div class="street">2300 Mockup Ln</div><div class="csz">Midvale, UT, 84047</div></div>
+              <div class="right"><div class="eq">13%</div><div class="eqk">equity</div><div class="val">$482,000</div></div></div>
+            <div class="badges"><span class="badge status">Unconfirmed: cured</span><span class="badge auc">auction 14d</span></div>
+          </div>
+          <div class="lead" style="border-left-color:#E9A620">
+            <div class="top"><div class="thumb"><div class="ph"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner D</div><div class="street">880 Fixture Ct</div><div class="csz">Lehi, UT, 84043</div></div>
+              <div class="right"><div class="eq">52%</div><div class="eqk">equity</div><div class="val">$610,000</div></div></div>
+            <div class="badges"><span class="badge status">Scheduled</span><span class="badge act">✓ Contacted</span></div>
+          </div>
+          <div class="lead" style="border-left-color:#5C6B62">
+            <div class="top"><div class="thumb"><div class="ph c"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner E</div><div class="street">17 Demo Way</div><div class="csz">Ogden, UT, 84401</div></div>
+              <div class="right"><div class="eq">—</div><div class="eqk">equity</div><div class="val">—</div></div></div>
+            <div class="badges"><span class="badge status">Notice of Default</span></div>
+          </div>
+          <div class="lead" style="border-left-color:#E4572E">
+            <div class="top"><div class="thumb"><div class="ph b"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner F</div><div class="street">5590 Stand-In Blvd</div><div class="csz">West Jordan, UT, 84088</div></div>
+              <div class="right"><div class="eq">38%</div><div class="eqk">equity</div><div class="val">$445,900</div></div></div>
+            <div class="badges"><span class="badge status">Scheduled</span><span class="badge soon">auction 0d</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: detail -->
+      <section class="detail">
+        <div class="dscroll">
+          <div class="dhero"><div class="ph b"><span class="lbl">street photo (hero)</span></div></div>
+          <div class="dhead">
+            <div class="owner">Sample Owner B</div>
+            <div class="street">4765 Placeholder Dr</div>
+            <div class="csz">St. George, UT, 84790 · Washington County</div>
+            <div class="badges"><span class="badge hbadge" style="background:#E4572E;border:0">HOT</span><span class="badge hbadge">Scheduled</span><span class="badge hbadge">auction 2d</span></div>
+            <div class="dkv">
+              <div class="cell"><div class="k">Beds / Baths</div><div class="v">4 / 2.5</div></div>
+              <div class="cell"><div class="k">Sq ft</div><div class="v">2,310</div></div>
+              <div class="cell"><div class="k">Year built</div><div class="v">2004</div></div>
+              <div class="cell"><div class="k">Sale date</div><div class="v">10/05/2026 · 10:00 AM</div></div>
+            </div>
+          </div>
+          <div class="dbody">
+            <div class="sec">Contact</div>
+            <div class="card2">
+              <div class="rowline locked-row"><span class="k">Phone</span><span class="v"><span class="blur">(•••) •••-••••</span><span class="lock">Pro</span></span></div>
+              <div class="rowline locked-row"><span class="k">Email</span><span class="v"><span class="blur">•••••@•••••.com</span><span class="lock">Pro</span></span></div>
+              <div class="rowline locked-row"><span class="k">Next of kin</span><span class="v"><span class="blur">$•••,•••</span><span class="lock">Pro</span></span></div>
+            </div>
+
+            <div class="sec">Evaluation</div>
+            <div class="card2">
+              <div class="rowline"><span class="k">Equity</span><span class="v">46%</span></div>
+              <div class="rowline locked-row"><span class="k">Equity $</span><span class="v"><span class="blur">$•••,•••</span><span class="lock">Pro</span></span></div>
+              <div class="rowline"><span class="k">AVM</span><span class="v">$520,200</span></div>
+              <div class="rowline locked-row"><span class="k">Loan balance</span><span class="v"><span class="blur">$•••,•••</span><span class="lock">Pro</span></span></div>
+              <div class="rowline"><span class="k">Loan-to-value</span><span class="v">54%</span></div>
+              <div class="rowline"><span class="k">Lender</span><span class="v">Sample Mortgage Co.</span></div>
+            </div>
+
+            <div class="sec">Court records</div>
+            <div class="card2">
+              <div class="rowline locked-row"><span class="k">Bankruptcy &amp; federal cases</span><span class="v"><span class="blur">$•••,•••</span><span class="lock">Pro</span></span></div>
+            </div>
+
+            <div class="sec">Engage</div>
+            <textarea class="anote" placeholder="Your note on this lead (saved automatically)">Drove by 10/1. Occupied. Try the mailing address first.</textarea>
+            <div class="maplinks"><a href="#">Open in Maps</a><a href="#">View on Zillow</a><a href="#">Public page</a></div>
+            <div class="flagstrip"><span class="flag abs">Absentee owner</span><span class="flag rev">Reverse mortgage</span></div>
+            <div class="hint">Save · Contacted · Hide · Call live in the sticky bar at the bottom of this pane.</div>
+
+            <div class="sec">Foreclosure</div>
+            <div class="card2">
+              <div class="rowline"><span class="k">Status</span><span class="v">Scheduled</span></div>
+              <div class="rowline"><span class="k">Type</span><span class="v">Non-judicial</span></div>
+              <div class="rowline"><span class="k">Sale date</span><span class="v">10/05/2026 · 10:00 AM</span></div>
+              <div class="rowline"><span class="k">Days to auction</span><span class="v">2 days</span></div>
+              <div class="rowline"><span class="k">Opening bid</span><span class="v">$281,400</span></div>
+              <div class="rowline"><span class="k">Est. value at auction</span><span class="v">$510,000</span></div>
+              <div class="rowline"><span class="k">Trustee file #</span><span class="v">T-00000-SAMPLE</span></div>
+              <div class="rowline"><span class="k">Foreclosing atty</span><span class="v">Sample Trustee Services</span></div>
+              <div class="rowline"><span class="k">Attorney phone</span><span class="v"><a href="#">(555) 010-0100</a></span></div>
+              <div class="rowline"><span class="k">Sale venue</span><span class="v">County courthouse · 197 E Tabernacle St, St. George</span></div>
+              <div class="rowline"><span class="k">Foreclosure notice</span><span class="v"><a href="#">View filing ›</a></span></div>
+            </div>
+
+            <div class="sec">Property</div>
+            <div class="card2">
+              <div class="rowline"><span class="k">Type</span><span class="v">Single family</span></div>
+              <div class="rowline"><span class="k">Occupancy</span><span class="v">Owner occupied</span></div>
+              <div class="rowline"><span class="k">APN</span><span class="v">SG-0000-0-000-SAMPLE</span></div>
+              <div class="rowline"><span class="k">Owner mailing</span><span class="v">PO Box 000, Sample City, NV 89000</span></div>
+            </div>
+
+            <div class="sec">Deal Analyzer</div>
+            <div class="analyzer">
+              <div class="ins">
+                <div><label>ARV</label><input type="number" value="520200"></div>
+                <div><label>Rehab</label><input type="number" value="25000"></div>
+                <div><label>Your offer</label><input type="number" placeholder="e.g. 180000" value="340000"></div>
+                <div><label>Loan balance</label><input type="number" placeholder="Pro" disabled></div>
+              </div>
+              <div class="out">
+                <div class="box"><div class="k">Est. profit</div><div class="v">$103,600</div></div>
+                <div class="box"><div class="k">ROI</div><div class="v">28.4%</div></div>
+              </div>
+              <div class="verdict neutral">Score updates as you type</div>
+            </div>
+          </div>
+        </div>
+        <!-- sticky Engage action bar -->
+        <div class="engagebar">
+          <span class="lbl">Engage</span>
+          <button class="abtn on">★ Saved</button>
+          <button class="abtn">Contacted</button>
+          <button class="abtn">Hide</button>
+          <div class="grow"></div>
+          <a class="callbtn" href="#">📞 Call owner <span class="lock">Pro</span></a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 2: STATE SHEET AS CENTERED MODAL ===== -->
+  <div class="seclabel">2 · State picker on desktop <span>— the mobile bottom sheet renders as a centered modal; same search, "Your states" and "All states" groups</span></div>
+  <div class="frame dim">
+    <header class="top">
+      <div class="logo"><span class="mark"></span>OffRamp <span>REI</span></div>
+      <div class="grow"></div>
+    </header>
+    <div class="body">
+      <nav class="rail">
+        <button class="on"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Deals</button>
+        <button><svg viewBox="0 0 24 24"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>Map</button>
+        <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search</button>
+        <button><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Account</button>
+      </nav>
+      <section class="listpane">
+        <div class="toolbar">
+          <div class="searchbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" placeholder="Owner, street, city, zip…">
+          </div>
+          <button class="tchip">All states<span class="car">▾</span></button>
+          <button class="tbtn"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5z"/></svg>Filter</button>
+        </div>
+        <div class="countrow"><div class="countline">350 deals in all states · 200 with owner data</div>
+          <div class="metaline"><span class="meterchip"><b>0</b> credits</span><span class="plan-pill free">Free</span></div></div>
+        <div class="list">
+          <div class="lead" style="border-left-color:#5C6B62">
+            <div class="top"><div class="thumb"><div class="ph"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner A</div><div class="street">1234 Example Ave</div><div class="csz">Payson, UT, 84651</div></div>
+              <div class="right"><div class="eq">31%</div><div class="eqk">equity</div><div class="val">$353,100</div></div></div>
+            <div class="badges"><span class="badge status">Unconfirmed: Pre-Foreclosure</span></div>
+          </div>
+          <div class="lead sel" style="border-left-color:#E4572E">
+            <div class="top"><div class="thumb"><div class="ph b"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner B</div><div class="street">4765 Placeholder Dr</div><div class="csz">St. George, UT, 84790</div></div>
+              <div class="right"><div class="eq">46%</div><div class="eqk">equity</div><div class="val">$520,200</div></div></div>
+            <div class="badges"><span class="badge status">Scheduled</span><span class="badge soon">auction 2d</span></div>
+          </div>
+          <div class="lead" style="border-left-color:#4A7BA6">
+            <div class="top"><div class="thumb"><div class="ph c"><span class="lbl">photo</span></div></div>
+              <div class="mid"><div class="owner">Sample Owner C</div><div class="street">2300 Mockup Ln</div><div class="csz">Midvale, UT, 84047</div></div>
+              <div class="right"><div class="eq">13%</div><div class="eqk">equity</div><div class="val">$482,000</div></div></div>
+            <div class="badges"><span class="badge status">Unconfirmed: cured</span><span class="badge auc">auction 14d</span></div>
+          </div>
+        </div>
+      </section>
+      <section class="detail">
+        <div class="dscroll">
+          <div class="dhero"><div class="ph b"><span class="lbl">street photo (hero)</span></div></div>
+          <div class="dhead">
+            <div class="owner">Sample Owner B</div>
+            <div class="street">4765 Placeholder Dr</div>
+            <div class="csz">St. George, UT, 84790 · Washington County</div>
+          </div>
+          <div class="dbody">
+            <div class="sec">Contact</div>
+            <div class="card2">
+              <div class="rowline locked-row"><span class="k">Phone</span><span class="v"><span class="blur">(•••) •••-••••</span><span class="lock">Pro</span></span></div>
+              <div class="rowline locked-row"><span class="k">Email</span><span class="v"><span class="blur">•••••@•••••.com</span><span class="lock">Pro</span></span></div>
+            </div>
+            <div class="sec">Evaluation</div>
+            <div class="card2">
+              <div class="rowline"><span class="k">Equity</span><span class="v">46%</span></div>
+              <div class="rowline"><span class="k">AVM</span><span class="v">$520,200</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="engagebar">
+          <span class="lbl">Engage</span>
+          <button class="abtn on">★ Saved</button><button class="abtn">Contacted</button><button class="abtn">Hide</button>
+          <div class="grow"></div><a class="callbtn" href="#">📞 Call owner <span class="lock">Pro</span></a>
+        </div>
+      </section>
+    </div>
+
+    <!-- centered modal -->
+    <div class="modal-bg">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="sheethead"><b>Browse by state</b><button class="sheetx" aria-label="Close">×</button></div>
+        <div class="sheetbody">
+          <div class="sheetq">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" placeholder="Find a state">
+          </div>
+          <div class="sgroup">Your states</div>
+          <div class="slist">
+            <button class="srow on"><span class="nm">All states</span><span class="cnt">56,559</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Arizona</span><span class="cnt">3,667</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Utah</span><span class="cnt">1,824</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Idaho</span><span class="cnt">1,744</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Montana</span><span class="cnt">366</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Wyoming</span><span class="cnt">94</span><span class="chk">✓</span></button>
+          </div>
+          <div class="sgroup">All states</div>
+          <div class="slist">
+            <button class="srow"><span class="nm">Alabama</span><span class="cnt">1,337</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Alaska</span><span class="cnt">192</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Arkansas</span><span class="cnt">820</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">California</span><span class="cnt">5,095</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Colorado</span><span class="cnt">1,102</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Florida</span><span class="cnt">4,169</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Illinois</span><span class="cnt">5,186</span><span class="chk">✓</span></button>
+            <button class="srow"><span class="nm">Indiana</span><span class="cnt">4,686</span><span class="chk">✓</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
