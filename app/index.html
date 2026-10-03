@@ -204,6 +204,12 @@
   .verdict.bad{background:#fbeae6;color:var(--danger)}
   .verdict.neutral{background:var(--bg);color:var(--sub)}
 
+  .plangrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+  .plancard{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--card)}
+  .plancard.cur{border-color:#1B4332}
+  .plancard .pn{font-weight:800;font-size:15px}.plancard .pp{float:right;color:#1B4332}.plancard .pp small{font-weight:500;color:var(--sub)}
+  .plancard .pb{font-size:12px;color:var(--sub);margin:6px 0 10px;line-height:1.4}.plancard .pcur{font-size:12px;font-weight:700;color:#1B4332}
+  .plancard .btn-gold{width:100%;margin:0}
   .badge.act{background:#eef3ef;color:#1B4332;border:1px solid #cfe0d6}
   .badge.act.hid{background:#f3f3f3;color:#777;border-color:#ddd}
   .abar{display:flex;gap:8px;margin:0 0 8px}
@@ -381,9 +387,9 @@ function doAuth(ev){
 }
 function ssoLogin(p){ window.location.href='/api/auth/sso?provider='+p; }
 function doLogout(){ api('/api/auth/logout',{method:'POST'}).then(function(){location.reload();}); }
-function doUpgrade(cycle){
+function doUpgrade(plan){
   fetch('/api/billing/checkout-link',{method:'POST',credentials:'include',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify({cycle:cycle||'annual'})})
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:plan||'pro'})})
     .then(function(r){return r.json();})
     .then(function(d){ if(d.url) location.href=d.url; else toast(d.error||'billing unavailable'); })
     .catch(function(){ toast('billing unavailable'); });
@@ -407,10 +413,10 @@ function loadActions(){
 }
 function renderHeader(){
   var pill=document.getElementById('planPill');
-  pill.textContent=ME.plan==='pro'?'Pro':'Free';
-  pill.className='plan-pill '+ME.plan;
+  pill.textContent=planLabel();
+  pill.className='plan-pill '+(ME.paid?'pro':'free');
   var u=ME.usage;
-  document.getElementById('meterChip').innerHTML='Lookups <b>'+u.lookups.used+'/'+u.lookups.limit+'</b>';
+  document.getElementById('meterChip').innerHTML='Credits <b>'+u.lookups.used+'/'+u.lookups.limit+'</b>'+(u.overage_credits?' <span style="color:#b26a00">+'+u.overage_credits+' overage</span>':'');
 }
 function pickState(m){ STATE=m;
   document.querySelectorAll('#stateChips .chip').forEach(function(c){c.classList.toggle('on',c.textContent===m);});
@@ -482,7 +488,7 @@ function renderList(){
 }
 /* item 7: the Pro gate lives on the card itself, not at the bottom of the detail scroll */
 function proChip(r){
-  if(ME&&ME.plan==='pro')return '';
+  if(ME&&ME.paid)return '';
   return '<span class="badge lock" onclick="event.stopPropagation();showScreen(\'acct\')">🔒 Owner contact · Pro</span>';
 }
 
@@ -570,6 +576,7 @@ function openDetail(i){
         lineIf('Maturity',fmtDate(r.mortgage_maturity_date)),
         r.reverse_mortgage===true?line('Reverse mortgage','Yes'):''
       ])+
+      premiumSection(r)+
       section('Property',[
         lineIf('Type',r.property_type),
         lineIf('APN',r.apn),
@@ -635,9 +642,24 @@ function saveNote(){
   var cur=(ACTIONS[CUR.id]||{}).note||''; if(v===cur)return;
   api('/api/lead-actions',{method:'POST',body:{id:CUR.id,note:v}}).then(function(r){return r.json();}).then(function(j){ if(j.action){ACTIONS[CUR.id]=j.action; renderList();} }).catch(function(){toast('note not saved');});
 }
+function premiumSection(r){
+  if(r.premium_locked){
+    if(!r.premium_has_data)return '';
+    return '<div class="sec">Next of kin &amp; PACER</div><div class="locked"><b>🔒 Premium data on this lead</b>Next-of-kin and bankruptcy case tracking unlock on Premium.<br><button class="cta" onclick="showScreen(\'acct\');closeDetail()">See Premium</button></div>';
+  }
+  return section('Next of kin & PACER',[
+    lineIf('Next of kin',r.next_of_kin),
+    lineIf('Deceased party',r.deceased_party),
+    lineIf('Probate case #',r.probate_case_number),
+    lineIf('Bankruptcy case',r.bankruptcy_case),
+    lineIf('Case title',r.bankruptcy_case_title),
+    r.bankruptcy_active_stay===true?line('Automatic stay','Active'):'',
+    r.bankruptcy_case_link?lineRaw('PACER','<a href="'+esc(r.bankruptcy_case_link)+'" target="_blank" rel="noopener">Open case ›</a>'):''
+  ]);
+}
 function renderContacts(){
   var el=document.getElementById('contacts'); var r=CUR;
-  if(ME.plan!=='pro'){
+  if(!ME.paid){
     el.innerHTML='<div class="locked"><b>🔒 Owner phones &amp; emails are a Pro feature</b>Skip-traced mobile numbers (DNC-flagged) + emails unlock on Pro.<br><button class="cta" onclick="showScreen(\'acct\');closeDetail()">See Pro</button></div>';
     return;
   }
@@ -728,6 +750,11 @@ function runLookup(){
 }
 
 /* ---------- account ---------- */
+function planLabel(){ if(ME.plan==='premium')return 'Premium'; if(ME.plan==='pro')return ME.founding?'Pro · Founding':'Pro'; return 'Free'; }
+function planCard(key,name,price,blurb,cur){
+  return '<div class="plancard'+(cur?' cur':'')+'"><div class="pn">'+name+' <span class="pp">$'+price+'<small>/mo</small></span></div><div class="pb">'+blurb+'</div>'+
+    (cur?'<div class="pcur">Your plan</div>':'<button class="btn-gold" onclick="doUpgrade(\''+key+'\')">'+(ME.paid?'Switch to ':'Upgrade to ')+name+'</button>')+'</div>';
+}
 function renderAccount(){
   var u=ME.usage;
   function meter(label,used,limit){
@@ -735,23 +762,29 @@ function renderAccount(){
     return '<div class="meter"><div class="lab"><span>'+label+'</span><span>'+used+' / '+limit+'</span></div>'+
       '<div class="bar"><div class="fill" style="width:'+pctv+'%"></div></div></div>';
   }
-  var isPro=ME.plan==='pro';
+  var isPaid=!!ME.paid, isPrem=ME.plan==='premium';
   var html='<div class="acct-plan"><span class="big">'+(ME.full_name||ME.email)+'</span>'+
-      '<span class="plan-pill '+ME.plan+'">'+(isPro?'Pro':'Free')+'</span></div>'+
+      '<span class="plan-pill '+(isPaid?'pro':'free')+'">'+planLabel()+'</span></div>'+
     '<div style="color:var(--sub);font-size:13px;margin-bottom:14px">'+esc(ME.email)+'</div>'+
     '<div class="infocard"><div class="inner">'+
-      meter('Property lookups',u.lookups.used,u.lookups.limit)+
-      (isPro?meter('Skip-traces',u.skiptraces.used,u.skiptraces.limit):'')+
-    '</div></div>'+
-    '<div style="color:var(--sub);font-size:12.5px;margin:14px 2px 4px">Markets with live inventory</div>'+
+      meter('Credits this month',u.lookups.used,u.lookups.limit)+
+      (ME.founding?meter('Skip-traces',u.skiptraces.used,u.skiptraces.limit):'')+
+      (ME.overage_cents?'<div style="font-size:12px;color:var(--sub);margin-top:6px">Past '+u.lookups.limit+' credits each extra credit is $0.'+ME.overage_cents+' on your next invoice'+(u.overage_credits?' · '+u.overage_credits+' overage credits so far':'')+'.</div>':'')+
+      (!isPaid?'<div style="font-size:12px;color:var(--sub);margin-top:6px">Free includes '+u.lookups.limit+' property lookups a month.</div>':'')+
+    '</div></div>';
+  if(ME.founding){ html+='<div class="infocard"><div class="inner" style="font-size:13px">🏅 Founding member. Your founding price and allowance are locked for your term.</div></div>'; }
+  html+='<div class="plangrid">'+
+    planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, CSV export. Overage $0.35 a credit.',ME.plan==='pro')+
+    planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',isPrem)+
+  '</div>';
+  html+='<div style="color:var(--sub);font-size:12.5px;margin:14px 2px 4px">Markets with live inventory</div>'+
     '<div class="chiprow" style="padding-left:0">'+ME.markets.map(function(m){return '<span class="chip">'+m+'</span>';}).join('')+'</div>';
-  if(isPro){ html+='<button class="btn-ghost" onclick="doExport()">⬇ Export current search (CSV)</button>'; }
-  else { html+='<button class="btn-gold" onclick="doUpgrade()">Upgrade to Pro — unlock contacts, skip-trace &amp; export</button>'; }
+  if(isPaid){ html+='<button class="btn-ghost" onclick="doExport()">⬇ Export current search (CSV)</button>'; }
   html+='<button class="btn-ghost" onclick="doLogout()">Log out</button>';
   document.getElementById('acctBody').innerHTML=html;
 }
 function doExport(){
-  if(ME.plan!=='pro'){ toast('CSV export is a Pro feature'); return; }
+  if(!ME.paid){ toast('CSV export is a Pro feature'); return; }
   var qs=new URLSearchParams(); qs.set('state',STATE);
   var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('q',c);
   var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);

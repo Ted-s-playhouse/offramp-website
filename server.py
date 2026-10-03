@@ -89,10 +89,38 @@ TG_CHAT = "7872962153"  # Ted
 
 MAIN_ORG_ID = "df45e2a2-3c18-4279-a1b1-5d4648fd5e5d"
 
+# Credits == lookups. Pro/Premium may run past their credits; each extra credit is
+# billed at OVERAGE_CENTS through a Stripe invoice item on their next invoice
+# (the app keeps the meter, Stripe only runs the subscription). Founding members
+# ($149 legacy price) keep the original allowance for their term.
+OVERAGE_CENTS = 35
 PLAN_LIMITS = {
-    "free": {"lookups": 100,  "skiptraces": 0,   "export_rows": 0},
-    "pro":  {"lookups": 2000, "skiptraces": 250, "export_rows": 2000},
+    "free":         {"lookups": 25,   "skiptraces": 0,   "export_rows": 0,    "premium_data": False, "overage": False},
+    "pro":          {"lookups": 200,  "skiptraces": 200, "export_rows": 2000, "premium_data": False, "overage": True},
+    "premium":      {"lookups": 200,  "skiptraces": 200, "export_rows": 5000, "premium_data": True,  "overage": True},
+    "pro_founding": {"lookups": 2000, "skiptraces": 250, "export_rows": 2000, "premium_data": False, "overage": False},
 }
+PAID_PLANS = ("pro", "premium")
+PREMIUM_COLS = ("next_of_kin", "deceased_party", "probate_case_number", "bankruptcy_case",
+                "bankruptcy_case_title", "bankruptcy_case_link", "bankruptcy_active_stay")
+
+
+def plan_key(u):
+    if u.get("plan") == "pro" and u.get("founding"):
+        return "pro_founding"
+    return u.get("plan") if u.get("plan") in PLAN_LIMITS else "free"
+
+
+def limits_for(u):
+    return PLAN_LIMITS[plan_key(u)]
+
+
+def is_paid(u):
+    return u.get("plan") in PAID_PLANS
+
+
+def has_premium(u):
+    return limits_for(u)["premium_data"]
 # markets we actually have inventory for (drives the app market picker)
 MARKETS = ["AZ", "UT", "ID", "MT", "WY"]
 
@@ -317,14 +345,20 @@ def bump(user, field, by=1):
 
 
 def public_user(u):
-    lim = PLAN_LIMITS.get(u["plan"], PLAN_LIMITS["free"])
+    lim = limits_for(u)
     return {
         "email": u["email"], "full_name": u.get("full_name"), "plan": u["plan"],
+        "plan_key": plan_key(u), "founding": bool(u.get("founding")),
+        "paid": is_paid(u), "premium": has_premium(u),
         "usage": {
             "lookups": {"used": int(u.get("lookups_used") or 0), "limit": lim["lookups"]},
+            "credits": {"used": int(u.get("lookups_used") or 0), "limit": lim["lookups"]},
             "skiptraces": {"used": int(u.get("skiptraces_used") or 0), "limit": lim["skiptraces"]},
+            "overage_credits": int(u.get("overage_credits") or 0),
         },
+        "overage_cents": OVERAGE_CENTS if lim["overage"] else None,
         "limits": lim,
+        "prices": {"pro": 49, "premium": 99},
         "markets": MARKETS,
     }
 
@@ -501,6 +535,8 @@ SEARCH_COLS = ("id,owner_full,owner_first,owner_last,property_street,property_ci
                "mortgage_interest_rate,mortgage_loan_type,mortgage_recording_date,"
                "mortgage_maturity_date,reverse_mortgage,mls_active,mls_status,"
                 "mls_list_price,bankruptcy_flag,bankruptcy_chapter,deceased_flag,"
+                "next_of_kin,deceased_party,probate_case_number,bankruptcy_case,"
+                "bankruptcy_case_title,bankruptcy_case_link,bankruptcy_active_stay,"
                 "skip_traced_at,phones,emails,photo_url")
 
 
@@ -608,6 +644,34 @@ def normalize_national_row(r):
     }
 
 
+def plan_from_price(price_id):
+    """Map a Stripe price id to (plan, founding)."""
+    if not price_id:
+        return None, False
+    if price_id == STRIPE_IDS.get("price_premium99_monthly"):
+        return "premium", False
+    if price_id == STRIPE_IDS.get("price_pro49_monthly"):
+        return "pro", False
+    if price_id in (STRIPE_IDS.get("price_monthly"), STRIPE_IDS.get("price_annual")):
+        return "pro", True  # legacy $149 founding price
+    return None, False
+
+
+def plan_from_session(sess):
+    """Plan for a completed Checkout Session: metadata first, then the line item price."""
+    meta_plan = (sess.get("metadata") or {}).get("plan")
+    if meta_plan in PAID_PLANS:
+        return meta_plan, False
+    try:
+        items = stripe_get(f"checkout/sessions/{sess.get('id')}/line_items").get("data") or []
+        plan, founding = plan_from_price((items[0].get("price") or {}).get("id") if items else None)
+        if plan:
+            return plan, founding
+    except Exception as e:
+        print(f"line_items lookup failed: {e}", flush=True)
+    return "pro", False
+
+
 def strip_contacts(row):
     """Free tier sees everything EXCEPT owner phones/emails (skip-trace gated)."""
     r = dict(row)
@@ -615,6 +679,54 @@ def strip_contacts(row):
     r["emails"] = None
     r["contacts_locked"] = True
     return r
+
+
+def strip_premium(row):
+    """Pro/free never see next-of-kin or PACER bankruptcy tracking (Premium only)."""
+    r = dict(row)
+    had = any(r.get(c) not in (None, "", [], False) for c in PREMIUM_COLS)
+    for c in PREMIUM_COLS:
+        r[c] = None
+    r["premium_locked"] = True
+    r["premium_has_data"] = had
+    return r
+
+
+def gate_row(u, row):
+    r = row if is_paid(u) else strip_contacts(row)
+    return r if has_premium(u) else strip_premium(r)
+
+
+def spend_credit(u, kind, ref=None):
+    """Meter one credit. Returns (ok, info). Free (or paid without a Stripe customer)
+    stops hard at the allowance; Pro/Premium keep going and each credit past the
+    allowance becomes a $0.35 Stripe invoice item (billed on their next invoice)."""
+    ensure_period(u)
+    lim = limits_for(u)
+    used = int(u.get("lookups_used") or 0)
+    period = datetime.now(timezone.utc).strftime("%Y-%m")
+    entry = {"user_id": u["id"], "kind": kind, "qty": 1, "ref": (ref or "")[:200], "period": period,
+             "overage": False, "unit_cents": 0}
+    if used >= lim["lookups"]:
+        if not lim["overage"] or not u.get("stripe_customer_id"):
+            return False, {"error": f"monthly credit limit reached ({lim['lookups']})",
+                           "upgrade": not is_paid(u), "credits": {"used": used, "limit": lim["lookups"]}}
+        desc = f"OffRamp REI credit overage ({kind}) {period}"
+        try:
+            item = stripe_post("invoiceitems", {"customer": u["stripe_customer_id"], "amount": OVERAGE_CENTS,
+                                                "currency": "usd", "description": desc})
+            entry.update({"overage": True, "unit_cents": OVERAGE_CENTS, "stripe_invoiceitem_id": item.get("id")})
+        except Exception as e:
+            print(f"overage invoiceitem error: {e}", flush=True)
+            return False, {"error": "could not meter overage credit, try again"}
+        bump(u, "overage_credits")
+    try:
+        sb("POST", "/offramp_credit_ledger", body=entry, headers={"Prefer": "return=minimal"})
+    except Exception as e:
+        print(f"ledger write error: {e}", flush=True)
+    bump(u, "lookups_used")
+    return True, {"credits": {"used": int(u["lookups_used"]), "limit": lim["lookups"]},
+                  "overage": entry["overage"], "overage_credits": int(u.get("overage_credits") or 0)}
 
 
 # ------------------------------ HTTP -----------------------------------------
@@ -813,9 +925,9 @@ class Handler(SimpleHTTPRequestHandler):
                 rows = sb("GET", path)
             except urllib.error.HTTPError as e:
                 return self._json(500, {"error": e.read().decode()[:200]})
-            locked = u["plan"] != "pro"
-            out = [strip_contacts(r) if locked else r for r in rows]
-            return self._json(200, {"count": len(out), "results": out, "plan": u["plan"]})
+            out = [gate_row(u, r) for r in rows]
+            return self._json(200, {"count": len(out), "results": out, "plan": u["plan"],
+                                    "paid": is_paid(u), "premium": has_premium(u)})
 
         if route == "/api/national-search":
             # National auction.com base layer (free public data, all 50 states).
@@ -840,17 +952,15 @@ class Handler(SimpleHTTPRequestHandler):
             rows = sb("GET", f"/hit_list?select={SEARCH_COLS}&id=eq.{pid}&limit=1")
             if not rows:
                 return self._json(404, {"error": "not found"})
-            r = rows[0]
-            if u["plan"] != "pro":
-                r = strip_contacts(r)
+            r = gate_row(u, rows[0])
             r["analysis"] = analyze(r.get("arv") or r.get("avm") or r.get("market_value"),
                                     0, None, r.get("mortgage_balance"), r.get("market_value"))
             return self._json(200, {"property": r})
 
         if route == "/api/export":
-            if u["plan"] != "pro":
+            if not is_paid(u):
                 return self._json(403, {"error": "CSV export is a Pro feature", "upgrade": True})
-            limit = min(PLAN_LIMITS["pro"]["export_rows"], 2000)
+            limit = min(limits_for(u)["export_rows"], 5000)
             rows = sb("GET", build_search_query(qs, limit))
             buf = io.StringIO()
             cols = ["owner_full", "property_street", "property_city", "property_state",
@@ -899,15 +1009,26 @@ class Handler(SimpleHTTPRequestHandler):
                     cust = obj.get("customer")
                     sub = obj.get("subscription")
                     u = get_user_by_id(uid) if uid else None
+                    plan, founding = plan_from_session(obj)
                     if u:
                         sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
-                           body={"plan": "pro", "stripe_customer_id": cust,
+                           body={"plan": plan, "founding": founding, "stripe_customer_id": cust,
                                  "stripe_subscription_id": sub, "stripe_status": "active"},
                            headers={"Prefer": "return=minimal"})
-                        notify_telegram(f"OffRamp REI: {u['email']} upgraded to Pro via Stripe checkout")
+                        notify_telegram(f"OffRamp REI: {u['email']} upgraded to {plan.title()} via Stripe checkout")
                     else:
                         notify_telegram(f"OffRamp REI Stripe checkout completed but no matching user "
                                          f"(client_reference_id={uid}, customer={cust}) — needs manual match")
+                elif etype == "customer.subscription.updated":
+                    cust = obj.get("customer")
+                    u = get_user_by_stripe_customer(cust) if cust else None
+                    if u and obj.get("status") in ("active", "trialing"):
+                        plan, founding = plan_from_price(((obj.get("items") or {}).get("data") or [{}])[0].get("price", {}).get("id"))
+                        if plan and plan != u.get("plan"):
+                            sb("PATCH", f"/offramp_users?id=eq.{u['id']}",
+                               body={"plan": plan, "founding": founding, "stripe_status": "active"},
+                               headers={"Prefer": "return=minimal"})
+                            notify_telegram(f"OffRamp REI: {u['email']} plan changed to {plan.title()}")
                 elif etype == "customer.subscription.deleted":
                     cust = obj.get("customer")
                     u = get_user_by_stripe_customer(cust) if cust else None
@@ -933,9 +1054,11 @@ class Handler(SimpleHTTPRequestHandler):
             if not u:
                 return self._json(401, {"error": "not signed in"})
             data = self._body() or {}
-            cycle = (data.get("cycle") or "annual").strip().lower()
-            annual = cycle == "annual"
-            price = STRIPE_IDS.get("price_annual" if annual else "price_monthly")
+            plan = (data.get("plan") or "pro").strip().lower()
+            if plan not in PAID_PLANS:
+                return self._json(400, {"error": "unknown plan"})
+            price = STRIPE_IDS.get("price_premium99_monthly" if plan == "premium" else "price_pro49_monthly")
+            annual = False  # new tiers are monthly only; the $149/$1,490 founding prices stay for existing members
             if not price:
                 return self._json(500, {"error": "billing not configured"})
             # Build a Checkout Session server-side (the hosted Payment Link's
@@ -951,11 +1074,9 @@ class Handler(SimpleHTTPRequestHandler):
                 "success_url": "https://offramprei.com/app/?upgraded=1",
                 "cancel_url": "https://offramprei.com/app/?upgrade_cancelled=1",
             }
-            promo = STRIPE_IDS.get("promo_annual" if annual else "promo_m12")
-            if promo and founding_spots_left() > 0:
-                params["discounts[0][promotion_code]"] = promo
-            else:
-                params["allow_promotion_codes"] = "true"
+            params["allow_promotion_codes"] = "true"
+            params["metadata[plan]"] = plan
+            params["subscription_data[metadata][plan]"] = plan
             try:
                 sess = stripe_post("checkout/sessions", params)
             except Exception as e:
@@ -1038,27 +1159,30 @@ class Handler(SimpleHTTPRequestHandler):
                     data.get("mortgage_balance"), data.get("market_value"))})
 
             if route == "/api/lookup":
-                lim = PLAN_LIMITS[u["plan"]]["lookups"]
-                if int(u.get("lookups_used") or 0) >= lim:
-                    return self._json(403, {"error": f"monthly lookup limit reached ({lim})",
-                                            "upgrade": u["plan"] == "free"})
                 addr = (data.get("address") or "").strip()
                 if not addr:
                     return self._json(400, {"error": "address required"})
+                lim = limits_for(u)
+                if int(u.get("lookups_used") or 0) >= lim["lookups"] and not (lim["overage"] and u.get("stripe_customer_id")):
+                    return self._json(403, {"error": f"monthly credit limit reached ({lim['lookups']})",
+                                            "upgrade": not is_paid(u)})
                 payload, src = reapi_lookup(addr)
                 if payload is None:
                     return self._json(502, {"error": f"lookup failed ({src})"})
                 if src == "live":  # only meter fresh pulls, not cache hits
-                    bump(u, "lookups_used")
+                    ok, info = spend_credit(u, "lookup", addr)
+                    if not ok:
+                        return self._json(403, info)
                 return self._json(200, {"source": src, "data": payload,
                                         "usage": public_user(u)["usage"]})
 
             if route == "/api/skiptrace":
-                if u["plan"] != "pro":
+                if not is_paid(u):
                     return self._json(403, {"error": "Skip-trace is a Pro feature", "upgrade": True})
-                lim = PLAN_LIMITS["pro"]["skiptraces"]
-                if int(u.get("skiptraces_used") or 0) >= lim:
-                    return self._json(403, {"error": f"monthly skip-trace limit reached ({lim})"})
+                if plan_key(u) == "pro_founding":
+                    lim = limits_for(u)["skiptraces"]
+                    if int(u.get("skiptraces_used") or 0) >= lim:
+                        return self._json(403, {"error": f"monthly skip-trace limit reached ({lim})"})
                 addr = (data.get("address") or "").strip()
                 pid = (data.get("id") or "").strip()
                 if not addr and pid:
