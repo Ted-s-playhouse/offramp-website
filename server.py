@@ -505,6 +505,30 @@ def _reapi_detail_cached(row):
     return None, "miss", ""
 
 
+def liens_from_detail(d):
+    """Mortgage/lien fields from a REAPI PropertyDetail payload, mirroring services/hitlist-liens/backfill_liens.py
+    (identical amounts collapse to one - Ted 2026-10-03). Returns a hit_list patch dict."""
+    ms = d.get("currentMortgages") or []
+    seen, liens = set(), []
+    order = {"first": 1, "second": 2, "third": 3}
+    for e in sorted(ms, key=lambda e: (order.get(str(e.get("position") or "").lower(), 9), e.get("seqNo") or 99)):
+        try:
+            amt = float(e.get("amount") or 0)
+        except Exception:
+            amt = 0.0
+        if amt in seen:
+            continue
+        seen.add(amt)
+        liens.append({"pos": e.get("position"), "lender": e.get("lenderName"), "amount": amt, "type": e.get("loanType"),
+                      "recorded": (e.get("recordingDate") or e.get("documentDate") or "")[:10] or None})
+    patch = {"lien_count": len(liens), "lien_total_amount": sum(x["amount"] for x in liens) or None,
+             "lien_first_position": liens[0]["pos"] if liens else None, "lien_first_lender": liens[0]["lender"] if liens else None,
+             "lien_first_amount": liens[0]["amount"] if liens else None, "lien_first_type": liens[0]["type"] if liens else None,
+             "lien_second_amount": liens[1]["amount"] if len(liens) > 1 else None,
+             "tax_lien": bool(d.get("taxLien")), "judgment_flag": bool(d.get("judgment")), "free_and_clear": bool(d.get("freeClear"))}
+    return patch
+
+
 def property_facts(row, live_ok):
     """Property facts block for the lead view (Ted 2026-10-03: more data on the property). Cached REAPI
     detail for everyone; a live PropertyDetail pull (enrich-once into offramp_lookups) only for paid users."""
@@ -520,6 +544,15 @@ def property_facts(row, live_ok):
     d = payload.get("data") if isinstance(payload, dict) and isinstance(payload.get("data"), dict) else payload
     if not isinstance(d, dict):
         return None, "bad-payload"
+    # JIT lien fill (Ted 2026-10-03: no bulk pulls; the card completes itself one opened lead at a time)
+    liens = None
+    if row.get("lien_count") is None and row.get("id"):
+        try:
+            liens = liens_from_detail(d)
+            sb("PATCH", f"/hit_list?id=eq.{urllib.parse.quote(str(row['id']))}", body=dict(liens, updated_at=datetime.datetime.now(datetime.timezone.utc).isoformat()),
+               headers={"Prefer": "return=minimal"})
+        except Exception as e:
+            print(f"[facts] jit lien write failed: {e}")
     pi = d.get("propertyInfo") or {}; li = d.get("lotInfo") or {}; ti = d.get("taxInfo") or {}
     ls = d.get("lastSale") or {}; oi = d.get("ownerInfo") or {}
     own_months = oi.get("ownershipLength")
@@ -540,7 +573,7 @@ def property_facts(row, live_ok):
         "years_owned": (round(own_months / 12) if isinstance(own_months, (int, float)) and own_months else None),
         "owner_mailing": (oi.get("mailAddress") or {}).get("label"), "absentee": oi.get("absenteeOwner"),
         "owner_occupied": oi.get("ownerOccupied"), "corporate_owned": oi.get("corporateOwned"),
-        "est_value": d.get("estimatedValue"), "fetched": (when or "")[:10],
+        "est_value": d.get("estimatedValue"), "fetched": (when or "")[:10], "liens": liens,
     }
     return f, src
 
@@ -1375,7 +1408,7 @@ class Handler(SimpleHTTPRequestHandler):
             pid = (qs.get("id") or [""])[0]
             if not pid:
                 return self._json(400, {"error": "id required"})
-            rows = sb("GET", f"/hit_list?select=id,addr_key,property_street,property_city,property_state,property_zip&id=eq.{pid}&limit=1")
+            rows = sb("GET", f"/hit_list?select=id,addr_key,property_street,property_city,property_state,property_zip,lien_count&id=eq.{pid}&limit=1")
             if not rows:
                 return self._json(404, {"error": "not found"})
             facts, src = property_facts(rows[0], live_ok=bool(u and is_paid(u)))

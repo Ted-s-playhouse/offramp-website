@@ -867,9 +867,7 @@ function openDetail(i){
     '<div class="dbody">'+
       '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
       signalsSection(r)+
-      section('Loan &amp; equity',loanRows(r,paid,prem))+
-      surplusSection(r)+
-      checksSection(r,paid,prem)+
+      '<div id="loanchecks">'+section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem)+'</div>'+
       '<div class="sec">Engage</div>'+
       actionBar(r)+maplinks+
       flagStrip(r)+
@@ -1164,6 +1162,7 @@ function loadFacts(r){
       el2.innerHTML=basic+'<div class="hint">No county record came back for this address.</div>'; return;
     }
     var f=j.facts, rows=factsTiered(r,f);
+    if(f.liens&&r.lien_count==null){ Object.assign(r,f.liens); var lc=document.getElementById('loanchecks'); if(lc){ var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); lc.innerHTML=section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem); } renderList(); }  // JIT: the opened lead fills its own mortgages + liens
     el2.innerHTML=(rows||basic)+'<div class="hint">OffRamp county record'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
   }).catch(function(){ var el2=document.getElementById('facts'); if(el2&&CUR===r)el2.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; });
 }
