@@ -100,6 +100,8 @@ Source: Ted 2026-10-03 10:30–10:45Z Telegram ("develop the next phase: the UI/
 38. Postcards (Ted 2026-10-03, awaiting GO): PostGrid API, "Send postcard" on the card w/ photo + message template, allowance per plan (Pro 25/mo, Premium 100/mo, overage $1.25) metered on offramp_credit_ledger. Verify: one real postcard to Ted's address.
 39. SEO forward plan (Ted asked 2026-10-03; Ron's list pending): city pages, "auctions this week in <state/county>", how-to-bid per state (bid_pages), probate/bankruptcy lead-type pages — all generated from existing data; fold in Ron's ideas and rank once received.
 
+40. CMA on the card (Ted 2026-10-03, after #37/#38): REAPI /v3/PropertyComps (works on Growth; verified) → sold comps ≤1 mi / ≤12 mo / beds ±1 / sqft ±25% → median $/sqft × subject sqft = CMA value; show CMA vs REAPI AVM (low/high) vs county market value + spread + comp list; cached on the row; no price shown where MLS has none (non-disclosure states). Verify: Payson UT and Aurora CO test rows.
+
 ### Timeline
 - 5A #22 finishes today; #23/#24 by 2026-10-04.
 - 5B #26/#27 by 2026-10-05; #28 mockup by 2026-10-06.
