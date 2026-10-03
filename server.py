@@ -94,7 +94,7 @@ except Exception:
 # OFFRAMP_TRIAL_LIVE=1 once Ted has enabled customer.subscription.created +
 # invoice.paid on the live webhook endpoint (until then the button stays hidden
 # and /api/billing/checkout-link {plan:"trial"} answers 409).
-TRIAL_DAYS = 7
+TRIAL_DAYS = int(os.environ.get("OFFRAMP_TRIAL_DAYS", "7") or 7)   # Ted 2026-10-03: 30-day preview at launch (OFFRAMP_TRIAL_DAYS=30)
 TRIAL_ENABLED = STRIPE_MODE == "test" or os.environ.get("OFFRAMP_TRIAL_LIVE", "").strip() == "1"
 
 # on-disk cache for proxied property imagery (Street View / satellite)
