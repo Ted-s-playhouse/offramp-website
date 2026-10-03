@@ -126,7 +126,7 @@ PLAN_LIMITS = {
 }
 PAID_PLANS = ("pro", "premium")
 TRIAL_PLAN = "trial"
-PREMIUM_COLS = ("next_of_kin", "deceased_party", "probate_case_number", "bankruptcy_case",
+PREMIUM_COLS = ("next_of_kin", "deceased_party", "probate_case_number", "bankruptcy_flag", "bankruptcy_chapter", "bankruptcy_case",
                 "bankruptcy_case_title", "bankruptcy_case_link", "bankruptcy_active_stay")
 
 
