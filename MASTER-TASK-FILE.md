@@ -58,3 +58,8 @@ Source: Ted via Telegram + Google Doc "Task" (Drive id 1ETnFhRjEfCZWxnFB8hEE8ef3
 3. Header credit meter reads "N credits left" or the plan name, not a raw regional number.
 4. Bottom nav "Lookup" tab renamed "Search".
 Rule: commit before starting and after each completed task.
+
+## Addendum 2 — 2026-10-03 (Ted, Telegram) — Free-user gray-out layer on deal detail
+Model on the Revive CRM lead layout, not a new screen. Order: owner + address, beds/baths/sqft, Contact (phone, email, next of kin), Evaluation (equity %, equity $, AVM, loan balance), Engage.
+Free: address, photo, beds/baths, status, sale date clear; phone, email, next of kin, equity $, loan balance blurred + "Pro" label; tap opens the upgrade sheet; never "no phones on file" for locked data.
+Pro: same layout, values clear, skip trace runs on the phone row; if not run, the CRM empty state. Do not gray the whole card. Do not invent phones.
