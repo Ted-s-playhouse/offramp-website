@@ -615,16 +615,34 @@ function reveal(){
 }
 
 /* ---------- analyzer (no MAO) ---------- */
+var ANALYZE_TIMER=null, ANALYZE_CTL=null;
 function runAnalyze(){
+  if(ANALYZE_TIMER) clearTimeout(ANALYZE_TIMER);
+  if(ANALYZE_CTL){ ANALYZE_CTL.abort(); ANALYZE_CTL=null; }
+  var v=document.getElementById('o_verdict');
+  if(v){ v.textContent='Calculating'; v.className='verdict neutral'; }
+  ANALYZE_TIMER=setTimeout(sendAnalyze, 500);
+}
+function sendAnalyze(){
+  ANALYZE_TIMER=null;
   if(!document.getElementById('an_arv'))return;
+  if(ANALYZE_CTL) ANALYZE_CTL.abort();
+  ANALYZE_CTL=new AbortController();
+  var seq=ANALYZE_CTL;
   var b={arv:val('an_arv'),rehab:val('an_rehab'),offer:val('an_offer'),mortgage_balance:val('an_mb'),market_value:CUR.market_value};
-  api('/api/analyze',{method:'POST',body:b}).then(function(r){return r.json();}).then(function(j){
+  api('/api/analyze',{method:'POST',body:b,signal:seq.signal}).then(function(r){return r.json();}).then(function(j){
+    if(seq!==ANALYZE_CTL) return;
     var a=j.analysis;
-    document.getElementById('o_profit').textContent=a.est_profit!==null?money(a.est_profit):'—';
-    document.getElementById('o_roi').textContent=a.roi_pct!==null?a.roi_pct+'%':'—';
+    var profit=document.getElementById('o_profit');
+    var roi=document.getElementById('o_roi');
     var v=document.getElementById('o_verdict');
+    if(!profit||!roi||!v) return;
+    profit.textContent=a.est_profit!==null?money(a.est_profit):'—';
+    roi.textContent=a.roi_pct!==null?a.roi_pct+'%':'—';
     v.textContent=a.verdict;
     v.className='verdict '+(a.est_profit===null?'neutral':(a.est_profit>0?'good':'bad'));
+  }).catch(function(err){
+    if(err&&err.name==='AbortError') return;
   });
 }
 function val(id){var e=document.getElementById(id);return e?e.value:'';}
