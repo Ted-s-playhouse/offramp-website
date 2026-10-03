@@ -45,7 +45,7 @@ MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
           "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
 PUBLIC_COLS = ("listing_id,state,county,city,zip,street,address,auction_window,"
                "status,product_type,asset_type,occupancy,trustee_sale,beds,baths,"
-               "sqft,year_built,est_value,structure_type,lot_size")
+               "sqft,year_built,est_value,structure_type,lot_size,county_norm,county_slug,county_fips")
 
 _CACHE = {}
 
@@ -97,6 +97,32 @@ def county_slug(name):
     if base.endswith("-county"):
         return base
     return base + "-county"
+
+
+def row_county(r):
+    """Display name for a row's county: Census-normalized when matched, raw feed value otherwise."""
+    return r.get("county_norm") or r.get("county") or "Unknown"
+
+
+def row_county_slug(r):
+    return r.get("county_slug") or county_slug(r.get("county"))
+
+
+def county_label(r):
+    """'Salt Lake County' / 'Orleans Parish' / 'Norfolk city' — suffix comes from the Census slug."""
+    name = row_county(r)
+    sl = row_county_slug(r)
+    if sl.endswith("-parish"):
+        return f"{name} Parish"
+    if sl.endswith("-borough"):
+        return f"{name} Borough"
+    if sl.endswith("-census-area"):
+        return f"{name} Census Area"
+    if sl.endswith("-municipality"):
+        return f"{name} Municipality"
+    if sl.endswith("-city") or name.lower().endswith(" city"):
+        return name
+    return f"{name} County"
 
 
 def county_name_from_slug(s):
@@ -168,6 +194,22 @@ def public_rows(state=None, county_like=None):
     if county_like:
         parts.append(f"county=ilike.*{urllib.parse.quote(county_like)}*")
     return _pages("/offramp_national_listings?" + "&".join(parts))
+
+
+def county_rows(abbr, slug_co):
+    """All active rows for one county slug. Normalized slug first; raw-slug fallback for
+    rows the normalizer rejected (they keep their raw county, see reports/county-reject-log.md)."""
+    rows = [r for r in public_rows(abbr) if row_county_slug(r) == slug_co]
+    return rows
+
+
+def legacy_redirect(abbr, slug_st, slug_co):
+    """If slug_co is an old raw-derived slug (e.g. san-bernadino-county) that now
+    normalizes to a different Census slug, return the canonical path for a 301."""
+    for r in public_rows(abbr):
+        if r.get("county_slug") and county_slug(r.get("county")) == slug_co and r["county_slug"] != slug_co:
+            return f"/{slug_st}/{r['county_slug']}"
+    return None
 
 
 def live_states():
@@ -323,19 +365,21 @@ def state_page(slug_st):
     soon.sort(key=lambda r: window_start(r) or date.max)
     counties = {}
     for r in rows:
-        c = r.get("county") or "Unknown"
-        counties[c] = counties.get(c, 0) + 1
+        sl = row_county_slug(r)
+        if sl not in counties:
+            counties[sl] = {"label": county_label(r), "n": 0}
+        counties[sl]["n"] += 1
     county_cards = []
-    for c, n in sorted(counties.items(), key=lambda kv: (-kv[1], kv[0])):
+    for sl, c in sorted(counties.items(), key=lambda kv: (-kv[1]["n"], kv[1]["label"])):
         county_cards.append(
-            f'<div class="card"><a href="/{slug_st}/{county_slug(c)}">{e(c)} County</a>'
-            f'<div class="meta">{n:,} public listings</div></div>')
+            f'<div class="card"><a href="/{slug_st}/{sl}">{e(c["label"])}</a>'
+            f'<div class="meta">{c["n"]:,} public listings</div></div>')
     auction_rows = []
     for r in soon[:40]:
         auction_rows.append(
-            f'<tr><td><a href="/{slug_st}/{county_slug(r.get("county"))}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
+            f'<tr><td><a href="/{slug_st}/{row_county_slug(r)}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
             f'<div class="meta">{e((r.get("city") or "").title())}</div></td>'
-            f'<td>{e(r.get("county"))}</td><td>{e(r.get("auction_window") or "Date not posted")}</td></tr>')
+            f'<td>{e(row_county(r))}</td><td>{e(r.get("auction_window") or "Date not posted")}</td></tr>')
     body = f"""<header class="hero"><div class="wrap"><h1>{e(name)} foreclosure auctions</h1>
 <p>Counties and upcoming public sales in {e(name)}.</p></div></header>
 <div class="wrap">
@@ -354,11 +398,11 @@ def state_page(slug_st):
 
 def county_page(slug_st, slug_co):
     abbr, name = STATES[slug_st]
-    like = county_name_from_slug(slug_co)
-    rows = [r for r in public_rows(abbr, like) if county_slug(r.get("county")) == slug_co]
+    rows = county_rows(abbr, slug_co)
     if not rows:
         return None
-    county = rows[0].get("county") or like.title()
+    county = row_county(rows[0])
+    label = county_label(rows[0])
     today = date.today()
     rows.sort(key=lambda r: window_start(r) or date.max)
     body_rows = []
@@ -371,31 +415,29 @@ def county_page(slug_st, slug_co):
             f'<td>{e(r.get("auction_window") or "Date not posted")}</td>'
             f'<td>{e(human_type(r.get("structure_type")))}</td></tr>')
     shown = "".join(body_rows) or '<tr><td colspan="3">No current public sales in this county.</td></tr>'
-    body = f"""<header class="hero"><div class="wrap"><h1>{e(county)} County, {e(name)} auctions</h1>
+    body = f"""<header class="hero"><div class="wrap"><h1>{e(label)}, {e(name)} auctions</h1>
 <p>Public listings with sale dates.</p></div></header>
 <div class="wrap">
-<p class="crumbs"><a href="/">Home</a> / <a href="/{slug_st}">{e(name)}</a> / {e(county)} County</p>
+<p class="crumbs"><a href="/">Home</a> / <a href="/{slug_st}">{e(name)}</a> / {e(label)}</p>
 <table><thead><tr><th>Property</th><th>Sale date</th><th>Type</th></tr></thead>
 <tbody>{shown}</tbody></table>
 <p class="note">{len(rows):,} public listings in this county. Private underwriting is not on this page.</p>
 <a class="cta" href="/app/">Open the deal room</a>
 </div>"""
-    title = f"{county} County, {name} foreclosure auctions | OffRamp REI"
-    desc = f"Public auction listings in {county} County, {name}, with sale dates and property type."
+    title = f"{label}, {name} foreclosure auctions | OffRamp REI"
+    desc = f"Public auction listings in {label}, {name}, with sale dates and property type."
     return shell(title, desc, body, f"{ORIGIN}/{slug_st}/{slug_co}")
 
 
 def listing_page(slug_st, slug_co, slug_li):
     abbr, name = STATES[slug_st]
-    like = county_name_from_slug(slug_co)
-    rows = [r for r in public_rows(abbr, like)
-            if county_slug(r.get("county")) == slug_co and listing_slug(r) == slug_li]
+    rows = [r for r in county_rows(abbr, slug_co) if listing_slug(r) == slug_li]
     if not rows:
         return None
     r = rows[0]
     street = (r.get("street") or "This property").title()
     city = (r.get("city") or "").title()
-    county = r.get("county") or like.title()
+    county = row_county(r)
     when = r.get("auction_window") or "not posted"
     kind = human_type(r.get("structure_type") or r.get("asset_type"))
     bb = beds_baths(r)
@@ -439,7 +481,7 @@ def sitemap_xml():
             return open(SITEMAP_PATH, encoding="utf-8").read()
     except OSError:
         pass
-    rows = _pages("/offramp_national_listings?select=listing_id,state,county,city,street,updated_at&status_group=eq.ACTIVE&delisted_at=is.null", cap=30)
+    rows = _pages("/offramp_national_listings?select=listing_id,state,county,county_slug,city,street,updated_at&status_group=eq.ACTIVE&delisted_at=is.null", cap=30)
     urls = [f"{ORIGIN}/"]
     seen_states = set()
     seen_counties = set()
@@ -451,11 +493,11 @@ def sitemap_xml():
         if sl not in seen_states:
             seen_states.add(sl)
             urls.append(f"{ORIGIN}/{sl}")
-        co = f"{ORIGIN}/{sl}/{county_slug(r.get('county'))}"
+        co = f"{ORIGIN}/{sl}/{row_county_slug(r)}"
         if co not in seen_counties:
             seen_counties.add(co)
             urls.append(co)
-        urls.append(f"{ORIGIN}/{sl}/{county_slug(r.get('county'))}/{listing_slug(r)}")
+        urls.append(f"{ORIGIN}/{sl}/{row_county_slug(r)}/{listing_slug(r)}")
     body = ['<?xml version="1.0" encoding="UTF-8"?>',
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in urls:
@@ -514,6 +556,13 @@ def serve(handler, route, qs):
             page = state_page(parts[0])
         elif len(parts) == 2:
             page = county_page(parts[0], parts[1])
+            if not page:
+                target = legacy_redirect(STATES[parts[0]][0], parts[0], parts[1])
+                if target:
+                    handler.send_response(301)
+                    handler.send_header("Location", target)
+                    handler.end_headers()
+                    return True
         elif len(parts) == 3:
             page = listing_page(parts[0], parts[1], parts[2])
         else:
