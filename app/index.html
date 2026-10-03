@@ -557,6 +557,7 @@ function openDetail(i){
         lineIf('Auction date',fmtDate(r.auction_date)+(r.auction_time?(' · '+r.auction_time):'')),
         lineIf('Days to auction',(r.days_to_auction!=null)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
         lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
+        (r.trustee_opening_bid==null&&r.mortgage_balance!=null)?lineRaw('Est. credit bid','<span title="Estimate: the recorded loan balance. Lenders usually open at or near what they are owed. Not a live figure.">'+money(r.mortgage_balance)+' <small style="color:var(--sub)">Est. · from stored loan balance</small></span>'):'',
         lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
         lineIf('Case / NOD #',r.nod_case_number),
         lineIf('Trustee file #',r.trustee_file_no),
