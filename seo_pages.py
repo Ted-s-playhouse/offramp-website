@@ -484,7 +484,8 @@ def sitemap_xml():
     except OSError:
         pass
     rows = _pages("/offramp_national_listings?select=listing_id,state,county,county_slug,city,street,updated_at&status_group=eq.ACTIVE&delisted_at=is.null", cap=30)
-    urls = [f"{ORIGIN}/"]
+    import bid_pages
+    urls = [f"{ORIGIN}/", f"{ORIGIN}/bid"] + [f"{ORIGIN}/bid/{k}" for k in bid_pages.STATES]
     seen_states = set()
     seen_counties = set()
     for r in rows:
@@ -544,6 +545,14 @@ def serve(handler, route, qs):
             _send(handler, 200, sitemap_xml(), "application/xml")
         except Exception as ex:
             _send(handler, 503, f"sitemap unavailable: {ex}", "text/plain")
+        return True
+    if path == "/bid" or path.startswith("/bid/"):
+        import bid_pages
+        slug_b = path[5:].strip("/")
+        page_b = bid_pages.state_page(slug_b) if slug_b else bid_pages.national_page()
+        if not page_b:
+            return False
+        _send(handler, 200, page_b, "text/html; charset=utf-8")
         return True
     if path == "/go":
         handler.send_response(302)
