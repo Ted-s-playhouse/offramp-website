@@ -612,6 +612,18 @@ def build_national_query(qs, limit):
     return "/offramp_national_listings?" + "&".join(parts)
 
 
+def sb_all(path, page=1000, cap=60):
+    """PostgREST caps a response at 1000 rows; page through to get everything."""
+    out = []
+    for i in range(cap):
+        sep = "&" if "?" in path else "?"
+        rows = sb("GET", f"{path}{sep}limit={page}&offset={i * page}")
+        out.extend(rows)
+        if len(rows) < page:
+            break
+    return out
+
+
 _STATE_COUNTS = {"at": 0, "val": None}
 
 
@@ -620,11 +632,11 @@ def state_counts():
     if _STATE_COUNTS["val"] and time.time() - _STATE_COUNTS["at"] < 600:
         return _STATE_COUNTS["val"]
     hit, nat = {}, {}
-    for r in sb("GET", "/hit_list?select=property_state&active=eq.true&or=(days_to_auction.gte.-3,days_to_auction.is.null)&limit=100000"):
+    for r in sb_all("/hit_list?select=property_state&active=eq.true&or=(days_to_auction.gte.-3,days_to_auction.is.null)"):
         st = (r.get("property_state") or "").upper()
         if st:
             hit[st] = hit.get(st, 0) + 1
-    for r in sb("GET", "/offramp_national_listings?select=state&status_group=eq.ACTIVE&delisted_at=is.null&limit=100000"):
+    for r in sb_all("/offramp_national_listings?select=state&status_group=eq.ACTIVE&delisted_at=is.null"):
         st = (r.get("state") or "").upper()
         if st:
             nat[st] = nat.get(st, 0) + 1
