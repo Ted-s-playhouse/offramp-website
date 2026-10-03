@@ -303,8 +303,9 @@ def home_block():
         when = r.get("auction_window") or "Date not posted"
         city = (r.get("city") or "").title()
         items.append(
-            f'<a class="seo-card" href="{e(href)}"><b>{e((r.get("street") or "").title())}</b>'
-            f'<span>{e(city)}, {e(st)} · {e(when)}</span></a>')
+            f'<a class="seo-card" href="{e(href)}"><img class="seo-thumb" loading="lazy" width="96" height="64" src="{e(href)}.jpg" alt="">'
+            f'<span class="seo-card-txt"><b>{e((r.get("street") or "").title())}</b>'
+            f'<span>{e(city)}, {e(st)} · {e(when)}</span></span></a>')
     if not items:
         items.append('<p class="seo-empty">No auctions dated in the next 7 days in the public feed.</p>')
     links = []
@@ -343,7 +344,9 @@ def home_css():
   .seo-search button { background:#1B4332; color:#fff; border:0; border-radius:10px; padding:0 16px; font-weight:800; }
   .seo-cards, .seo-states { display:flex; flex-wrap:wrap; gap:10px; }
   .seo-card, .seo-states a { display:block; background:#F6F5F1; border:1px solid #e3e0d8; border-radius:12px; padding:12px 14px; text-decoration:none; color:#15221B; }
-  .seo-card { min-width:220px; flex:1; }
+  .seo-card { min-width:220px; flex:1; display:flex; align-items:center; gap:12px; }
+  .seo-thumb { width:96px; height:64px; object-fit:cover; border-radius:8px; background:#e6ede8; flex:none; }
+  .seo-card-txt { display:flex; flex-direction:column; min-width:0; }
   .seo-card b { display:block; }
   .seo-card span, .seo-states em { color:#5c6b63; font-style:normal; font-size:13px; }
   .seo-states a { font-weight:800; color:#1B4332; }
@@ -382,7 +385,8 @@ def state_page(slug_st):
     auction_rows = []
     for r in soon[:40]:
         auction_rows.append(
-            f'<tr><td><a href="/{slug_st}/{row_county_slug(r)}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
+            f'<tr><td class="thumbcell"><img class="thumb" loading="lazy" width="96" height="64" src="/{slug_st}/{row_county_slug(r)}/{listing_slug(r)}.jpg" alt=""></td>'
+            f'<td><a href="/{slug_st}/{row_county_slug(r)}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
             f'<div class="meta">{e((r.get("city") or "").title())}</div></td>'
             f'<td>{e(row_county(r))}</td><td>{e(r.get("auction_window") or "Date not posted")}</td></tr>')
     body = f"""<header class="hero"><div class="wrap"><h1>{e(name)} foreclosure auctions</h1>
@@ -392,7 +396,7 @@ def state_page(slug_st):
 <h2>Counties</h2>
 <div class="grid">{''.join(county_cards) or '<p>No public listings yet.</p>'}</div>
 <h2>Upcoming auctions</h2>
-<table><thead><tr><th>Address</th><th>County</th><th>Sale date</th></tr></thead>
+<table><thead><tr><th></th><th>Address</th><th>County</th><th>Sale date</th></tr></thead>
 <tbody>{''.join(auction_rows) or '<tr><td colspan="3">No upcoming dates in the public feed.</td></tr>'}</tbody></table>
 <a class="cta" href="/app/">Open the deal room</a>
 </div>"""
