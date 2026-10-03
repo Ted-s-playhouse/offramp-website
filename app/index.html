@@ -1016,7 +1016,9 @@ var SIG_ICON={
 };
 var LVL={high:'High',med:'Medium',low:'Low'};
 function meterBars(m){ return '<span class="bars"><i class="on"></i><i'+(m!=='low'?' class="on"':'')+'></i><i'+(m==='high'?' class="on"':'')+'></i></span>'; }
+var SIGNALS_PILOT_STATES={UT:1};  // Ted 2026-10-03: pilot small before going global. Signals run in Utah only until he widens it.
 function sigBadges(r){
+  if(!SIGNALS_PILOT_STATES[(r.property_state||'').toUpperCase()])return '';
   // list cards: at most ONE badge, paid users only, and only a strong call (Ted 2026-10-03: extremely sparingly). Ramp Bid never rides on a card.
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); if(!paid)return '';
   // UT check 2026-10-03: pre-sale surplus room + Reversion Low fired on 42% of cards (high-equity market). Cards get only what already happened or cannot be argued:
@@ -1026,6 +1028,7 @@ function sigBadges(r){
   return '';
 }
 function signalsSection(r){
+  if(!SIGNALS_PILOT_STATES[(r.property_state||'').toUpperCase()])return '';
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
   var rb=rampBid(r), g=gavelOdds(r), m=reversion(r), s=surplusChaser(r);
   if(!rb&&!g&&!m&&!s)return '';
