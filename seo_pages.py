@@ -335,17 +335,16 @@ def state_page(slug_st):
         auction_rows.append(
             f'<tr><td><a href="/{slug_st}/{county_slug(r.get("county"))}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
             f'<div class="meta">{e((r.get("city") or "").title())}</div></td>'
-            f'<td>{e(r.get("county"))}</td><td>{e(r.get("auction_window") or "Not posted")}</td>'
-            f'<td>Not posted</td></tr>')
+            f'<td>{e(r.get("county"))}</td><td>{e(r.get("auction_window") or "Date not posted")}</td></tr>')
     body = f"""<header class="hero"><div class="wrap"><h1>{e(name)} foreclosure auctions</h1>
-<p>Counties and upcoming public sales in {e(name)}. Opening bids are shown only when the public feed includes them.</p></div></header>
+<p>Counties and upcoming public sales in {e(name)}.</p></div></header>
 <div class="wrap">
 <p class="crumbs"><a href="/">Home</a> / {e(name)}</p>
 <h2>Counties</h2>
 <div class="grid">{''.join(county_cards) or '<p>No public listings yet.</p>'}</div>
 <h2>Upcoming auctions</h2>
-<table><thead><tr><th>Address</th><th>County</th><th>Sale date</th><th>Opening bid</th></tr></thead>
-<tbody>{''.join(auction_rows) or '<tr><td colspan="4">No upcoming dates in the public feed.</td></tr>'}</tbody></table>
+<table><thead><tr><th>Address</th><th>County</th><th>Sale date</th></tr></thead>
+<tbody>{''.join(auction_rows) or '<tr><td colspan="3">No upcoming dates in the public feed.</td></tr>'}</tbody></table>
 <a class="cta" href="/app/">Open the deal room</a>
 </div>"""
     title = f"{name} foreclosure auctions | OffRamp REI"
@@ -369,14 +368,14 @@ def county_page(slug_st, slug_co):
         body_rows.append(
             f'<tr><td><a href="/{slug_st}/{slug_co}/{listing_slug(r)}">{e((r.get("street") or "").title())}</a>'
             f'<div class="meta">{e((r.get("city") or "").title())} {e(r.get("zip") or "")}</div></td>'
-            f'<td>{e(r.get("auction_window") or "Not posted")}</td><td>Not posted</td>'
+            f'<td>{e(r.get("auction_window") or "Date not posted")}</td>'
             f'<td>{e(human_type(r.get("structure_type")))}</td></tr>')
-    shown = "".join(body_rows) or '<tr><td colspan="4">No current public sales in this county.</td></tr>'
+    shown = "".join(body_rows) or '<tr><td colspan="3">No current public sales in this county.</td></tr>'
     body = f"""<header class="hero"><div class="wrap"><h1>{e(county)} County, {e(name)} auctions</h1>
-<p>Public listings with sale dates. Opening bid is not in this feed, so it is marked not posted.</p></div></header>
+<p>Public listings with sale dates.</p></div></header>
 <div class="wrap">
 <p class="crumbs"><a href="/">Home</a> / <a href="/{slug_st}">{e(name)}</a> / {e(county)} County</p>
-<table><thead><tr><th>Property</th><th>Sale date</th><th>Opening bid</th><th>Type</th></tr></thead>
+<table><thead><tr><th>Property</th><th>Sale date</th><th>Type</th></tr></thead>
 <tbody>{shown}</tbody></table>
 <p class="note">{len(rows):,} public listings in this county. Private underwriting is not on this page.</p>
 <a class="cta" href="/app/">Open the deal room</a>
@@ -409,7 +408,7 @@ def listing_page(slug_st, slug_co, slug_li):
     p1 = (f"{street} in {city}, {county} County, {name} is {sale_kind} with a sale window of {when}. "
           f"The public record lists it as a {kind.lower()}"
           + (f", {facts}." if facts else "."))
-    p2 = (f"Estimated value in the public feed is {value}. Opening bid is not posted in this feed. "
+    p2 = (f"Estimated value in the public feed is {value}. "
           f"{('Occupancy is listed as ' + occ + '. ') if occ else ''}"
           f"This page is the public listing only. Underwriting lives in the deal room.")
     body = f"""<header class="hero"><div class="wrap"><h1>{e(street)}</h1>
@@ -420,7 +419,6 @@ def listing_page(slug_st, slug_co, slug_li):
 <tr><th>Address</th><td>{e(street)}, {e(city)}, {e(abbr)} {e(r.get('zip') or '')}</td></tr>
 <tr><th>County</th><td>{e(county)}</td></tr>
 <tr><th>Sale date</th><td>{e(when)}</td></tr>
-<tr><th>Opening bid</th><td>Not posted</td></tr>
 <tr><th>Property type</th><td>{e(kind)}</td></tr>
 <tr><th>Beds / baths</th><td>{e(bb or 'Not posted')}</td></tr>
 <tr><th>Estimated value</th><td>{e(value)}</td></tr>
