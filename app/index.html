@@ -169,7 +169,8 @@
   .lead .right .val{font-size:12px;color:var(--sub);margin-top:4px}
   .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
   .badge{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:20px;border:1px solid transparent}
-  .badge.status{color:#fff}
+  .badge.vmark{background:#e7f3ec;color:#1f6f43;border:1px solid #b7dcc6}
+.badge.status{color:#fff}
   .badge.soon{background:var(--danger);color:#fff}
   .badge.auc{background:var(--warm);color:#3a2a06}
   .badge.outline{background:transparent;border-color:var(--border);color:var(--sub)}
@@ -650,7 +651,8 @@ function search(){
 }
 function badgeHtml(r){
   var out='';
-  if(r.foreclosure_status){ out+='<span class="badge status" style="background:'+tempColor(r.temperature||'')+'">'+esc(r.foreclosure_status)+'</span>'; }
+  if(statusLabel(r)){ out+='<span class="badge status" style="background:'+tempColor(r.temperature||'')+'">'+esc(statusLabel(r))+'</span>'; }
+  out+=trusteeMark(r);
   var d=r.days_to_auction;
   if(d!==null&&d!==undefined&&d>=0){ out+='<span class="badge '+(d<=7?'soon':'auc')+'">auction '+d+'d</span>'; }
   return out;
@@ -743,7 +745,8 @@ function openDetail(i){
   var hero=pu?'<img class="dhero" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.style.display=\'none\'">':'';
   var hbadges='';
   if(r.temperature)hbadges+='<span class="badge hbadge" style="background:'+tempColor(r.temperature)+';border:0">'+esc(r.temperature.toUpperCase())+'</span>';
-  if(r.foreclosure_status)hbadges+='<span class="badge hbadge">'+esc(r.foreclosure_status)+'</span>';
+  if(statusLabel(r))hbadges+='<span class="badge hbadge">'+esc(statusLabel(r))+'</span>';
+  hbadges+=trusteeMark(r);
   if(r.days_to_auction!=null&&r.days_to_auction>=0)hbadges+='<span class="badge hbadge">auction '+r.days_to_auction+'d</span>';
   var maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(addr);
   var zillow='https://www.zillow.com/homes/'+encodeURIComponent(addr)+'_rb/';
@@ -788,7 +791,7 @@ function openDetail(i){
       '<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>'+
       flagStrip(r)+
       section('Foreclosure',[
-        lineIf('Status',r.foreclosure_status),
+        lineIf('Status',statusLabel(r)+(trusteeMark(r)?' (trustee verified)':'')),
         lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
         lineIf('Sale date',saleDate),
         lineIf('Days to auction',(r.days_to_auction!=null)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
@@ -840,6 +843,8 @@ function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div cla
 function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
 function lineIf(k,v){ return (v===null||v===undefined||v===''||v==='—')?'':line(k,v); }
 function lineRaw(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+function statusLabel(r){ return (r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,''); }  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
+function trusteeMark(r){ var v=r.sale_verified_source||''; return (v && !/realestateapi/i.test(v)) ? '<span class="badge vmark" title="Sale date verified on the trustee page">&#10003; Trustee verified</span>' : ''; }
 function pct(x){ return (x===null||x===undefined||x==='')?'':(Math.round(Number(x))+'%'); }  // Ted 2026-10-03: never a decimal on a percent
 function fmtDate(d){ if(!d)return ''; var s=String(d).slice(0,10); var p=s.split('-'); return p.length===3?(p[1]+'/'+p[2]+'/'+p[0]):s; }
 function section(title,rows){ var body=rows.filter(Boolean).join(''); return body?('<div class="sec">'+title+'</div><div class="card2">'+body+'</div>'):''; }
