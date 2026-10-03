@@ -328,7 +328,7 @@
   .locked-row{cursor:pointer}
   .locked-row .v{display:flex;align-items:center;gap:8px;justify-content:flex-end}
   .locked-row .blur{filter:blur(5px);user-select:none;color:var(--sub)}
-  .locked-row .lock{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--gold);color:#231a0c;padding:3px 7px;border-radius:12px}
+  .locked-row .lock{font-size:10.5px;font-weight:800;letter-spacing:.02em;background:var(--gold);color:#231a0c;padding:5px 10px;border-radius:9px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.12)}
   .contactcard{padding:0 12px}.empty-v{color:var(--sub);font-style:italic}
   .revealbtn.inline{display:inline-block;width:auto;padding:6px 10px;font-size:12px;margin-left:8px}
   #upsheet{display:none;position:fixed;inset:0;z-index:60}
@@ -808,15 +808,15 @@ function renderPins(){
 
 /* ---------- detail ---------- */
 function lockedRow(label,kind){
-  // Free-tier gray-out: the value is withheld server-side; the blurred placeholder is a lock, not data.
+  // Free/Pro gray-out: the value is withheld server-side; the blurred placeholder is a lock, not data. The pill is the upgrade button (Ted 2026-10-03: every gray-out leads to checkout).
   var tag=kind==='premium'?'Premium':'Pro';
-  return '<div class="rowline locked-row" onclick="openUpgradeSheet(\''+kind+'\')"><span class="k">'+label+'</span><span class="v"><span class="blur">'+(label==='Phone'?'(•••) •••-••••':(label==='Email'?'•••••@•••••.com':'$•••,•••'))+'</span><span class="lock">'+tag+'</span></span></div>';
+  return '<div class="rowline locked-row" onclick="openUpgradeSheet(\''+kind+'\')"><span class="k">'+label+'</span><span class="v"><span class="blur">'+(label==='Phone'?'(•••) •••-••••':(label==='Email'?'•••••@•••••.com':'$•••,•••'))+'</span><span class="lock">Unlock · '+tag+' ›</span></span></div>';
 }
 function openUpgradeSheet(kind){
   var el=document.getElementById('upsheet'); if(!el){ el=document.createElement('div'); el.id='upsheet'; document.body.appendChild(el); }
   var isPrem=kind==='premium';
   el.innerHTML='<div class="upsheet-bg" onclick="closeUpgradeSheet()"></div><div class="upsheet"><div class="grab"></div>'+
-    '<div class="upt">'+(isPrem?'Next of kin &amp; PACER tracking are on Premium':'Owner contact and the numbers are on Pro')+'</div>'+
+    '<div class="upt">'+(isPrem?'Every lien, judgments, court records and next of kin are on Premium':'Owner contact and the numbers are on Pro')+'</div>'+
     trialCard()+
     '<div class="plangrid">'+planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, equity and loan figures, CSV export.',ME.plan==='pro')+
     planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',ME.plan==='premium')+'</div>'+
@@ -1097,7 +1097,7 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
   }
   return rows;
 }
-function lockedTile(title,sub,kind){ return '<div class="vtile none lockt" onclick="openUpgradeSheet(\''+kind+'\')"><div class="ico">🔒</div><div><div class="title">'+title+'</div><div class="word">CLEAR</div><div class="proof">'+sub+' · unlocks on '+(kind==='premium'?'Premium':'Pro')+'</div></div></div>'; }
+function lockedTile(title,sub,kind){ var tag=(kind==='premium'?'Premium':'Pro'); return '<div class="vtile none lockt" onclick="openUpgradeSheet(\''+kind+'\')"><div class="ico">🔒</div><div><div class="title">'+title+'</div><div class="word">CLEAR</div><div class="proof">'+sub+'</div><span class="more">Unlock on '+tag+' ›</span></div></div>'; }
 function lienTile(r){
   if(r.lien_count==null)return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Liens on record</div><div class="word">NO RECORD</div><div class="proof">No recorded lien sheet on file for this property yet.</div></div></div>';
   if(r.lien_count===0)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Liens on record</div><div class="word">CLEAR</div><div class="detail">No liens recorded'+(r.free_and_clear?' · free and clear':'')+'</div><div class="proof">OffRamp county record.</div></div></div>';
