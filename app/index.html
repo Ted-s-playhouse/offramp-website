@@ -444,7 +444,8 @@ function renderHeader(){
   pill.textContent=planLabel();
   pill.className='plan-pill '+(ME.paid?'pro':'free');
   var u=ME.usage;
-  document.getElementById('meterChip').innerHTML='Credits <b>'+u.lookups.used+'/'+u.lookups.limit+'</b>'+(u.overage_credits?' <span style="color:#b26a00">+'+u.overage_credits+' overage</span>':'');
+  var left=Math.max(0,(u.lookups.limit||0)-(u.lookups.used||0));
+  document.getElementById('meterChip').innerHTML=(u.lookups.limit?('<b>'+left+'</b> credits left'):planLabel())+(u.overage_credits?' <span style="color:#b26a00">· '+u.overage_credits+' overage</span>':'');
 }
 function pickState(m){ STATE=m||null;
   try{ if(STATE)localStorage.setItem('offramp_state',STATE); else localStorage.removeItem('offramp_state'); }catch(e){}
