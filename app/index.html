@@ -684,10 +684,10 @@ function renderList(){
         '<div class="right"><div class="eq">'+(r.equity_pct!=null?r.equity_pct+'%':'—')+'</div><div class="eqk">equity</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
       '</div>'+
-      '<div class="badges">'+badgeHtml(r)+actChips(r)+proChip(r)+'</div></div>';
+      '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div></div>';
   }).join('');
 }
-/* item 7: the Pro gate lives on the card itself, not at the bottom of the detail scroll */
+/* Pro gate chip removed from list cards (Ted 2026-10-03: redundant on every card); the detail page carries the lock rows */
 function proChip(r){
   if(ME&&ME.paid)return '';
   return '<span class="badge lock" onclick="event.stopPropagation();showScreen(\'acct\')">🔒 Owner contact · Pro</span>';
