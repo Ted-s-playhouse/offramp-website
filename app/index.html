@@ -1080,15 +1080,13 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
     paid?lineIf('Loan balance',bal>0?money(bal):''):lockedRow('Loan balance','pro'),
     paid?(pay?line('Est. payment',money(pay)+' /mo'):''):lockedRow('Est. payment','pro')
   ];
-  if(prem){
+  if(prem){  // Ted 2026-10-03: on a loan show only the lender and the balance (DealMachine property sheet style). No terms, no dates, no types.
     rows=rows.concat([
-      hasLiens?lineRaw('First lien',esc(lienText(r,1))+((agree&&terms)?'<small>'+esc(terms)+'</small>':'')):'',
+      hasLiens?line('First lien',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):'',
       (!hasLiens)?lineIf('Lender',r.mortgage_lender):'',
-      (!hasLiens&&terms)?line('Loan terms',terms):'',
-      (hasLiens&&!agree&&mb>0)?lineRaw('Loan on file',money(mb)+'<small>'+esc((r.mortgage_lender?r.mortgage_lender+' · ':'')+terms)+' · does not match the recorded first lien</small>'):'',
-      lineIf('Second lien',lienText(r,2)),
+      lineIf('Second lien',r.lien_second_amount?money(r.lien_second_amount):''),
       lineIf('More liens',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
-      (hasLiens&&r.lien_total_amount)?line('Total debt on record',money(r.lien_total_amount)):'',
+      (hasLiens&&r.lien_total_amount)?line('Total debt',money(r.lien_total_amount)):'',
       lineIf('Liens on record',(r.lien_count===0)?'None recorded':''),
       lineIf('Tax lien',r.tax_lien?'Yes':''),
       lineIf('Judgment',r.judgment_flag?'Yes':''),
