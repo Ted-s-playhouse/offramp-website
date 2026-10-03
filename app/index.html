@@ -170,6 +170,12 @@
   .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
   .badge{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:20px;border:1px solid transparent}
   .eq.eq-unv{color:#8a949c;font-size:15px}
+.ftier{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.ftier .lock{margin-left:auto;cursor:pointer}
+.plan-pill.premium{background:#5a2ca0;color:#fff}
+.fgroup-locked{opacity:.45}
+.frow{display:flex;gap:8px}.frow select{flex:1}
+.fcheck{display:flex;align-items:center;gap:10px;padding:9px 2px;font-size:14.5px}.fcheck input{width:18px;height:18px}
 .badge.vmark{background:#e7f3ec;color:#1f6f43;border:1px solid #b7dcc6}
 .badge.status{color:#fff}
   .badge.soon{background:var(--danger);color:#fff}
@@ -405,21 +411,39 @@
       <div id="stateList"></div>
     </div>
     <div class="sheetbody hidden" id="sheetFilter">
-      <div class="fblock"><label for="fStatus">Status</label>
-        <select id="fStatus">
-          <option value="">All statuses</option>
-          <option>Pre-Foreclosure</option>
-          <option>Auction</option>
-          <option>Notice of Default</option>
-          <option>Notice of Trustee's Sale</option>
-        </select></div>
-      <div class="fblock"><label for="fEquity">Minimum equity</label>
-        <select id="fEquity">
-          <option value="">Any equity</option>
-          <option value="50000">$50k+ equity</option>
-          <option value="100000">$100k+ equity</option>
-          <option value="200000">$200k+ equity</option>
-        </select></div>
+      <div class="ftier"><span class="plan-pill free">Free</span> where &amp; when</div>
+      <div class="fblock"><label for="fWithin">Sale within</label>
+        <select id="fWithin" data-f="within"><option value="">Any date</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option></select></div>
+      <div class="fblock"><label for="fSaleType">Sale type</label>
+        <select id="fSaleType" data-f="sale_type"><option value="">Trustee and judicial</option><option value="trustee">Trustee sale</option><option value="judicial">Judicial foreclosure</option></select></div>
+      <div class="fblock"><label for="fPtype">Property type</label>
+        <select id="fPtype" data-f="ptype"><option value="">Any type</option><option value="sfr">Single family</option><option value="condo">Condo / townhome</option><option value="mfr">Multi family</option><option value="mobile">Mobile / manufactured</option><option value="land">Land</option></select></div>
+      <div class="ftier"><span class="plan-pill pro">Pro</span> how much <span class="lock tierlock" data-tier="pro" onclick="openUpgradeSheet('pro')">Pro</span></div>
+      <div class="fgroup" data-tier="pro">
+      <div class="fblock"><label for="fEqPct">Minimum equity %</label>
+        <select id="fEqPct" data-f="min_equity_pct"><option value="">Any</option><option value="20">20%+</option><option value="30">30%+</option><option value="40">40%+</option><option value="50">50%+</option></select></div>
+      <div class="fblock"><label for="fEquity">Minimum equity $</label>
+        <select id="fEquity" data-f="min_equity"><option value="">Any equity</option><option value="50000">$50k+ equity</option><option value="100000">$100k+ equity</option><option value="200000">$200k+ equity</option></select></div>
+      <div class="fblock"><label for="fValMin">Value range</label>
+        <div class="frow"><select id="fValMin" data-f="val_min"><option value="">No min</option><option value="100000">$100k</option><option value="200000">$200k</option><option value="300000">$300k</option><option value="500000">$500k</option></select>
+        <select id="fValMax" data-f="val_max"><option value="">No max</option><option value="200000">$200k</option><option value="300000">$300k</option><option value="500000">$500k</option><option value="750000">$750k</option><option value="1000000">$1M</option></select></div></div>
+      <div class="fblock"><label for="fBeds">Bedrooms</label>
+        <select id="fBeds" data-f="beds_min"><option value="">Any</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option></select></div>
+      <div class="fblock"><label for="fYear">Built after</label>
+        <select id="fYear" data-f="year_min"><option value="">Any year</option><option value="1950">1950</option><option value="1980">1980</option><option value="2000">2000</option></select></div>
+      <div class="fblock"><label for="fLender">Lender contains</label><input id="fLender" data-f="lender" type="text" placeholder="e.g. Wells Fargo" autocomplete="off"></div>
+      <label class="fcheck"><input type="checkbox" id="fAbsentee" data-f="absentee"> Absentee owner (mail goes elsewhere)</label>
+      </div>
+      <div class="ftier"><span class="plan-pill premium">Premium</span> who &amp; why they sell <span class="lock tierlock" data-tier="premium" onclick="openUpgradeSheet('premium')">Premium</span></div>
+      <div class="fgroup" data-tier="premium">
+      <label class="fcheck"><input type="checkbox" id="fDeceased" data-f="deceased"> Deceased or inherited</label>
+      <label class="fcheck"><input type="checkbox" id="fBk" data-f="bankruptcy"> Bankruptcy on file</label>
+      <label class="fcheck"><input type="checkbox" id="fReverse" data-f="reverse"> Reverse mortgage</label>
+      <label class="fcheck"><input type="checkbox" id="fOos" data-f="out_of_state"> Out-of-state owner</label>
+      <label class="fcheck"><input type="checkbox" id="fMulti" data-f="multi"> Owns multiple properties</label>
+      <label class="fcheck"><input type="checkbox" id="fNok" data-f="nok"> Next of kin on file</label>
+      <label class="fcheck"><input type="checkbox" id="fSurplus" data-f="surplus"> Surplus candidate</label>
+      </div>
       <div class="fbtns"><button class="btn-ghost" onclick="clearFilterSheet()">Clear</button><button class="btn-primary" onclick="applyFilters()">Apply</button></div>
     </div>
   </div>
@@ -438,7 +462,7 @@ var ACTIONS={}; var SHOW_HIDDEN=false;
 var STATE=null; var COUNTS={hit:{},national:{},total:{}};
 var ADJ={AL:['FL','GA','MS','TN'],AK:['WA','OR','HI'],AZ:['CA','CO','NV','NM','UT'],AR:['LA','MS','MO','OK','TN','TX'],CA:['AZ','NV','OR'],CO:['AZ','KS','NE','NM','OK','UT','WY'],CT:['MA','NY','RI'],DE:['MD','NJ','PA'],DC:['MD','VA'],FL:['AL','GA'],GA:['AL','FL','NC','SC','TN'],HI:['CA','AK'],ID:['MT','NV','OR','UT','WA','WY'],IL:['IN','IA','KY','MI','MO','WI'],IN:['IL','KY','MI','OH'],IA:['IL','MN','MO','NE','SD','WI'],KS:['CO','MO','NE','OK'],KY:['IL','IN','MO','OH','TN','VA','WV'],LA:['AR','MS','TX'],ME:['NH'],MD:['DE','DC','PA','VA','WV'],MA:['CT','NH','NY','RI','VT'],MI:['IN','OH','WI'],MN:['IA','ND','SD','WI'],MS:['AL','AR','LA','TN'],MO:['AR','IL','IA','KS','KY','NE','OK','TN'],MT:['ID','ND','SD','WY'],NE:['CO','IA','KS','MO','SD','WY'],NV:['AZ','CA','ID','OR','UT'],NH:['ME','MA','VT'],NJ:['DE','NY','PA'],NM:['AZ','CO','OK','TX','UT'],NY:['CT','MA','NJ','PA','VT'],NC:['GA','SC','TN','VA'],ND:['MN','MT','SD'],OH:['IN','KY','MI','PA','WV'],OK:['AR','CO','KS','MO','NM','TX'],OR:['CA','ID','NV','WA'],PA:['DE','MD','NJ','NY','OH','WV'],RI:['CT','MA'],SC:['GA','NC'],SD:['IA','MN','MT','NE','ND','WY'],TN:['AL','AR','GA','KY','MS','MO','NC','VA'],TX:['AR','LA','NM','OK'],UT:['AZ','CO','ID','NV','NM','WY'],VT:['MA','NH','NY'],VA:['DC','KY','MD','NC','TN','WV'],WA:['ID','OR','AK'],WV:['KY','MD','OH','PA','VA'],WI:['IL','IA','MI','MN'],WY:['CO','ID','MT','NE','SD','UT']};
 function emptyStateHtml(){
-  var filtered=document.getElementById('fStatus').value||document.getElementById('fEquity').value||document.getElementById('fSearch').value.trim();
+  var filtered=filterCount()>0||document.getElementById('fSearch').value.trim();
   var name=STATE?(STATE_NAMES[STATE]||STATE):'any state';
   var tot=COUNTS.total||{};
   var nearby=(STATE?(ADJ[STATE]||[]):[]).filter(function(k){return tot[k]>0;}).sort(function(a,b){return tot[b]-tot[a];});
@@ -448,7 +472,7 @@ function emptyStateHtml(){
   var clear=filtered?'<div style="margin:8px 0"><a href="#" onclick="clearFilters();return false;">Clear the search and filters</a></div>':'';
   return '<div class="empty"><b>'+head+'</b>'+clear+(links?'<div style="margin-top:10px;color:var(--sub);font-size:13px">See nearby states</div><div class="chiprow" style="flex-wrap:wrap;justify-content:center;padding:8px 0">'+links+'</div>':'')+'</div>';
 }
-function clearFilters(){ document.getElementById('fStatus').value=''; document.getElementById('fEquity').value=''; document.getElementById('fSearch').value=''; search(); }
+function clearFilters(){ filterEls().forEach(function(el){ if(el.type==='checkbox')el.checked=false; else el.value=''; }); document.getElementById('fSearch').value=''; search(); }
 var STATE_NAMES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
 
 function money(n){ if(n===null||n===undefined||n==='')return '—'; var x=Number(n); if(isNaN(x))return '—'; return '$'+Math.round(x).toLocaleString(); }
@@ -562,7 +586,7 @@ function openSheet(which,title){
 function closeSheet(){
   var w=document.getElementById('sheet');
   if(SHEET==='filter'&&FILTER_SNAP){ // dismissed without Apply: put the selects back to what the list is showing
-    document.getElementById('fStatus').value=FILTER_SNAP[0]; document.getElementById('fEquity').value=FILTER_SNAP[1]; FILTER_SNAP=null;
+    filterEls().forEach(function(el,i){ if(el.type==='checkbox')el.checked=!!FILTER_SNAP[i]; else el.value=FILTER_SNAP[i]||''; }); FILTER_SNAP=null;
   }
   SHEET=null; w.classList.remove('open'); document.body.classList.remove('sheet-open');
   SHEET_TIMER=setTimeout(function(){ w.classList.add('hidden'); SHEET_TIMER=null; },260);
@@ -599,11 +623,18 @@ function renderStateList(){
 function chooseState(v){ closeSheet(); pickState(v); }
 
 /* C: filter sheet (status + equity). Apply runs the same search() the selects used to trigger. */
-function openFilterSheet(){ FILTER_SNAP=[document.getElementById('fStatus').value,document.getElementById('fEquity').value]; openSheet('filter','Filters'); }
+function filterEls(){ return Array.prototype.slice.call(document.querySelectorAll('#sheetFilter [data-f]')); }
+function filterCount(){ return filterEls().filter(function(el){ return el.type==='checkbox'?el.checked:!!(el.value||'').trim(); }).length; }
+function filterParams(qs){ filterEls().forEach(function(el){ var v=el.type==='checkbox'?(el.checked?'1':''):(el.value||'').trim(); if(v)qs.set(el.getAttribute('data-f'),v); }); return qs; }
+function gateFilterSheet(){ var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
+  document.querySelectorAll('#sheetFilter .fgroup').forEach(function(g){ var ok=g.getAttribute('data-tier')==='pro'?paid:prem; g.classList.toggle('fgroup-locked',!ok); g.querySelectorAll('select,input').forEach(function(el){ el.disabled=!ok; if(!ok){ if(el.type==='checkbox')el.checked=false; else el.value=''; } }); });
+  document.querySelectorAll('#sheetFilter .tierlock').forEach(function(l){ var ok=l.getAttribute('data-tier')==='pro'?paid:prem; l.style.display=ok?'none':'inline-block'; }); }
+function openFilterSheet(){ FILTER_SNAP=filterEls().map(function(el){ return el.type==='checkbox'?el.checked:el.value; }); gateFilterSheet(); openSheet('filter','Filters'); }
 function applyFilters(){ FILTER_SNAP=null; closeSheet(); search(); }
-function clearFilterSheet(){ document.getElementById('fStatus').value=''; document.getElementById('fEquity').value=''; FILTER_SNAP=null; closeSheet(); search(); }
+
+function clearFilterSheet(){ filterEls().forEach(function(el){ if(el.type==='checkbox')el.checked=false; else el.value=''; }); FILTER_SNAP=null; closeSheet(); search(); }
 function updateFilterBadge(){
-  var n=(document.getElementById('fStatus').value?1:0)+(document.getElementById('fEquity').value?1:0);
+  var n=filterCount();
   var b=document.getElementById('filterBadge'); b.textContent=n; b.classList.toggle('hidden',!n);
   document.getElementById('filterBtn').classList.toggle('on',!!n);
 }
@@ -631,8 +662,7 @@ function search(){
   var qs=new URLSearchParams();
   if(STATE)qs.set('state',STATE);
   if(c)qs.set('q',c);
-  var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);
-  var e=document.getElementById('fEquity').value; if(e)qs.set('min_equity',e);
+  filterParams(qs);
   qs.set('limit','200');
   var nq=new URLSearchParams(); if(STATE)nq.set('state',STATE); if(c)nq.set('q',c); nq.set('limit',STATE?'300':'150');
   document.getElementById('list').innerHTML='<div class="loadrow">Searching…</div>';
@@ -643,6 +673,7 @@ function search(){
   ]).then(function(res){
     if(seq!==window.SEARCH_SEQ)return;
     var enriched=res[0].results||[], national=res[1].results||[];
+    if(res[0].ignored_filters&&res[0].ignored_filters.length){ toast('Some filters need '+(ME&&ME.paid?'Premium':'Pro')+' — ignored'); }
     var seen={}; enriched.forEach(function(r){ seen[((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase()]=1; });
     var extra=national.filter(function(r){ var k=((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase(); if(seen[k])return false; seen[k]=1; return true; });
     ROWS=enriched.concat(extra); renderList(); if(MAP)renderPins();
@@ -797,6 +828,7 @@ function openDetail(i){
       flagStrip(r)+
       section('Foreclosure',[
         lineIf('Status',statusLabel(r)+(trusteeMark(r)?' (trustee verified)':'')),
+        lineIf('Sale moved',saleMoved(r)),
         lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
         lineIf('Sale date',saleDate),
         lineIf('Days to auction',(r.days_to_auction!=null)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
@@ -852,7 +884,11 @@ function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)retur
   var f=r.lien_first_lender?(r.lien_first_position||'First')+': '+r.lien_first_lender+(r.lien_first_amount?' $'+Math.round(r.lien_first_amount).toLocaleString():'')+(r.lien_first_type?' ('+r.lien_first_type+')':''):'';
   var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
   return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
-function statusLabel(r){ return (r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,''); }  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
+function statusLabel(r){ var st=(r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,'');  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
+  if(/^postponed/i.test(st))return 'Postponed';                       // Ted 2026-10-03: plain Postponed tag; dates go to the 'Sale moved' line
+  if(r.auction_date&&/pre.?foreclosure|notice of|^foreclosure$/i.test(st))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
+  return st; }
+function saleMoved(r){ var m=/postponed.*?from\s*([\d\/\-]+)\s*to\s*([\d\/\-]+)/i.exec(r.foreclosure_status||''); return m?(m[1]+' → '+m[2]):''; }
 function trusteeMark(r){ var v=r.sale_verified_source||''; return (v && !/realestateapi/i.test(v)) ? '<span class="badge vmark" title="Sale date verified on the trustee page">&#10003; Trustee verified</span>' : ''; }
 function pct(x){ return (x===null||x===undefined||x==='')?'':(Math.round(Number(x))+'%'); }  // Ted 2026-10-03: never a decimal on a percent
 function fmtDate(d){ if(!d)return ''; var s=String(d).slice(0,10); var p=s.split('-'); return p.length===3?(p[1]+'/'+p[2]+'/'+p[0]):s; }
@@ -1085,8 +1121,7 @@ function doExport(){
   if(!ME.paid){ toast('CSV export is a Pro feature'); return; }
   var qs=new URLSearchParams(); qs.set('state',STATE);
   var c=document.getElementById('fSearch').value.trim(); if(c)qs.set('q',c);
-  var s=document.getElementById('fStatus').value; if(s)qs.set('status',s);
-  var e=document.getElementById('fEquity').value; if(e)qs.set('min_equity',e);
+  filterParams(qs);
   window.location.href='/api/export?'+qs.toString();
   toast('Exporting CSV…');
 }

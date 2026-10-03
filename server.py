@@ -664,14 +664,40 @@ SEARCH_COLS = ("equity_unverified,equity_verify_note,lien_count,lien_first_posit
                 "skip_traced_at,phones,emails,photo_url")
 
 
-def build_search_query(qs, limit):
+# Tiered filters (Ted 2026-10-03): Free answers where/when, Pro answers how much, Premium answers who/why.
+# A param above the user's tier is silently ignored and reported back in ignored_filters so the app can nudge.
+FILTER_TIER = {
+    "within": "free", "sale_type": "free", "ptype": "free",
+    "min_equity_pct": "pro", "min_equity": "pro", "val_min": "pro", "val_max": "pro", "beds_min": "pro",
+    "year_min": "pro", "absentee": "pro", "lender": "pro",
+    "deceased": "premium", "bankruptcy": "premium", "reverse": "premium", "out_of_state": "premium",
+    "multi": "premium", "nok": "premium", "surplus": "premium",
+}
+PTYPE_OR = {
+    "sfr": "or=(property_type.ilike.sfr,property_type.ilike.single*)",
+    "condo": "property_type=ilike.condo*",
+    "mfr": "or=(property_type.ilike.mfr,property_type.ilike.multi*)",
+    "mobile": "property_type=ilike.mobile*",
+    "land": "property_type=ilike.land*",
+}
+
+
+def tier_allows(u, tier):
+    if tier == "free":
+        return True
+    if tier == "pro":
+        return u is None or is_paid(u)
+    return u is None or has_premium(u)
+
+
+def build_search_query(qs, limit, u=None):
+    """Returns (postgrest_path, ignored_filters). u=None means no gating (internal callers)."""
     parts = [f"select={SEARCH_COLS}", "active=eq.true", "auction_date=not.is.null", f"limit={limit}",  # Ted 2026-10-03: auctions only
              "order=days_to_auction.asc.nullslast"]
-    # Deal room defaults to live inventory: hide auctions that already passed
-    # (days_to_auction very negative) unless caller explicitly opts in with
-    # include_past=1. A short grace window keeps just-passed sales visible.
+    # Deal room defaults to live inventory: hide auctions that already passed unless the caller
+    # opts in with include_past=1. A short grace window keeps just-passed sales visible.
     if (qs.get("include_past") or [""])[0] != "1":
-        parts.append("or=(days_to_auction.gte.-3,days_to_auction.is.null)")
+        parts.append("days_to_auction=gte.-3")
     state = (qs.get("state") or [""])[0].upper().strip()
     if state:
         parts.append(f"property_state=eq.{state}")
@@ -690,10 +716,65 @@ def build_search_query(qs, limit):
     status = (qs.get("status") or [""])[0].strip()
     if status:
         parts.append(f"foreclosure_status=eq.{urllib.parse.quote(status)}")
-    mineq = (qs.get("min_equity") or [""])[0].strip()
-    if mineq.isdigit():
-        parts.append(f"equity_dollars=gte.{mineq}")
-    return "/hit_list?" + "&".join(parts)
+
+    ignored = []
+
+    def val(name):
+        v = (qs.get(name) or [""])[0].strip()
+        if not v:
+            return ""
+        if not tier_allows(u, FILTER_TIER.get(name, "free")):
+            ignored.append(name)
+            return ""
+        return v
+
+    v = val("within")
+    if v.isdigit():
+        parts.append(f"days_to_auction=lte.{int(v)}")
+    v = val("sale_type")
+    if v in ("trustee", "judicial"):
+        parts.append("is_judicial=eq." + ("true" if v == "judicial" else "false"))
+    v = val("ptype")
+    if v in PTYPE_OR:
+        parts.append(PTYPE_OR[v])
+    v = val("min_equity_pct")
+    if v.isdigit():
+        parts += [f"equity_pct=gte.{int(v)}", "equity_unverified=not.is.true"]
+    v = val("min_equity")
+    if v.isdigit():
+        parts += [f"equity_dollars=gte.{int(v)}", "equity_unverified=not.is.true"]
+    v = val("val_min")
+    if v.isdigit():
+        parts.append(f"avm=gte.{int(v)}")
+    v = val("val_max")
+    if v.isdigit():
+        parts.append(f"avm=lte.{int(v)}")
+    v = val("beds_min")
+    if v.isdigit():
+        parts.append(f"beds=gte.{int(v)}")
+    v = val("year_min")
+    if v.isdigit():
+        parts.append(f"year_built=gte.{int(v)}")
+    if val("absentee") == "1":
+        parts.append("owner_absentee=is.true")
+    v = val("lender")
+    if v:
+        parts.append(f"mortgage_lender=ilike.*{urllib.parse.quote(v)}*")
+    if val("deceased") == "1":
+        parts.append("or=(deceased_flag.is.true,tags.cs.{reapi-inherited})")
+    if val("bankruptcy") == "1":
+        parts.append("bankruptcy_flag=is.true")
+    if val("reverse") == "1":
+        parts.append("reverse_mortgage=is.true")
+    if val("out_of_state") == "1":
+        parts.append("owner_out_of_state=is.true")
+    if val("multi") == "1":
+        parts.append("dm_multi_property=is.true")
+    if val("nok") == "1":
+        parts.append("next_of_kin=not.is.null")
+    if val("surplus") == "1":
+        parts.append("or=(surplus_amount.not.is.null,auction_reserve_gt_reapi_debt.is.true)")
+    return "/hit_list?" + "&".join(parts), ignored
 
 
 NATIONAL_COLS = ("id,listing_id,state,county,county_norm,county_slug,city,zip,street,address,detail_url,"
@@ -1172,14 +1253,14 @@ class Handler(SimpleHTTPRequestHandler):
                 limit = min(int((qs.get("limit") or ["100"])[0]), 500)
             except Exception:
                 limit = 100
-            path = build_search_query(qs, limit)
+            path, ignored = build_search_query(qs, limit, u)
             try:
                 rows = sb("GET", path)
             except urllib.error.HTTPError as e:
                 return self._json(500, {"error": e.read().decode()[:200]})
             out = [gate_row(u, r) for r in rows]
             return self._json(200, {"count": len(out), "results": out, "plan": u["plan"],
-                                    "paid": is_paid(u), "premium": has_premium(u)})
+                                    "paid": is_paid(u), "premium": has_premium(u), "ignored_filters": ignored})
 
         if route == "/api/national-search":
             # National auction.com base layer (free public data, all 50 states).
@@ -1213,7 +1294,7 @@ class Handler(SimpleHTTPRequestHandler):
             if not is_paid(u):
                 return self._json(403, {"error": "CSV export is a Pro feature", "upgrade": True})
             limit = min(limits_for(u)["export_rows"], 5000)
-            rows = sb("GET", build_search_query(qs, limit))
+            rows = sb("GET", build_search_query(qs, limit, u)[0])
             buf = io.StringIO()
             cols = ["owner_full", "property_street", "property_city", "property_state",
                     "property_zip", "county", "foreclosure_status", "auction_date",
