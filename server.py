@@ -96,6 +96,15 @@ except Exception:
 # and /api/billing/checkout-link {plan:"trial"} answers 409).
 TRIAL_DAYS = int(os.environ.get("OFFRAMP_TRIAL_DAYS", "7") or 7)   # Ted 2026-10-03: 30-day preview at launch (OFFRAMP_TRIAL_DAYS=30)
 TRIAL_ENABLED = STRIPE_MODE == "test" or os.environ.get("OFFRAMP_TRIAL_LIVE", "").strip() == "1"
+# $5 document pull (Ted 2026-10-03: "a JIT button on the lead. Pick the document.
+# Pay five dollars. The actual recorded filing shows up as a PDF."). One-time
+# live Price on product prod_VNMSIl9WBB1dYM "OffRamp document pull"; Checkout
+# mode=payment with metadata.kind=doc_pull; the webhook writes
+# crm.offramp_doc_orders and pings Telegram; Ted fulfils by hand within 24h.
+DOC_PULL_PRICE = STRIPE_IDS.get("price_doc_pull") or "price_1UMbjiLq4QlEucPyj79859c9"
+DOC_PULL_DOCS = {"mortgage": "Recorded mortgage", "nod": "Notice of default",
+                 "lis_pendens": "Lis pendens", "bankruptcy": "Bankruptcy petition"}
+DOC_PULL_ADMIN = "ted@americahomerestoration.com"
 
 # on-disk cache for proxied property imagery (Street View / satellite)
 PHOTO_CACHE = os.path.join(DIR, "cache", "photos")
@@ -377,6 +386,52 @@ def stripe_post(path, params):
                  "Content-Type": "application/x-www-form-urlencoded"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())
+
+
+def record_doc_order(sess):
+    """checkout.session.completed with metadata.kind=doc_pull: one row in
+    crm.offramp_doc_orders (status paid), a funnel beacon and a Telegram ping so
+    the PDF gets pulled and emailed within 24h. Idempotent on the session id
+    (Stripe retries deliveries)."""
+    md = sess.get("metadata") or {}
+    sid = sess.get("id") or ""
+    if sid:
+        try:
+            if sb("GET", f"/offramp_doc_orders?select=id&stripe_session_id=eq.{urllib.parse.quote(sid)}&limit=1"):
+                return  # already recorded (webhook retry)
+        except Exception as e:
+            print(f"[docs] dedupe check failed: {e}", flush=True)
+    doc = (md.get("doc") or "").strip().lower()
+    if doc not in DOC_PULL_DOCS:
+        doc = "mortgage"
+    uid = md.get("user_id") or sess.get("client_reference_id") or None
+    hid = md.get("hit_list_id") or None
+    email = ((sess.get("customer_details") or {}).get("email") or sess.get("customer_email") or "")
+    if uid and not email:
+        try:
+            u = get_user_by_id(uid)
+            email = (u or {}).get("email") or ""
+        except Exception:
+            pass
+    label = ""
+    if hid:
+        try:
+            rows = sb("GET", f"/hit_list?select=property_street,property_city,property_state&id=eq.{urllib.parse.quote(str(hid))}&limit=1")
+            if rows:
+                r = rows[0]
+                label = f"{r.get('property_street') or ''}, {r.get('property_city') or ''} {r.get('property_state') or ''}".strip(" ,")
+        except Exception as e:
+            print(f"[docs] hit_list lookup failed: {e}", flush=True)
+    if (sess.get("payment_status") or "paid") not in ("paid", "no_payment_required"):
+        notify_telegram(f"OffRamp DOC ORDER $5 NOT PAID YET ({sess.get('payment_status')}): {doc} for {label or hid} by {email} (session {sid})")
+        return
+    row = {"user_id": uid, "user_email": email or None, "hit_list_id": hid, "doc": doc, "status": "paid",
+           "stripe_session_id": sid or None, "amount_cents": sess.get("amount_total"), "property_label": label or None}
+    ins = sb("POST", "/offramp_doc_orders", body=row, headers={"Prefer": "return=representation"})
+    oid = (ins[0].get("id") if isinstance(ins, list) and ins else None) or "?"
+    funnel("doc_order_paid", user_id=uid, path=f"doc:{doc}")
+    notify_telegram(f"OffRamp DOC ORDER $5: {DOC_PULL_DOCS[doc]} ({doc}) for {label or hid or 'unknown property'} "
+                    f"by {email or 'unknown email'} — fulfil within 24h (order {oid})")
 
 
 _FOUNDING_CACHE = {"spots_left": None, "at": 0}
@@ -1243,6 +1298,21 @@ class Handler(SimpleHTTPRequestHandler):
         if route == "/api/founding-count":
             return self._json(200, {"spots_left": founding_spots_left()})
 
+        if route == "/api/docs/orders":
+            # Ted-only fulfilment list: the last 100 $5 document-pull orders
+            u = self._current_user()
+            if not u:
+                return self._json(401, {"error": "not signed in"})
+            if u["email"] != DOC_PULL_ADMIN:
+                return self._json(403, {"error": "forbidden"})
+            try:
+                rows = sb("GET", "/offramp_doc_orders?select=*&order=created_at.desc&limit=100")
+            except Exception as ex:
+                print(f"[docs] orders list error: {ex}", flush=True)
+                return self._json(500, {"error": "orders unavailable"})
+            return self._json(200, {"orders": rows, "count": len(rows),
+                                    "open": sum(1 for r in rows if r.get("status") == "paid")})
+
         if route == "/api/auth/sso":
             provider = (qs.get("provider") or ["google"])[0]
             # Real Google OAuth when the client is configured; otherwise demo.
@@ -1477,6 +1547,11 @@ class Handler(SimpleHTTPRequestHandler):
             etype = event.get("type")
             obj = (event.get("data") or {}).get("object") or {}
             try:
+                if etype == "checkout.session.completed" and (obj.get("metadata") or {}).get("kind") == "doc_pull":
+                    # $5 document pull (mode=payment). Separate path so the
+                    # subscription handling below never sees a one-time order.
+                    record_doc_order(obj)
+                    return self._json(200, {"received": True})
                 if etype == "checkout.session.completed":
                     uid = obj.get("client_reference_id")
                     cust = obj.get("customer")
@@ -1618,6 +1693,55 @@ class Handler(SimpleHTTPRequestHandler):
             if not ps.get("url"):
                 return self._json(502, {"error": "billing portal unavailable"})
             return self._json(200, {"url": ps["url"]})
+
+        # ---------- $5 document pull: one-time Checkout for a recorded filing on a lead ----------
+        if route == "/api/docs/order":
+            u = self._current_user()
+            if not u:
+                return self._json(401, {"error": "not signed in"})
+            data = self._body() or {}
+            hid = str(data.get("id") or "").strip()
+            doc = str(data.get("doc") or "").strip().lower()
+            if doc not in DOC_PULL_DOCS:
+                return self._json(400, {"error": "unknown document"})
+            if not re.fullmatch(r"[0-9a-fA-F-]{36}", hid):
+                return self._json(400, {"error": "bad lead id"})
+            try:
+                rows = sb("GET", f"/hit_list?select=id,property_street,property_city,property_state&id=eq.{urllib.parse.quote(hid)}&limit=1")
+            except Exception as e:
+                print(f"docs/order hit_list error: {e}", flush=True)
+                rows = []
+            if not rows:
+                return self._json(404, {"error": "lead not found"})
+            r = rows[0]
+            label = f"{r.get('property_street') or ''}, {r.get('property_city') or ''} {r.get('property_state') or ''}".strip(" ,")
+            funnel("doc_order_start", user_id=u["id"], path=f"doc:{doc}", handler=self)
+            params = {
+                "mode": "payment",
+                "line_items[0][price]": DOC_PULL_PRICE,
+                "line_items[0][quantity]": 1,
+                "client_reference_id": u["id"],
+                "metadata[kind]": "doc_pull",
+                "metadata[user_id]": u["id"],
+                "metadata[hit_list_id]": hid,
+                "metadata[doc]": doc,
+                "metadata[property_label]": label[:400],
+                "payment_intent_data[description]": f"OffRamp document pull: {DOC_PULL_DOCS[doc]} - {label}"[:1000],
+                "success_url": "https://offramprei.com/app/?doc_ordered=1",
+                "cancel_url": "https://offramprei.com/app/",
+            }
+            if u.get("stripe_customer_id"):
+                params["customer"] = u["stripe_customer_id"]
+            else:
+                params["customer_email"] = u["email"]
+            try:
+                sess = stripe_post("checkout/sessions", params)
+            except Exception as e:
+                print(f"docs/order checkout-session error: {e}", flush=True)
+                return self._json(502, {"error": "could not start checkout"})
+            if not sess.get("url"):
+                return self._json(502, {"error": "could not start checkout"})
+            return self._json(200, {"url": sess["url"]})
 
         # ---------- app auth ----------
         if route == "/api/auth/signup":

@@ -332,6 +332,14 @@
   .locked-row .blur{filter:blur(5px);user-select:none;color:var(--sub)}
   .locked-row .lock{font-size:10.5px;font-weight:800;letter-spacing:.02em;background:var(--gold);color:#231a0c;padding:5px 10px;border-radius:9px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.12)}
   .contactcard{padding:0 12px}.empty-v{color:var(--sub);font-style:italic}
+  .docrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--border)}
+  .docrow:last-of-type{border-bottom:0}
+  .docrow .dl{min-width:0}
+  .docrow .dl b{display:block;font-size:14px;font-weight:700}
+  .docrow .dl small{display:block;font-size:12px;color:var(--sub);line-height:1.35;margin-top:2px}
+  .docbtn{flex:none;background:var(--gold);color:#231a0c;font-weight:800;font-size:12.5px;padding:8px 12px;border-radius:9px;border:0;white-space:nowrap;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .docbtn[disabled]{opacity:.6;cursor:default}
+  .dochint{font-size:12px;color:var(--sub);line-height:1.4;padding:8px 2px 4px}
   .revealbtn.inline{display:inline-block;width:auto;padding:6px 10px;font-size:12px;margin-left:8px}
   #upsheet{display:none;position:fixed;inset:0;z-index:60}
   .upsheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
@@ -610,6 +618,10 @@ function enterApp(){
   renderAccount();
   if(!window.PENDING_CHECKOUT){ var co0=(window.location.search.match(/[?&]checkout=(pro|premium|trial)\b/)||[])[1]; if(co0)window.PENDING_CHECKOUT=co0; }
   if(/[?&]trial_started=1\b/.test(window.location.search)){ toast('Your free trial is on. Premium features are unlocked.'); }
+  if(/[?&]doc_ordered=1\b/.test(window.location.search)){
+    toast('Order received. Your PDF arrives within 24 hours.');
+    try{ var du=new URL(window.location.href); du.searchParams.delete('doc_ordered'); history.replaceState(null,'',du.pathname+(du.search||'')+(du.hash||'')); }catch(e){}
+  }
   if(window.PENDING_CHECKOUT&&!isNativeApp()){ var pc=window.PENDING_CHECKOUT; window.PENDING_CHECKOUT=null; showScreen('acct'); doUpgrade(pc); }
 }
 function loadActions(){
@@ -891,6 +903,7 @@ function openDetail(i){
       '<div class="sec">Engage</div>'+
       actionBar(r)+maplinks+
       flagStrip(r)+
+      docsSection(r)+
       section('Foreclosure',[
         lineIf('Status',statusLabel(r)+(trusteeMark(r)?' (trustee verified)':'')),
         lineIf('Sale moved',saleMoved(r)),
@@ -970,6 +983,35 @@ function flagStrip(r){
 }
 function closeDetail(){ document.getElementById('detail').classList.remove('open'); }
 
+/* ---------- $5 document pull (Ted 2026-10-03: pick the document, pay five dollars, the recorded filing arrives as a PDF) ---------- */
+var DOC_PULLS=[
+  ['mortgage','Recorded mortgage','The recorded deed of trust as filed with the county.'],
+  ['nod','Notice of default','The recorded notice that started this foreclosure.'],
+  ['lis_pendens','Lis pendens','The recorded lis pendens if one is on file.'],
+  ['bankruptcy','Bankruptcy petition','The Chapter 7 or 13 petition from the federal court.']
+];
+function docsSection(r){
+  var rows=DOC_PULLS.filter(function(d){
+    if(d[0]==='bankruptcy') return r.bankruptcy_flag===true||!!r.bankruptcy_case;
+    if(d[0]==='lis_pendens') return r.is_judicial===true||!!r.notice_url;
+    return true;
+  }).map(function(d){
+    return '<div class="docrow"><div class="dl"><b>'+esc(d[1])+'</b><small>'+esc(d[2])+'</small></div>'+
+      '<button class="docbtn" onclick="docOrder(\''+d[0]+'\',this)">Get it · $5</button></div>';
+  }).join('');
+  return '<div class="sec">Documents</div><div class="card2">'+rows+
+    '<div class="dochint">Delivered as a PDF to your account email within 24 hours. Five dollars each. No subscription needed.</div></div>';
+}
+function docOrder(doc,btn){
+  if(!CUR||!CUR.id){ toast('open a lead first'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Opening checkout…'; }
+  function reset(){ if(btn){ btn.disabled=false; btn.textContent='Get it · $5'; } }
+  try{ api('/api/track',{method:'POST',body:{event:'doc_pull_click',path:'doc:'+doc+(CUR.property_state?':'+CUR.property_state:'')}}).catch(function(){}); }catch(e){}
+  api('/api/docs/order',{method:'POST',body:{id:CUR.id,doc:doc}}).then(function(r){return r.json().then(function(j){ j._status=r.status; return j; });}).then(function(j){
+    if(j.url){ window.location.href=j.url; return; }
+    reset(); toast(j.error||(j._status===401?'sign in to order documents':'could not start checkout'));
+  }).catch(function(){ reset(); toast('could not start checkout'); });
+}
 function actionBar(r){
   var a=act(r);
   function b(k,on,label){ return '<button class="abtn'+(on?' on':'')+'" onclick="setAction(\''+k+'\','+(!on)+')">'+label+'</button>'; }
