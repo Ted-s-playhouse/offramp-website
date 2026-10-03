@@ -56,7 +56,8 @@ except Exception:
 REAPI_KEY = _reapi.get("api_key", "")
 REAPI_BASE = _reapi.get("base", "https://api.realestateapi.com")
 REAPI_HEADER = _reapi.get("header", "x-api-key")
-DM_KEY = _read(os.path.join(SEC, "dealmachine-skiptrace-api-key"))
+DM_KEY = _read(os.path.join(SEC, "dealmachine-skiptrace-api-key"))      # org 23501 "Ted Sanders's Team" (Pro Classic, 30k/mo, resets 7th)
+DM_KEY_ALT = _read(os.path.join(SEC, "dealmachine-v2-key"))              # org 40711 "Sell Your House Fast…" (Pro Plus Classic, 60k/mo, resets 15th) — fallback when primary is out of credits
 GOOGLE_KEY = _read(os.path.join(SEC, "google-maps-api-key"))
 # Google Sign-In (OAuth 2.0 authorization-code flow). Reuses the existing
 # revivebuyers web OAuth client. Real SSO is live only when BOTH are present
@@ -400,38 +401,83 @@ def reapi_lookup(address):
     return payload, "live"
 
 
-def dm_skiptrace(address):
-    if not DM_KEY:
+def dm_skiptrace(parts):
+    """DealMachine enrichment-by-address. `parts` = {street, city, state, zip}.
+    Returns (payload, src). Request/response shape per api.docs.dealmachine.com
+    (2026-10-03 fix: the old {"address": ...} body was rejected 400 ZodError on every call)."""
+    keys = [k for k in (DM_KEY, DM_KEY_ALT) if k]
+    if not keys:
         return None, "no-key"
+    last = "no-key"
+    for key in keys:
+        data, last = _dm_enrich_once(key, parts)
+        if data is not None:
+            return data, "live"
+        if last != "vendor-credits":
+            break
+    return None, last
+
+
+def _dm_enrich_once(key, parts):
+    body = {"data": [{"street": parts.get("street") or "", "city": parts.get("city") or "",
+                      "state": parts.get("state") or "", "zip": parts.get("zip") or ""}],
+            "fields": ["full_name", "phones", "emails"],
+            "contact_audience": "owners_and_family"}
     try:
         req = urllib.request.Request(
             "https://api.v2.dealmachine.com/v1/enrichment/address",
-            data=json.dumps({"address": address,
-                             "fields": ["full_name", "phones", "emails"],
-                             "contact_audience": "owners_and_family"}).encode(),
-            headers={"Authorization": f"Bearer {DM_KEY}",
+            data=json.dumps(body).encode(),
+            headers={"Authorization": f"Bearer {key}",
                      "Content-Type": "application/json",
                      "User-Agent": "curl/8.0"}, method="POST")
         with urllib.request.urlopen(req, timeout=45) as r:
             data = json.loads(r.read().decode())
     except urllib.error.HTTPError as e:
-        return None, f"dm {e.code}: {e.read().decode()[:200]}"
+        txt = e.read().decode()[:400]
+        print(f"[skiptrace] dm HTTP {e.code} (key …{key[-4:]}): {txt}", file=sys.stderr, flush=True)
+        if e.code == 402:
+            return None, "vendor-credits"
+        return None, f"dm {e.code}"
     except Exception as e:
+        print(f"[skiptrace] dm error: {e}", file=sys.stderr, flush=True)
         return None, f"dm {e}"
     return data, "live"
 
 
+def dm_contacts(dm_payload):
+    """Flatten the enrichment response: data[].contacts[] -> list of
+    {name, type, phones:[{number,type,dnc}], emails:[str]}."""
+    out = []
+    blocks = (dm_payload or {}).get("data", []) if isinstance(dm_payload, dict) else []
+    for block in blocks:
+        for c in (block.get("contacts") or []):
+            phones = []
+            for p in (c.get("phones") or []):
+                num = re.sub(r"\D", "", str(p.get("number") or ""))
+                if num:
+                    phones.append({"number": num, "type": (p.get("type") or "").lower(),
+                                   "dnc": bool(p.get("do_not_call") or p.get("dnc"))})
+            emails = []
+            for e in (c.get("emails") or []):
+                ea = e.get("address") or e.get("email") if isinstance(e, dict) else e
+                if ea and ea not in emails:
+                    emails.append(ea)
+            out.append({"name": c.get("full_name") or " ".join(x for x in [c.get("first_name"), c.get("last_name")] if x),
+                        "type": (c.get("contact_type") or "owner").lower(),
+                        "phones": phones, "emails": emails})
+    return out
+
+
 def extract_mobiles(dm_payload):
-    """Mobile/wireless numbers only, per outreach rule."""
+    """Mobile/wireless numbers only, per outreach rule (owner + family)."""
     out = []
     seen = set()
-    for block in (dm_payload or {}).get("results", []) if isinstance(dm_payload, dict) else []:
-        for p in (block.get("phones") or []):
-            num = re.sub(r"\D", "", str(p.get("number") or ""))
-            typ = (p.get("type") or "").lower()
-            if num and num not in seen and ("wireless" in typ or "mobile" in typ or "cell" in typ):
-                seen.add(num)
-                out.append({"number": num, "type": typ, "dnc": bool(p.get("dnc"))})
+    for c in dm_contacts(dm_payload):
+        for p in c["phones"]:
+            if p["number"] not in seen and any(k in p["type"] for k in ("wireless", "mobile", "cell")):
+                seen.add(p["number"])
+                out.append({"number": p["number"], "type": p["type"], "dnc": p["dnc"],
+                            "name": c["name"], "contact_type": c["type"]})
     return out
 
 
@@ -1250,29 +1296,56 @@ class Handler(SimpleHTTPRequestHandler):
                         return self._json(403, {"error": f"monthly skip-trace limit reached ({lim})"})
                 addr = (data.get("address") or "").strip()
                 pid = (data.get("id") or "").strip()
-                if not addr and pid:
-                    rows = sb("GET", f"/hit_list?select=property_street,property_city,property_state,property_zip,phones,emails&id=eq.{pid}&limit=1")
+                parts = None
+                if pid:
+                    rows = sb("GET", f"/hit_list?select=property_street,property_city,property_state,property_zip,phones,emails,skip_traced_at&id=eq.{pid}&limit=1")
                     if rows:
                         r = rows[0]
-                        # if already skip-traced in our DB, serve from there (enrich-once)
-                        if r.get("phones"):
+                        # enrich-once: already skip-traced in our DB -> serve from cache, no vendor call, no user credit
+                        if r.get("phones") or r.get("skip_traced_at"):
+                            ph = r.get("phones") or []
                             return self._json(200, {"source": "cache",
-                                                    "mobiles": [p for p in r["phones"]
-                                                                if "wireless" in (p.get("type") or "").lower()],
+                                                    "mobiles": [p for p in ph
+                                                                if any(k in (p.get("type") or "").lower() for k in ("wireless", "mobile", "cell"))],
                                                     "emails": r.get("emails") or []})
-                        addr = f"{r.get('property_street','')}, {r.get('property_city','')}, {r.get('property_state','')} {r.get('property_zip','')}"
-                if not addr:
+                        parts = {"street": r.get("property_street"), "city": r.get("property_city"),
+                                 "state": r.get("property_state"), "zip": r.get("property_zip")}
+                if parts is None and addr:
+                    m = re.match(r"^(.*?),\s*([^,]+?),\s*([A-Za-z]{2})\s+(\d{5})", addr)
+                    if not m:
+                        return self._json(400, {"error": "address must be 'street, city, ST zip'"})
+                    parts = {"street": m.group(1), "city": m.group(2), "state": m.group(3).upper(), "zip": m.group(4)}
+                if parts is None:
                     return self._json(400, {"error": "id or address required"})
-                dm, src = dm_skiptrace(addr)
+                dm, src = dm_skiptrace(parts)
                 if dm is None:
-                    return self._json(502, {"error": f"skip-trace failed ({src})"})
+                    if src == "vendor-credits":
+                        return self._json(503, {"error": "Skip-trace is temporarily unavailable (data vendor limit). You were not charged. Try again after the 7th."})
+                    return self._json(502, {"error": f"Skip-trace failed ({src}). You were not charged."})
+                contacts = dm_contacts(dm)
                 mobiles = extract_mobiles(dm)
                 emails = []
-                for block in dm.get("results", []) if isinstance(dm, dict) else []:
-                    for e in (block.get("emails") or []):
-                        ea = e.get("email") if isinstance(e, dict) else e
-                        if ea and ea not in emails:
+                for c in contacts:
+                    for ea in c["emails"]:
+                        if ea not in emails:
                             emails.append(ea)
+                # cache the result on the row so the next viewer costs nothing (enrich-once)
+                if pid:
+                    try:
+                        all_phones = [p for c in contacts for p in c["phones"]]
+                        nok = [{"name": c["name"], "relation": c["type"], "phones": c["phones"]}
+                               for c in contacts if c["type"] != "owner"]
+                        owner = next((c["name"] for c in contacts if c["type"] == "owner" and c["name"]), None)
+                        patch = {"phones": all_phones, "emails": emails,
+                                 "skip_traced_at": datetime.now(timezone.utc).isoformat(),
+                                 "enrichment_source": "dealmachine"}
+                        if nok:
+                            patch["next_of_kin"] = nok
+                        if owner:
+                            patch["owner_full"] = owner
+                        sb("PATCH", f"/hit_list?id=eq.{pid}", patch, {"Prefer": "return=minimal"})
+                    except Exception as e:
+                        print(f"[skiptrace] cache write failed for {pid}: {e}", file=sys.stderr, flush=True)
                 bump(u, "skiptraces_used")
                 return self._json(200, {"source": "live", "mobiles": mobiles, "emails": emails,
                                         "usage": public_user(u)["usage"]})
