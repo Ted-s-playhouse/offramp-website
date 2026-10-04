@@ -2033,8 +2033,18 @@ h1{{font-size:20px;margin:0 0 8px}}p{{color:#5C6B62;font-size:14px;margin:0 0 18
             try:
                 sess = stripe_post("checkout/sessions", params)
             except Exception as e:
-                print(f"checkout-session error: {e}", flush=True)
-                return self._json(502, {"error": "could not start checkout"})
+                print(f"checkout-session error (attempt 1): {e}", flush=True)
+                # If we used a stored customer ID, retry without it (it may be stale/invalid)
+                if params.get("customer"):
+                    params2 = {k: v for k, v in params.items() if k != "customer"}
+                    params2["customer_email"] = u["email"]
+                    try:
+                        sess = stripe_post("checkout/sessions", params2)
+                    except Exception as e2:
+                        print(f"checkout-session error (attempt 2): {e2}", flush=True)
+                        return self._json(502, {"error": "could not start checkout"})
+                else:
+                    return self._json(502, {"error": "could not start checkout"})
             if not sess.get("url"):
                 return self._json(502, {"error": "could not start checkout"})
             return self._json(200, {"url": sess["url"]})
@@ -2343,8 +2353,18 @@ h1{{font-size:20px;margin:0 0 8px}}p{{color:#5C6B62;font-size:14px;margin:0 0 18
                 return self._json(200, {"source": "live", "mobiles": mobiles, "emails": emails,
                                         "usage": public_user(u)["usage"]})
 
+        # ---------- accept-terms is authenticated; exempt from the lead-capture throttle ----------
+        if route == "/api/auth/accept-terms":
+            tu = self._current_user()
+            if not tu:
+                return self._json(401, {"error": "not signed in"})
+            sb("PATCH", f"/offramp_users?id=eq.{urllib.parse.quote(str(tu['id']))}",
+               body={"terms_accepted_at": datetime.now(timezone.utc).isoformat(), "terms_version": TERMS_VERSION},
+               headers={"Prefer": "return=minimal"})
+            return self._json(200, {"ok": True})
+
         # ---------- public lead capture (unchanged) ----------
-        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access", "/api/track", "/api/auth/accept-terms",
+        if route not in ("/api/signup", "/api/unsubscribe", "/api/request-access", "/api/track",
                           "/api/storage-waitlist", "/api/storage-listing"):
             return self._json(404, {"error": "not found"})
         ip = self.headers.get("CF-Connecting-IP") or self.client_address[0]
@@ -2368,16 +2388,6 @@ h1{{font-size:20px;margin:0 0 8px}}p{{color:#5C6B62;font-size:14px;margin:0 0 18
                        body={"tags": tags}, headers={"Prefer": "return=minimal"})
             except Exception as e:
                 print(f"[unsub] error: {e}")
-            return self._json(200, {"ok": True})
-
-        if route == "/api/auth/accept-terms":
-            # SSO signups never saw the signup form: the app shows the notice on first entry and posts here (Ted 2026-10-03)
-            tu = self._current_user()
-            if not tu:
-                return self._json(401, {"error": "not signed in"})
-            sb("PATCH", f"/offramp_users?id=eq.{urllib.parse.quote(str(tu['id']))}",
-               body={"terms_accepted_at": datetime.now(timezone.utc).isoformat(), "terms_version": TERMS_VERSION},
-               headers={"Prefer": "return=minimal"})
             return self._json(200, {"ok": True})
 
         if route == "/api/track":
