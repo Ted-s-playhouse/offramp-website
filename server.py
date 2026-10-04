@@ -30,6 +30,7 @@ Plans:
 """
 import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets, posixpath
 import functools, sys, threading, urllib.request, urllib.error, urllib.parse
+import http.client, queue, gzip
 import seo_pages
 sys.path.insert(0, "/home/cortextos/cortextos/services/lib")
 import court_records  # CourtListener RECAP lookup (Phase 5 #35)
@@ -146,6 +147,8 @@ SECURITY_HEADERS = [
 
 # on-disk cache for proxied property imagery (Street View / satellite)
 PHOTO_CACHE = os.path.join(DIR, "cache", "photos")
+GZIP_JSON = os.environ.get("OFFRAMP_GZIP", "1").strip() != "0"   # perf 2026-10-03: gzip JSON over 1 KB at the origin
+GZIP_MIN = 1024
 try:
     os.makedirs(PHOTO_CACHE, exist_ok=True)
 except Exception:
@@ -232,6 +235,44 @@ def throttled(ip):
     return len(q) > 5
 
 
+# perf 2026-10-03: one TCP+TLS handshake per PostgREST call cost ~30 ms of every hop (a lead open made five).
+# Idle keep-alive connections are pooled; a stale socket (closed by the far end while idle) is retried once.
+_SB_HOST = urllib.parse.urlparse(SB_URL).netloc
+_SB_PREFIX = urllib.parse.urlparse(SB_URL).path.rstrip("/")
+_SB_POOL = queue.LifoQueue()
+_SB_POOL_MAX = 8
+_SB_IDLE_MAX = 50.0   # seconds; the far end drops idle sockets around 60 s, never hand out one older than that
+_SB_STALE = (http.client.HTTPException, OSError)   # a pooled socket that died while idle surfaces as one of these
+
+
+def _sb_conn():
+    """(connection, reused) - an idle pooled connection or a fresh one."""
+    while True:
+        try:
+            c, last = _SB_POOL.get_nowait()
+        except queue.Empty:
+            return http.client.HTTPSConnection(_SB_HOST, timeout=30), False
+        if time.time() - last < _SB_IDLE_MAX:
+            return c, True
+        try:
+            c.close()
+        except Exception:
+            pass
+
+
+def _sb_release(c):
+    if _SB_POOL.qsize() < _SB_POOL_MAX:
+        _SB_POOL.put((c, time.time()))
+    else:
+        try:
+            c.close()
+        except Exception:
+            pass
+
+
+_USER_ID_RE = re.compile(r"[?&]id=eq\.([^&]+)")
+
+
 def sb(method, path, body=None, headers=None):
     h = {"apikey": SRK, "Authorization": f"Bearer {SRK}",
          "Content-Type": "application/json", "Accept-Profile": "crm",
@@ -239,10 +280,57 @@ def sb(method, path, body=None, headers=None):
     if headers:
         h.update(headers)
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(f"{SB_URL}{path}", data=data, headers=h, method=method)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        raw = r.read().decode()
-        return json.loads(raw) if raw else []
+    url = f"{_SB_PREFIX}{path}"
+    is_user_write = method != "GET" and path.startswith("/offramp_users")
+    if is_user_write:   # before and after: a concurrent reader must never re-cache the pre-write row
+        m = _USER_ID_RE.search(path)
+        invalidate_user(urllib.parse.unquote(m.group(1)) if m else None)
+    try:
+        for attempt in (0, 1):
+            c, reused = _sb_conn()
+            try:
+                c.request(method, url, body=data, headers=h)
+                r = c.getresponse()
+                raw = r.read()
+            except Exception as ex:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+                if reused and attempt == 0 and isinstance(ex, _SB_STALE) and not isinstance(ex, TimeoutError):
+                    continue   # the pooled socket had gone away; one retry on a fresh connection (a timeout is not stale)
+                raise
+            if (r.getheader("Connection") or "").lower() == "close" or r.version < 11:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+            else:
+                _sb_release(c)
+            if r.status >= 400:   # same exception type and .read() body the callers already handle
+                raise urllib.error.HTTPError(f"{SB_URL}{path}", r.status, r.reason, r.headers, io.BytesIO(raw))
+            txt = raw.decode()
+            return json.loads(txt) if txt else []
+    finally:
+        if is_user_write:
+            invalidate_user(urllib.parse.unquote(m.group(1)) if m else None)
+
+
+SB_PROJECT_REF = _SB_HOST.split(".")[0]
+SB_PAT = _read(os.path.join(SEC, "supabase-pat"))   # management-API token: read-only SQL for the state counts (same path services/perf-audit used)
+SB_SQL_URL = f"https://api.supabase.com/v1/projects/{SB_PROJECT_REF}/database/query"
+
+
+def sb_sql(sql, timeout=60):
+    """One SQL statement through the Supabase management API. Used for read-only aggregates PostgREST cannot express
+    (aggregates are disabled on this project: PGRST123)."""
+    if not SB_PAT:
+        raise RuntimeError("no supabase management token")
+    req = urllib.request.Request(SB_SQL_URL, data=json.dumps({"query": sql}).encode(), method="POST",
+                                 headers={"Authorization": f"Bearer {SB_PAT}", "Content-Type": "application/json",
+                                          "User-Agent": "curl/8.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.load(r)
 
 
 # ------------------------------ funnel ---------------------------------------
@@ -464,9 +552,43 @@ def get_user_by_email(email):
     return rows[0] if rows else None
 
 
-def get_user_by_id(uid):
+# perf 2026-10-03: every authenticated call re-read the user row (one PostgREST round trip, ~110-160 ms) before doing
+# anything. Rows are cached per uid for USER_CACHE_TTL seconds; sb() drops the entry on any write to offramp_users
+# (plan change, terms accept, password reset, usage bump, Stripe webhook), and a row fetched before the latest
+# invalidation is never cached, so a concurrent reader cannot pin the pre-write row.
+USER_CACHE_TTL = 60
+_USER_CACHE = {}        # uid -> (expires_at, row)
+_USER_INVAL = {"*": 0.0}   # uid -> last invalidation time ("*" = everyone)
+_USER_LOCK = threading.Lock()
+
+
+def invalidate_user(uid=None):
+    now = time.time()
+    with _USER_LOCK:
+        if uid is None:
+            _USER_CACHE.clear()
+            _USER_INVAL["*"] = now
+        else:
+            _USER_CACHE.pop(str(uid), None)
+            _USER_INVAL[str(uid)] = now
+
+
+def get_user_by_id(uid, fresh=False):
+    key = str(uid)
+    if not fresh:
+        with _USER_LOCK:
+            ent = _USER_CACHE.get(key)
+        if ent and ent[0] > time.time():
+            return dict(ent[1])
+    t0 = time.time()
     rows = sb("GET", f"/offramp_users?select=*&id=eq.{uid}&limit=1")
-    return rows[0] if rows else None
+    u = rows[0] if rows else None
+    with _USER_LOCK:
+        if u and max(_USER_INVAL.get(key, 0.0), _USER_INVAL["*"]) < t0:
+            _USER_CACHE[key] = (t0 + USER_CACHE_TTL, dict(u))
+        else:
+            _USER_CACHE.pop(key, None)
+    return u
 
 
 def get_user_by_stripe_customer(cid):
@@ -924,6 +1046,17 @@ SEARCH_COLS = ("addr_key,owner_absentee,surplus_amount,surplus_sale_date,surplus
                 "bankruptcy_case_title,bankruptcy_case_link,bankruptcy_active_stay,"
                 "skip_traced_at,phones,emails,photo_url")
 
+# perf 2026-10-03: the feed carries only what the list card, its badges, the map pins, the search dedupe, the detail
+# header and the UAT filter predicates read (plus id/photo_url). 49 columns instead of 87; phones/emails and the
+# detail-only columns come down per lead through /api/property when a card is opened (app: hydrateDetail).
+CARD_COLS = ("id,owner_full,owner_first,owner_last,property_street,property_city,property_state,property_zip,county,"
+             "foreclosure_status,auction_date,auction_time,days_to_auction,market_value,avm,arv,"
+             "equity_dollars,equity_pct,equity_unverified,mortgage_balance,mortgage_interest_rate,mortgage_recording_date,"
+             "mortgage_lender,lien_count,lien_first_amount,lien_second_amount,lien_total_amount,"
+             "surplus_amount,surplus_margin,sale_status_verified,sale_verified_source,trustee_opening_bid,"
+             "mls_active,mls_status,deceased_flag,bankruptcy_flag,reverse_mortgage,is_judicial,property_type,next_of_kin,"
+             "beds,baths,living_area_sqft,year_built,owner_absentee,mailing_address,latitude,longitude,photo_url")
+
 
 # Tiered filters (Ted 2026-10-03): Free answers where/when, Pro answers how much, Premium answers who/why.
 # A param above the user's tier is silently ignored and reported back in ignored_filters so the app can nudge.
@@ -951,9 +1084,10 @@ def tier_allows(u, tier):
     return u is None or has_premium(u)
 
 
-def build_search_query(qs, limit, u=None):
-    """Returns (postgrest_path, ignored_filters). u=None means no gating (internal callers)."""
-    parts = [f"select={SEARCH_COLS}", "active=eq.true", "auction_date=not.is.null", f"limit={limit}",  # Ted 2026-10-03: auctions only
+def build_search_query(qs, limit, u=None, cols=SEARCH_COLS):
+    """Returns (postgrest_path, ignored_filters). u=None means no gating (internal callers).
+    cols: SEARCH_COLS (full row: export, internal) or CARD_COLS (the app feed)."""
+    parts = [f"select={cols}", "active=eq.true", "auction_date=not.is.null", f"limit={limit}",  # Ted 2026-10-03: auctions only
              "order=days_to_auction.asc.nullslast"]
     # Deal room defaults to live inventory: hide auctions that already passed unless the caller
     # opts in with include_past=1. A short grace window keeps just-passed sales visible.
@@ -1086,10 +1220,15 @@ def build_national_query(qs, limit):
 
 
 def sb_all(path, page=1000, cap=60):
-    """PostgREST caps a response at 1000 rows; page through to get everything."""
+    """PostgREST caps a response at 1000 rows; page through to get everything.
+    perf 2026-10-03: pages are ordered by id unless the caller set an order=, so consecutive offsets never overlap
+    (an unordered paged scan returned duplicate and missing rows and the state chips drifted)."""
     out = []
+    sep = "&" if "?" in path else "?"
+    if "order=" not in path:
+        path = f"{path}{sep}order=id.asc"
+        sep = "&"
     for i in range(cap):
-        sep = "&" if "?" in path else "?"
         rows = sb("GET", f"{path}{sep}limit={page}&offset={i * page}")
         out.extend(rows)
         if len(rows) < page:
@@ -1097,25 +1236,71 @@ def sb_all(path, page=1000, cap=60):
     return out
 
 
-_STATE_COUNTS = {"at": 0, "val": None}
+_STATE_COUNTS = {"at": 0, "val": None, "refreshing": False}
+_STATE_COUNTS_LOCK = threading.Lock()
+# The chip must count exactly the rows a state feed shows: hit_list under the /api/search live predicate
+# (active, auction_date set, days_to_auction >= -3), plus the national rows the app would ADD after its dedupe
+# (UPPER(street)|zip not already a hit row; duplicate national addresses counted once). The old paging path had no
+# order= so PostgREST pages overlapped and the 10-minute cache froze the drift (NV 90/96 vs 125 real, MA 104/107/79
+# vs 73, CT 77 vs 100 in the 2026-10-03 UAT).
+STATE_COUNTS_SQL = (
+    "with live as (select upper(property_state) st, upper(coalesce(property_street,'')) street, coalesce(property_zip,'') zip "
+    "  from crm.hit_list where active and auction_date is not null and days_to_auction >= -3) "
+    "select 'hit' as src, st, count(*)::int as n from live where st <> '' group by st "
+    "union all "
+    "select 'national', upper(n.state), count(distinct (upper(coalesce(n.street,'')), coalesce(n.zip,'')))::int "
+    "  from crm.offramp_national_listings n where n.status_group = 'ACTIVE' and n.delisted_at is null "
+    "  and not exists (select 1 from live h where h.street = upper(coalesce(n.street,'')) and h.zip = coalesce(n.zip,'')) "
+    "  group by 2")
+
+
+def _state_counts_compute():
+    """perf 2026-10-03: the same answer as paging 50k rows through PostgREST (35 + 16 serial calls, ~7 s cold)
+    as one GROUP BY (~36 ms in Postgres). The paging path stays as the fallback if the SQL path is unavailable."""
+    hit, nat = {}, {}
+    try:
+        for r in sb_sql(STATE_COUNTS_SQL, timeout=45):
+            st = (r.get("st") or "").upper()
+            if st:
+                (hit if r.get("src") == "hit" else nat)[st] = int(r.get("n") or 0)
+    except Exception as ex:
+        print(f"[state-counts] SQL path failed ({str(ex)[:120]}); paging fallback", flush=True)
+        hit, nat = {}, {}
+        for r in sb_all("/hit_list?select=property_state&active=eq.true&auction_date=not.is.null&days_to_auction=gte.-3"):
+            st = (r.get("property_state") or "").upper()
+            if st:
+                hit[st] = hit.get(st, 0) + 1
+        for r in sb_all("/offramp_national_listings?select=state&status_group=eq.ACTIVE&delisted_at=is.null"):
+            st = (r.get("state") or "").upper()
+            if st:
+                nat[st] = nat.get(st, 0) + 1
+    return {"hit": hit, "national": nat, "total": {k: hit.get(k, 0) + nat.get(k, 0) for k in set(hit) | set(nat)}}
+
+
+def _state_counts_refresh():
+    try:
+        val = _state_counts_compute()
+        _STATE_COUNTS.update({"at": time.time(), "val": val})
+        return val
+    finally:
+        _STATE_COUNTS["refreshing"] = False
 
 
 def state_counts():
-    """Active deal counts per state: enriched hit_list + national auction.com feed. Cached 10 min."""
-    if _STATE_COUNTS["val"] and time.time() - _STATE_COUNTS["at"] < 600:
-        return _STATE_COUNTS["val"]
-    hit, nat = {}, {}
-    for r in sb_all("/hit_list?select=property_state&active=eq.true&auction_date=not.is.null&days_to_auction=gte.-3"):
-        st = (r.get("property_state") or "").upper()
-        if st:
-            hit[st] = hit.get(st, 0) + 1
-    for r in sb_all("/offramp_national_listings?select=state&status_group=eq.ACTIVE&delisted_at=is.null"):
-        st = (r.get("state") or "").upper()
-        if st:
-            nat[st] = nat.get(st, 0) + 1
-    val = {"hit": hit, "national": nat, "total": {k: hit.get(k, 0) + nat.get(k, 0) for k in set(hit) | set(nat)}}
-    _STATE_COUNTS.update({"at": time.time(), "val": val})
-    return val
+    """Active deal counts per state: enriched hit_list + national auction.com feed. Cached 10 min; after that the
+    cached answer is served while one background thread refreshes it, so no request ever waits on the recount."""
+    val = _STATE_COUNTS["val"]
+    if val and time.time() - _STATE_COUNTS["at"] < 600:
+        return val
+    if val:
+        with _STATE_COUNTS_LOCK:
+            if not _STATE_COUNTS["refreshing"]:
+                _STATE_COUNTS["refreshing"] = True
+                threading.Thread(target=_state_counts_refresh, daemon=True).start()
+        return val
+    with _STATE_COUNTS_LOCK:
+        _STATE_COUNTS["refreshing"] = True
+    return _state_counts_refresh()   # first call after boot computes inline
 
 
 def normalize_national_row(r):
@@ -1303,6 +1488,8 @@ class Handler(SimpleHTTPRequestHandler):
         pth = self.path.split("?")[0]
         if pth in ("/app/", "/app/index.html", "/app/sw.js", "/app/manifest.json"):
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        elif pth.startswith("/brand/") or pth.startswith("/app/icons/"):
+            self.send_header("Cache-Control", "public, max-age=86400")
         for k, v in SECURITY_HEADERS:
             self.send_header(k, v)
         super().end_headers()
@@ -1311,6 +1498,10 @@ class Handler(SimpleHTTPRequestHandler):
         payload = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        if GZIP_JSON and len(payload) > GZIP_MIN and "gzip" in (self.headers.get("Accept-Encoding") or "").lower():
+            payload = gzip.compress(payload, compresslevel=5)
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Vary", "Accept-Encoding")
         self.send_header("Content-Length", str(len(payload)))
         if extra_headers:
             for k, v in extra_headers:
@@ -1591,7 +1782,7 @@ h1{{font-size:20px;margin:0 0 8px}}p{{color:#5C6B62;font-size:14px;margin:0 0 18
                 limit = min(int((qs.get("limit") or ["100"])[0]), 500)
             except Exception:
                 limit = 100
-            path, ignored = build_search_query(qs, limit, u)
+            path, ignored = build_search_query(qs, limit, u, cols=CARD_COLS)
             try:
                 rows = sb("GET", path)
             except urllib.error.HTTPError as e:
@@ -2385,4 +2576,7 @@ if __name__ == "__main__":
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), HandlerBound)
     print(f"OffRamp server on 127.0.0.1:{PORT} dir={DIR} "
           f"reapi={'on' if REAPI_KEY else 'off'} dm={'on' if DM_KEY else 'off'}")
+    # perf 2026-10-03: warm state_counts in the background so first /api/state-counts
+    # request is instant (SQL GROUP BY ~36 ms) rather than blocking boot for ~7 s.
+    threading.Thread(target=lambda: state_counts(), daemon=True, name="warm-state-counts").start()
     srv.serve_forever()
