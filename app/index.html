@@ -369,7 +369,7 @@
   .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none}
 
   /* ---------- DESKTOP LAYOUT (≥960px) ---------- */
-  #appBody{display:flex;flex:1;min-height:0}
+  #appBody{flex:1;min-height:0}
   nav.rail{display:none;width:60px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);flex-direction:column;align-items:stretch;padding-top:6px}
   nav.rail button{background:transparent;border:0;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--sub);font-size:10.5px;font-weight:700;border-left:3px solid transparent;cursor:pointer}
   nav.rail button svg{width:22px;height:22px;stroke:var(--sub);fill:none;stroke-width:2}
@@ -380,7 +380,7 @@
   @media(min-width:960px){
     body.desk{overflow:hidden}
     body.desk #shell{max-width:none;height:100vh;display:flex;flex-direction:column;box-shadow:none}
-    body.desk #appBody{overflow:hidden}
+    body.desk #appBody{overflow:hidden;display:flex}
     body.desk #appBody main{width:400px;flex-shrink:0;padding-bottom:0;overflow-y:auto;height:100%;border-right:1px solid var(--border)}
     body.desk #appBody main .toolbar{position:sticky;top:0;background:var(--bg)}
     body.desk nav.rail{display:flex}
@@ -1182,8 +1182,9 @@ var DOC_PULLS=[
 function docsSection(r){
   var rows=DOC_PULLS.filter(function(d){
     if(d[0]==='bankruptcy') return r.bankruptcy_flag===true||!!r.bankruptcy_case;
-    if(d[0]==='lis_pendens') return r.is_judicial===true||!!r.notice_url;
-    return true;
+    if(d[0]==='lis_pendens') return r.is_judicial===true;
+    if(d[0]==='nod') return !!r.notice_url||r.is_judicial===true;
+    return true; /* mortgage: always on file */
   }).map(function(d){
     return '<div class="docrow"><div class="dl"><b>'+esc(d[1])+'</b><small>'+esc(d[2])+'</small></div>'+
       '<button class="docbtn" onclick="docOrder(\''+d[0]+'\',this)">Get it · $5</button></div>';
