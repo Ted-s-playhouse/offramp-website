@@ -6,15 +6,13 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#1B4332">
 <title>OffRamp REI — Deal Room</title>
-<link rel="icon" href="/brand/mark_ramp.png">
+<link rel="icon" href="/brand/mark_ramp_96.png">
 <link rel="manifest" href="/app/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/app/icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OffRamp">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
   /* ---- Revive/OffRamp brand palette (matches CRM theme.ts) ---- */
   :root{
@@ -376,7 +374,7 @@
 <!-- ============ AUTH ============ -->
 <div id="auth">
   <div class="authcard">
-    <div class="brandrow"><img src="/brand/mark_ramp.png" alt=""><b>OffRamp</b> <span>REI</span></div>
+    <div class="brandrow"><img src="/brand/mark_ramp_96.png" width="32" height="32" alt="" decoding="async"><b>OffRamp</b> <span>REI</span></div>
     <p class="sub">The deal room for pre-foreclosure, auction &amp; probate.</p>
     <div class="tabs">
       <button id="tabLogin" class="on" onclick="setTab('login')">Log in</button>
@@ -409,7 +407,7 @@
 <!-- ============ APP ============ -->
 <div id="shell" class="hidden">
   <header class="top">
-    <div class="logo"><img src="/brand/mark_ramp.png" alt="">OffRamp <span>REI</span></div>
+    <div class="logo"><img src="/brand/mark_ramp_96.png" width="24" height="24" alt="" decoding="async">OffRamp <span>REI</span></div>
     <div class="grow"></div>
   </header>
 
@@ -524,10 +522,31 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 var ME=null, MAP=null, MARKERS=null, ROWS=[], CUR=null, SCREEN='deals';
+/* perf 2026-10-03: Leaflet (47 KB script + CSS from unpkg) used to block the first paint and the app script on every boot.
+   It now loads when the Map tab is first opened, or in idle time after the first feed render. */
+var LEAFLET_P=null;
+function loadLeaflet(){
+  if(window.L)return Promise.resolve();
+  if(LEAFLET_P)return LEAFLET_P;
+  LEAFLET_P=new Promise(function(res,rej){
+    try{
+      var css=document.createElement('link'); css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      css.integrity='sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY='; css.crossOrigin=''; document.head.appendChild(css);
+      var sc=document.createElement('script'); sc.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      sc.integrity='sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='; sc.crossOrigin='';
+      sc.onload=function(){ res(); }; sc.onerror=function(){ LEAFLET_P=null; rej(new Error('leaflet')); };
+      document.head.appendChild(sc);
+    }catch(e){ LEAFLET_P=null; rej(e); }
+  });
+  return LEAFLET_P;
+}
+function prefetchLeaflet(){  // once, after the first cards are on screen, in idle time
+  if(window.__lfPrefetch)return; window.__lfPrefetch=1;
+  var idle=window.requestIdleCallback||function(f){ setTimeout(f,1500); };
+  try{ idle(function(){ loadLeaflet().catch(function(){}); },{timeout:5000}); }catch(e){}
+}
 var ACTIONS={}; var SHOW_HIDDEN=false;
 var STATE=null; var COUNTS={hit:{},national:{},total:{}};
 var ADJ={AL:['FL','GA','MS','TN'],AK:['WA','OR','HI'],AZ:['CA','CO','NV','NM','UT'],AR:['LA','MS','MO','OK','TN','TX'],CA:['AZ','NV','OR'],CO:['AZ','KS','NE','NM','OK','UT','WY'],CT:['MA','NY','RI'],DE:['MD','NJ','PA'],DC:['MD','VA'],FL:['AL','GA'],GA:['AL','FL','NC','SC','TN'],HI:['CA','AK'],ID:['MT','NV','OR','UT','WA','WY'],IL:['IN','IA','KY','MI','MO','WI'],IN:['IL','KY','MI','OH'],IA:['IL','MN','MO','NE','SD','WI'],KS:['CO','MO','NE','OK'],KY:['IL','IN','MO','OH','TN','VA','WV'],LA:['AR','MS','TX'],ME:['NH'],MD:['DE','DC','PA','VA','WV'],MA:['CT','NH','NY','RI','VT'],MI:['IN','OH','WI'],MN:['IA','ND','SD','WI'],MS:['AL','AR','LA','TN'],MO:['AR','IL','IA','KS','KY','NE','OK','TN'],MT:['ID','ND','SD','WY'],NE:['CO','IA','KS','MO','SD','WY'],NV:['AZ','CA','ID','OR','UT'],NH:['ME','MA','VT'],NJ:['DE','NY','PA'],NM:['AZ','CO','OK','TX','UT'],NY:['CT','MA','NJ','PA','VT'],NC:['GA','SC','TN','VA'],ND:['MN','MT','SD'],OH:['IN','KY','MI','PA','WV'],OK:['AR','CO','KS','MO','NM','TX'],OR:['CA','ID','NV','WA'],PA:['DE','MD','NJ','NY','OH','WV'],RI:['CT','MA'],SC:['GA','NC'],SD:['IA','MN','MT','NE','ND','WY'],TN:['AL','AR','GA','KY','MS','MO','NC','VA'],TX:['AR','LA','NM','OK'],UT:['AZ','CO','ID','NV','NM','WY'],VT:['MA','NH','NY'],VA:['DC','KY','MD','NC','TN','WV'],WA:['ID','OR','AK'],WV:['KY','MD','OH','PA','VA'],WI:['IL','IA','MI','MN'],WY:['CO','ID','MT','NE','SD','UT']};
@@ -670,7 +689,10 @@ function enterApp(){
   if(STATE&&!STATE_NAMES[STATE])STATE=null;
   renderStateBrowse();
   api('/api/state-counts').then(function(r){return r.json();}).then(function(j){ COUNTS=j||COUNTS; renderStateBrowse(); }).catch(function(){});
-  loadActions().then(search);
+  // perf 2026-10-03: /api/lead-actions and /api/search (+ national) fire together right after /api/me.
+  // The feed renders as soon as search returns; Saved/Hidden chips decorate when the actions land.
+  loadActions().then(function(){ if(ROWS.length){ renderList(); if(MAP)renderPins(); } });
+  search();
   renderAccount();
   if(!window.PENDING_CHECKOUT){ var co0=(window.location.search.match(/[?&]checkout=(pro|premium|trial)\b/)||[])[1]; if(co0)window.PENDING_CHECKOUT=co0; }
   if(/[?&]trial_started=1\b/.test(window.location.search)){ toast('Your free trial is on. Premium features are unlocked.'); }
@@ -784,7 +806,7 @@ function showScreen(name){
     document.getElementById('s-'+n).classList.toggle('on',n===name);
     document.getElementById('n-'+n).classList.toggle('on',n===name);
   });
-  if(name==='map'){ ensureMap(); setTimeout(function(){ if(MAP){MAP.invalidateSize();renderPins();} },80); }
+  if(name==='map'){ ensureMap(function(){ setTimeout(function(){ if(MAP){MAP.invalidateSize();renderPins();} },80); }); }
 }
 
 /* ---------- search ---------- */
@@ -817,7 +839,7 @@ function search(){
     if(res[0].ignored_filters&&res[0].ignored_filters.length){ toast('Some filters need '+(ME&&ME.paid?'Premium':'Pro')+' — ignored'); }
     var seen={}; enriched.forEach(function(r){ seen[((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase()]=1; });
     var extra=national.filter(function(r){ var k=((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase(); if(seen[k])return false; seen[k]=1; return true; });
-    ROWS=enriched.concat(extra); renderList(); if(MAP)renderPins();
+    ROWS=enriched.concat(extra); renderList(); if(MAP)renderPins(); prefetchLeaflet();
     var where=STATE?(STATE_NAMES[STATE]||STATE):'all states';
     document.getElementById('countLine').textContent=ROWS.length?(ROWS.length+' deals in '+where+(enriched.length&&extra.length?' · '+enriched.length+' with owner data':'')):'';
   });
@@ -874,11 +896,16 @@ function proChip(r){
 }
 
 /* ---------- map ---------- */
-function ensureMap(){
-  if(MAP)return;
-  MAP=L.map('map',{zoomControl:true}).setView([39.3,-111.7],6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(MAP);
-  MARKERS=L.layerGroup().addTo(MAP);
+function ensureMap(cb){
+  if(MAP){ if(cb)cb(); return; }
+  loadLeaflet().then(function(){
+    if(!MAP){
+      MAP=L.map('map',{zoomControl:true}).setView([39.3,-111.7],6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(MAP);
+      MARKERS=L.layerGroup().addTo(MAP);
+    }
+    if(cb)cb();
+  }).catch(function(){ toast('Map could not load. Check your connection.'); });
 }
 function renderPins(){
   if(!MARKERS)return;
@@ -913,18 +940,64 @@ function openUpgradeSheet(kind){
   el.style.display='block';
 }
 function closeUpgradeSheet(){ var el=document.getElementById('upsheet'); if(el)el.style.display='none'; }
+function isHitRow(r){ return !!(r&&r.id&&String(r.id).indexOf('nat:')!==0); }
 function openDetail(i){
   CUR=ROWS[i]; var r=CUR;
+  // perf 2026-10-03: feed rows are card-sized (CARD_COLS). The header paints at once from the card; the body renders
+  // from the full row, fetched through /api/property on open (one ~3 KB call, in parallel with the county facts).
+  var full=!!r._full||!isHitRow(r);
+  document.getElementById('detailInner').innerHTML=full?detailHtml(r):(detailHeadHtml(r)+'<div class="dbody"><div class="loadrow">Loading the lead…</div></div>');
+  document.getElementById('detail').scrollTop=0;
+  document.getElementById('detail').classList.add('open');
+  if(full){ if(ME&&ME.paid)renderContacts(); } else hydrateDetail(r);
+  loadFacts(r);
+}
+function mergeRow(r,p){  // the full row wins, except a value the open lead already filled (JIT liens) is never erased by a null
+  for(var k in p){ if(k==='analysis')continue; if(p[k]==null&&r[k]!=null)continue; r[k]=p[k]; }
+  r._full=true; return r;
+}
+function hydrateDetail(r){
+  api('/api/property?id='+encodeURIComponent(r.id)).then(function(x){return x.json();}).then(function(j){
+    if(j&&j.property)mergeRow(r,j.property); else throw 0;
+    if(CUR!==r)return; rerenderDetail(r);
+  }).catch(function(){ if(CUR!==r)return; r._full=false; rerenderDetail(r); toast('Some lead details could not load'); });
+}
+function rerenderDetail(r){
+  var d=document.getElementById('detail'), sc=d?d.scrollTop:0;
+  document.getElementById('detailInner').innerHTML=detailHtml(r);
+  if(d)d.scrollTop=sc;
+  if(ME&&ME.paid)renderContacts();
+  if(r._facts!==undefined)renderFacts(r);   // the county record landed before the row did
+}
+function detailHeadHtml(r){
   var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
-  var addr=fullAddr(r);
   var pu=photoUrl(r);
   var fb=photoFallback(r);
   var hero=pu?'<img class="dhero" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.style.display=\'none\'">':'';
   var hbadges='';
-  // temperature is an internal CRM field — not a consumer token (Ted 2026-10-03)
   if(statusLabel(r))hbadges+='<span class="badge hbadge">'+esc(statusLabel(r))+'</span>';
   hbadges+=trusteeMark(r);
   if(r.days_to_auction!=null&&r.days_to_auction>=0)hbadges+='<span class="badge hbadge">auction '+r.days_to_auction+'d</span>';
+  var saleDate=fmtDate(r.auction_date)+(r.auction_time?(' · '+r.auction_time):'');
+  return hero+
+    '<div class="dhead">'+
+      '<button class="dback" onclick="closeDetail()">‹ Back</button>'+
+      '<div class="owner">'+esc(owner)+'</div>'+
+      '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
+      '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
+      '<div class="badges">'+hbadges+occupancyChip(r)+basicsChips(r)+'</div>'+
+      '<div class="dkv">'+
+        cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
+        cell('Sq ft',r.living_area_sqft?Number(r.living_area_sqft).toLocaleString():'—')+
+        cell('Year built',r.year_built||'—')+
+        cell('Sale date',saleDate||'—')+
+      '</div>'+
+    '</div>';
+}
+function detailHtml(r){
+  var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
+  var addr=fullAddr(r);
+  // temperature is an internal CRM field — not a consumer token (Ted 2026-10-03)
   var maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(addr);
   var zillow='https://www.zillow.com/homes/'+encodeURIComponent(addr)+'_rb/';
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
@@ -938,20 +1011,7 @@ function openDetail(i){
 
   var maplinks='<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>';
   var rbF=rampBid(r);
-  var html=hero+
-    '<div class="dhead">'+
-      '<button class="dback" onclick="closeDetail()">‹ Back</button>'+
-      '<div class="owner">'+esc(owner)+'</div>'+
-      '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
-      '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
-      '<div class="badges">'+hbadges+occupancyChip(r)+basicsChips(r)+'</div>'+
-      '<div class="dkv">'+
-        cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
-        cell('Sq ft',r.living_area_sqft?Number(r.living_area_sqft).toLocaleString():'—')+
-        cell('Year built',r.year_built||'—')+
-        cell('Sale date',saleDate||'—')+
-      '</div>'+
-    '</div>'+
+  var html=detailHeadHtml(r)+
     '<div class="dbody">'+
       '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
       signalsSection(r)+
@@ -980,10 +1040,7 @@ function openDetail(i){
       premiumSection(r)+
       '<div class="sec">Property facts</div><div class="card2" id="facts"><div class="hint">Pulling the county record…</div></div>'+
     '</div>';
-  document.getElementById('detailInner').innerHTML=html;
-  document.getElementById('detail').scrollTop=0;
-  document.getElementById('detail').classList.add('open');
-  if(paid)renderContacts(); loadFacts(r);
+  return html;
 }
 function cell(k,v){ return '<div class="cell"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
 function line(k,v){ return '<div class="rowline"><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>'; }
@@ -1271,18 +1328,25 @@ function factsTiered(r,f){  // Premium = full county record. Pro = 6 rows. Free 
   return out+lockedRow('Full county record','premium');
 }
 function loadFacts(r){
-  var el=document.getElementById('facts'); if(!el)return;
-  var basic=[lineIf('Type',r.property_type),lineIf('Occupancy',r.occupancy),lineIf('APN',r.apn),lineIf('Owner mailing',r.mailing_address)].filter(Boolean).join('');
+  if(r._facts!==undefined){ renderFacts(r); return; }
   api('/api/property-facts?id='+encodeURIComponent(r.id)).then(function(x){return x.json();}).then(function(j){
-    if(CUR!==r)return; var el2=document.getElementById('facts'); if(!el2)return;
-    if(!j.facts){
-      if(j.source==='locked'){ el2.innerHTML=basic+lockedRow('Full county record','premium')+'<div class="hint">Zoning, lot, garage, taxes, flood zone, last sale and years owned are on the full county record.</div>'; return; }
-      el2.innerHTML=basic+'<div class="hint">No county record came back for this address.</div>'; return;
-    }
-    var f=j.facts, rows=factsTiered(r,f);
-    if(f.liens&&r.lien_count==null){ Object.assign(r,f.liens); var lc=document.getElementById('loanchecks'); if(lc){ var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); lc.innerHTML=section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem); } renderList(); }  // JIT: the opened lead fills its own mortgages + liens
-    el2.innerHTML=(rows||basic)+'<div class="hint">OffRamp county record'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
-  }).catch(function(){ var el2=document.getElementById('facts'); if(el2&&CUR===r)el2.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; });
+    r._facts=j||null;
+    if(j&&j.facts&&j.facts.liens&&r.lien_count==null){ Object.assign(r,j.facts.liens); r._jitLiens=true; renderList(); }  // JIT: the opened lead fills its own mortgages + liens
+    if(CUR===r)renderFacts(r);
+  }).catch(function(){ r._facts=null; if(CUR===r)renderFacts(r); });
+}
+function renderFacts(r){
+  var el=document.getElementById('facts'); if(!el)return;
+  var j=r._facts;
+  var basic=[lineIf('Type',r.property_type),lineIf('Occupancy',r.occupancy),lineIf('APN',r.apn),lineIf('Owner mailing',r.mailing_address)].filter(Boolean).join('');
+  if(!j){ el.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; return; }
+  if(!j.facts){
+    if(j.source==='locked'){ el.innerHTML=basic+lockedRow('Full county record','premium')+'<div class="hint">Zoning, lot, garage, taxes, flood zone, last sale and years owned are on the full county record.</div>'; return; }
+    el.innerHTML=basic+'<div class="hint">No county record came back for this address.</div>'; return;
+  }
+  var f=j.facts, rows=factsTiered(r,f);
+  if(r._jitLiens){ r._jitLiens=false; var lc=document.getElementById('loanchecks'); if(lc){ var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); lc.innerHTML=section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem); } }
+  el.innerHTML=(rows||basic)+'<div class="hint">OffRamp county record'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
 }
 function premiumSection(r){
   if(r.premium_locked){

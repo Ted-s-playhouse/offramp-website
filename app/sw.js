@@ -1,8 +1,8 @@
 /* OffRamp REI deal room service worker (Master Task File item 16).
    Shell + icons are cached so the installed app opens offline; API and
    everything else stay network-only so no stale data is ever shown. */
-const VERSION = 'offramp-shell-v44-2026-10-03';
-const SHELL = ['/app/', '/app/manifest.webmanifest', '/app/icons/icon-192.png', '/app/icons/icon-512.png', '/brand/mark_ramp.png'];
+const VERSION = 'offramp-shell-v45-2026-10-03';
+const SHELL = ['/app/', '/app/manifest.webmanifest', '/app/icons/icon-192.png', '/app/icons/icon-512.png', '/brand/mark_ramp_96.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
