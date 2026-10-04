@@ -367,6 +367,33 @@
   .emailchip{display:inline-block;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin:6px 6px 0 0;font-size:13px}
 
   .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none}
+
+  /* ---------- DESKTOP LAYOUT (≥960px) ---------- */
+  #appBody{display:flex;flex:1;min-height:0}
+  nav.rail{display:none;width:60px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);flex-direction:column;align-items:stretch;padding-top:6px}
+  nav.rail button{background:transparent;border:0;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--sub);font-size:10.5px;font-weight:700;border-left:3px solid transparent;cursor:pointer}
+  nav.rail button svg{width:22px;height:22px;stroke:var(--sub);fill:none;stroke-width:2}
+  nav.rail button.on{color:var(--accent);border-left-color:var(--accent);background:var(--accentSoft)}
+  nav.rail button.on svg{stroke:var(--accent)}
+  .desk-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:14px;font-weight:600;padding:40px;text-align:center}
+
+  @media(min-width:960px){
+    body.desk{overflow:hidden}
+    body.desk #shell{max-width:none;height:100vh;display:flex;flex-direction:column;box-shadow:none}
+    body.desk #appBody{overflow:hidden}
+    body.desk #appBody main{width:400px;flex-shrink:0;padding-bottom:0;overflow-y:auto;height:100%;border-right:1px solid var(--border)}
+    body.desk #appBody main .toolbar{position:sticky;top:0;background:var(--bg)}
+    body.desk nav.rail{display:flex}
+    body.desk nav.bottom{display:none}
+    body.desk header.top{flex-shrink:0}
+    body.desk #appBody #detail{position:static;transform:none!important;flex:1;min-width:0;display:flex;flex-direction:column;height:100%;overflow-y:auto;background:var(--bg)}
+    body.desk #appBody #detail.open{display:flex}
+    body.desk .dback{display:none}
+    body.desk #list .lead.sel{background:var(--accentSoft);border-color:var(--accent)}
+    body.desk #sheet:not(.hidden){display:flex;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(11,31,22,.45);z-index:200}
+    body.desk #sheet .sheet{position:static;transform:none;width:440px;max-height:80vh;border-radius:18px;left:auto;bottom:auto;overflow:auto}
+    body.desk #sheet .grab{display:none}
+  }
 </style>
 </head>
 <body>
@@ -411,7 +438,18 @@
     <div class="grow"></div>
   </header>
 
-  <main>
+  <div id="appBody">
+    <nav class="rail" id="railNav">
+      <button id="rn-deals" class="on" onclick="showScreen('deals')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Deals</button>
+      <button id="rn-map" onclick="showScreen('map')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>Map</button>
+      <button id="rn-lookup" onclick="showScreen('lookup')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search</button>
+      <button id="rn-acct" onclick="showScreen('acct')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Account</button>
+    </nav>
+    <main>
     <!-- DEALS -->
     <section class="screen on" id="s-deals">
       <!-- A: pinned toolbar = search + state chip (opens state sheet) + Filter (opens filter sheet) -->
@@ -452,6 +490,7 @@
       <div class="pad" id="acctBody"></div>
     </section>
   </main>
+  </div>
 
   <nav class="bottom">
     <button id="n-deals" class="on" onclick="showScreen('deals')">
@@ -524,6 +563,7 @@
 
 <script>
 var ME=null, MAP=null, MARKERS=null, ROWS=[], CUR=null, SCREEN='deals';
+var DESK=false;
 /* perf 2026-10-03: Leaflet (47 KB script + CSS from unpkg) used to block the first paint and the app script on every boot.
    It now loads when the Map tab is first opened, or in idle time after the first feed render. */
 var LEAFLET_P=null;
@@ -695,6 +735,18 @@ function enterApp(){
   loadActions().then(function(){ if(ROWS.length){ renderList(); if(MAP)renderPins(); } });
   search();
   renderAccount();
+  DESK=window.innerWidth>=960;
+  if(DESK){
+    document.body.classList.add('desk');
+    var appBody=document.getElementById('appBody');
+    var detail=document.getElementById('detail');
+    if(appBody&&detail)appBody.appendChild(detail);
+    var ph=document.createElement('div');
+    ph.id='detailEmpty';
+    ph.className='desk-empty';
+    ph.textContent='← Select a deal to view details';
+    detail.insertBefore(ph,detail.firstChild);
+  }
   if(!window.PENDING_CHECKOUT){ var co0=(window.location.search.match(/[?&]checkout=(pro|premium|trial)\b/)||[])[1]; if(co0)window.PENDING_CHECKOUT=co0; }
   if(/[?&]trial_started=1\b/.test(window.location.search)){ toast('Your free trial is on. Premium features are unlocked.'); }
   if(/[?&]doc_ordered=1\b/.test(window.location.search)){
@@ -806,6 +858,7 @@ function showScreen(name){
   ['deals','map','lookup','acct'].forEach(function(n){
     document.getElementById('s-'+n).classList.toggle('on',n===name);
     document.getElementById('n-'+n).classList.toggle('on',n===name);
+    var rn=document.getElementById('rn-'+n); if(rn)rn.classList.toggle('on',n===name);
   });
   if(name==='map'){ ensureMap(function(){ setTimeout(function(){ if(MAP){MAP.invalidateSize();renderPins();} },80); }); }
 }
@@ -880,7 +933,7 @@ function renderList(){
     var thumb=pu
       ? '<div class="thumb"><img loading="lazy" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.parentNode.classList.add(\'noimg\');this.remove()"></div>'
       : '<div class="thumb noimg"></div>';
-    return '<div class="lead" onclick="openDetail('+i+')">'+
+    return '<div class="lead" data-idx="'+i+'" onclick="openDetail('+i+')">'+
       '<div class="top">'+thumb+
         '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
           '<div class="street">'+esc(cleanStreet(r.property_street)||'No address')+'</div>'+
@@ -951,6 +1004,12 @@ function openDetail(i){
   document.getElementById('detailInner').innerHTML=full?detailHtml(r):(detailHeadHtml(r)+'<div class="dbody"><div class="loadrow">Loading the lead…</div></div>');
   document.getElementById('detail').scrollTop=0;
   document.getElementById('detail').classList.add('open');
+  if(DESK){
+    document.querySelectorAll('#list .lead').forEach(function(el){el.classList.remove('sel');});
+    var card=document.querySelector('#list .lead[data-idx="'+i+'"]');
+    if(card)card.classList.add('sel');
+    var de=document.getElementById('detailEmpty'); if(de)de.style.display='none';
+  }
   if(full){ if(ME&&ME.paid)renderContacts(); } else hydrateDetail(r);
   loadFacts(r);
 }
@@ -1101,7 +1160,17 @@ function flagStrip(r){
   if(!f.length) return '';
   return '<div class="flagstrip">'+f.map(function(x){return '<span class="flag '+x[0]+'">'+esc(x[1])+'</span>';}).join('')+'</div>';
 }
-function closeDetail(){ document.getElementById('detail').classList.remove('open'); }
+function closeDetail(){
+  if(DESK){
+    CUR=null;
+    document.getElementById('detailInner').innerHTML='';
+    document.getElementById('detail').classList.remove('open');
+    document.querySelectorAll('#list .lead').forEach(function(el){el.classList.remove('sel');});
+    var de=document.getElementById('detailEmpty'); if(de)de.style.display='';
+    return;
+  }
+  document.getElementById('detail').classList.remove('open');
+}
 
 /* ---------- $5 document pull (Ted 2026-10-03: pick the document, pay five dollars, the recorded filing arrives as a PDF) ---------- */
 var DOC_PULLS=[

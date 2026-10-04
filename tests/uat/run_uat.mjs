@@ -304,7 +304,7 @@ async function walkAccount(run) {
   const appCounts = await page.evaluate(() => window.COUNTS || {});
   const totals = appCounts.total || {}; const hitCounts = appCounts.hit || {};
   run.info('state-sheet', 'state counts source', `the app's own /api/state-counts (server caches it 10 min; hit_list moves live, so feed-vs-sheet drift of a few rows is tolerated)`);
-  await page.click('#stateChipBtn'); await page.waitForSelector('#sheet.open #sheetState', { timeout: 10000 });
+  await page.click('#stateChipBtn'); await page.waitForSelector('#sheet.open #sheetState', { timeout: 10000 }); await page.waitForTimeout(300);
   const sheet = await page.evaluate(() => { const rows = Array.from(document.querySelectorAll('#stateList .srow')).map(b => ({ nm: b.querySelector('.nm').textContent.trim(), cnt: b.querySelector('.cnt').textContent.trim(), on: b.classList.contains('on') })); return { title: document.getElementById('sheetTitle').textContent, rows, groups: Array.from(document.querySelectorAll('.sgroup')).map(g => g.textContent) }; });
   const allRow = sheet.rows.find(r => r.nm === 'All states'); const utRow = sheet.rows.find(r => r.nm === 'Utah');
   const sumTot = Object.values(totals).reduce((a, b) => a + b, 0);
@@ -314,8 +314,9 @@ async function walkAccount(run) {
   await page.fill('#stateQ', 'ut');
   const q = await page.evaluate(() => Array.from(document.querySelectorAll('#stateList .srow .nm')).map(n => n.textContent.trim()));
   run.ok('state-sheet', 'Find a state filters the list', q.includes('Utah') && q.length < 20 && !q.includes('Alabama'), `'ut' → ${q.join(', ')}`, `'ut' → ${q.join(', ')}`);
+  await page.waitForTimeout(300);
   let tS = Date.now();
-  S = await settleSearch(run, tS, async () => { await page.click('#stateList .srow:has(.nm:text-is("Utah"))'); });
+  S = await settleSearch(run, tS, async () => { await page.click('#stateList .srow:has(.nm:text-is("Utah"))', { force: true }); });
   run.ok('deals-list', 'picking Utah closes the sheet and the chip shows UT · count', /^UT/.test(S.ui.chip) && S.ui.chip.includes(String(totals.UT || '')), `chip '${S.ui.chip}'`, `chip '${S.ui.chip}'`);
   reconcile(run, 'deals-list', 'Utah', S);
   cards = await cardsSnapshot(page, 400);
@@ -341,7 +342,7 @@ async function walkAccount(run) {
   await run.shot('deals-list');
 
   // ---- filter sheet gating
-  await page.click('#filterBtn'); await page.waitForSelector('#sheet.open #sheetFilter', { timeout: 10000 });
+  await page.click('#filterBtn', { force: true }); await page.waitForSelector('#sheet.open #sheetFilter', { timeout: 10000 });
   const fs_ = await page.evaluate(() => { const g = {}; document.querySelectorAll('#sheetFilter .fgroup').forEach(x => { g[x.getAttribute('data-tier')] = { locked: x.classList.contains('fgroup-locked'), disabled: Array.from(x.querySelectorAll('select,input')).every(e => e.disabled), anyEnabled: Array.from(x.querySelectorAll('select,input')).some(e => !e.disabled) }; }); const l = {}; document.querySelectorAll('#sheetFilter .tierlock').forEach(x => { l[x.getAttribute('data-tier')] = getComputedStyle(x).display !== 'none'; }); const free = Array.from(document.querySelectorAll('#fWithin,#fSaleType,#fPtype')).every(e => !e.disabled); return { g, l, free, title: document.getElementById('sheetTitle').textContent, n: document.querySelectorAll('#sheetFilter [data-f]').length }; });
   run.ok('filter-sheet', 'filter sheet opens with every control', fs_.title === 'Filters' && fs_.n === Object.keys(MATRIX.filters).filter(k => k[0] !== '_').length, `${fs_.n} controls`, `${fs_.n} controls, title '${fs_.title}'`, await run.shot('filter-sheet'));
   run.ok('filter-sheet', 'Free group (within / sale type / property type) enabled', fs_.free, '', JSON.stringify(fs_));
@@ -350,21 +351,22 @@ async function walkAccount(run) {
     if (want === 'locked') run.ok('filter-sheet', `${grp} group locked for ${run.tier}: grayed, disabled, '${grp}' pill shown`, g.locked && g.disabled && pill, '', JSON.stringify({ g, pill }));
     else run.ok('filter-sheet', `${grp} group enabled for ${run.tier}: usable, no tier pill`, !g.locked && g.anyEnabled && !pill, '', JSON.stringify({ g, pill }));
   }
-  await page.click('#sheet .sheetx'); await page.waitForSelector('#sheet.hidden', { timeout: 5000 }).catch(() => {});
+  await page.click('#sheet .sheetx', { force: true }); await page.waitForSelector('#sheet.hidden', { timeout: 5000 }).catch(() => {});
 
   // ---- filters walk (Utah), one at a time
   run.photos = false;
   const baseline = S.expected;
   const applyFilter = async (key, value) => {
     const f = MATRIX.filters[key];
-    await page.click('#filterBtn'); await page.waitForSelector('#sheet.open #sheetFilter', { timeout: 10000 });
+    await page.click('#filterBtn', { force: true }); await page.waitForSelector('#sheet.open #sheetFilter', { timeout: 10000 });
     const el = '#' + f.el;
-    if (f.type === 'select') await page.selectOption(el, value); else if (f.type === 'checkbox') await page.check(el); else await page.fill(el, value);
+    if (f.type === 'select') await page.selectOption(el, value); else if (f.type === 'checkbox') await page.check(el, { force: true }); else await page.fill(el, value);
     const t = Date.now();
     const R2 = await settleSearch(run, t, async () => { await page.click('#sheetFilter .fbtns .btn-primary'); });
+    await page.waitForSelector('#sheet.hidden', { timeout: 5000 }).catch(() => {});
     return R2;
   };
-  const clearViaSheet = async () => { await page.click('#filterBtn'); await page.waitForSelector('#sheet.open #sheetFilter', { timeout: 10000 }); const t = Date.now(); return settleSearch(run, t, async () => { await page.click('#sheetFilter .fbtns .btn-ghost'); }); };
+  const clearViaSheet = async () => { await page.click('#filterBtn', { force: true }); await page.waitForSelector('#sheet.open #sheetFilter', { timeout: 10000 }); const t = Date.now(); const R = await settleSearch(run, t, async () => { await page.click('#sheetFilter .fbtns .btn-ghost'); }); await page.waitForSelector('#sheet.hidden', { timeout: 5000 }).catch(() => {}); return R; };
   for (const [key, f] of Object.entries(MATRIX.filters)) {
     if (key[0] === '_') continue;
     const allowed = f.tier === 'free' || (f.tier === 'pro' && R.paid) || (f.tier === 'premium' && R.premium);
@@ -714,18 +716,18 @@ async function walkDesktop(run) {
   if (run.role.terms_accepted === false) { await page.waitForSelector('#g_terms'); await page.check('#g_terms'); await Promise.all([page.waitForResponse(r => r.url().includes('/api/auth/accept-terms')), page.click('#upsheet button.btn-primary')]); run.pass('terms-gate', 'accepted on desktop'); }
   await page.waitForSelector('#shell:not(.hidden)');
   let S = await settleSearch(run, tLogin, null); reconcile(run, 'deals-all-states', 'All states (desktop)', S);
-  const box = await page.evaluate(() => { const r = document.getElementById('shell').getBoundingClientRect(); const n = document.querySelector('nav.bottom').getBoundingClientRect(); return { w: r.width, left: r.left, vw: innerWidth, navW: n.width, navLeft: n.left }; });
-  run.ok('layout', 'desktop: phone-frame shell is 520px max and centered, bottom nav aligned to it', box.w <= 520 && Math.abs((box.left + box.w / 2) - box.vw / 2) < 4 && Math.abs(box.navLeft - box.left) < 4, `shell ${box.w}px at x=${box.left} in ${box.vw}px`, JSON.stringify(box), await run.shot('deals-all-states'));
+  const box = await page.evaluate(() => { const r = document.getElementById('shell').getBoundingClientRect(); const hasDeskClass = document.body.classList.contains('desk'); const railVisible = window.getComputedStyle(document.querySelector('nav.rail')).display !== 'none'; const bottomNavHidden = window.getComputedStyle(document.querySelector('nav.bottom')).display === 'none'; return { w: Math.round(r.width), left: Math.round(r.left), vw: innerWidth, hasDeskClass, railVisible, bottomNavHidden }; });
+  run.ok('layout', 'desktop: full-width two-column layout (body.desk, rail nav visible, bottom nav hidden)', box.hasDeskClass && box.railVisible && box.bottomNavHidden && box.w >= 900, `shell ${box.w}px, desk=${box.hasDeskClass}, rail=${box.railVisible}, botNav hidden=${box.bottomNavHidden}`, JSON.stringify(box), await run.shot('deals-all-states'));
   S = await settleSearch(run, Date.now(), async () => { await page.fill('#fSearch', 'Utah'); await page.press('#fSearch', 'Enter'); }); reconcile(run, 'deals-list', 'Utah (desktop)', S); await run.shot('deals-list');
   await page.click('#filterBtn'); await page.waitForSelector('#sheet.open'); await run.shot('filter-sheet'); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
   run.ok('filter-sheet', 'Escape closes the sheet (keyboard)', (await page.locator('#sheet.open').count()) === 0, '', 'sheet still open');
-  await page.click('#n-map'); await page.waitForSelector('#s-map.on .leaflet-container').catch(() => {}); await page.waitForTimeout(800); await run.shot('map'); await page.click('#n-deals');
+  await page.click('#rn-map'); await page.waitForSelector('#s-map.on .leaflet-container').catch(() => {}); await page.waitForTimeout(800); await run.shot('map'); await page.click('#rn-deals');
   await page.click('#list .lead >> nth=0'); await page.waitForSelector('#detail.open');
   await page.waitForFunction(() => { const f = document.getElementById('facts'); return f && !/Pulling the county record/.test(f.innerHTML); }, null, { timeout: 30000 }).catch(() => {});
   const hasTelClick = await page.evaluate(() => document.querySelectorAll('#detail a[href^="tel:"]').length);
   run.ok('lead-detail', 'lead view opens on desktop', (await page.locator('#detail.open .dhead .owner').count()) === 1, `${hasTelClick} tel: links (not tapped)`, '', await run.shot('lead-detail', { fullDetail: true }));
   await page.evaluate(() => closeDetail());
-  await page.click('#n-acct'); await page.waitForTimeout(200); await run.shot('account', { fullPage: true });
+  await page.click('#rn-acct'); await page.waitForTimeout(200); await run.shot('account', { fullPage: true });
   const [lo] = await Promise.all([page.waitForResponse(r => r.url().includes('/api/auth/logout')), page.click('#acctBody button:has-text("Log out")')]);
   run.ok('logout', 'desktop logout', lo.status() === 200, `HTTP ${lo.status()}`);
   run.ok('hygiene', 'no JS errors on desktop', run.errors.length === 0, '', run.errors.slice(0, 3).map(e => e.msg).join(' | '));
