@@ -13,9 +13,17 @@ platform :ios do
     match(type: "appstore", api_key: api_key, readonly: false,
           git_url: "https://x-access-token:#{ENV["MATCH_GIT_TOKEN"]}@github.com/Ted-s-playhouse/offramp-certs.git",
           app_identifier: ["com.offramprei.app"], team_id: ENV["APPLE_TEAM_ID"])
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      team_id: ENV["APPLE_TEAM_ID"],
+      targets: "App",
+      profile_name: "match AppStore com.offramprei.app",
+      code_sign_identity: "Apple Distribution",
+      path: "ios/App/App.xcodeproj"
+    )
     increment_build_number(build_number: ENV["GITHUB_RUN_NUMBER"] || Time.now.strftime("%Y%m%d%H%M"), xcodeproj: "ios/App/App.xcodeproj")
     build_app(workspace: "ios/App/App.xcworkspace", scheme: "App", export_method: "app-store",
-              xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=42NZQ76XK5 CODE_SIGN_STYLE=Manual",
+              xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=42NZQ76XK5",
               output_directory: "build")
     upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true,
                          changelog: "OffRamp REI deal room wrapper build #{ENV["GITHUB_RUN_NUMBER"]}")
