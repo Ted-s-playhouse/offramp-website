@@ -65,6 +65,9 @@
   .sso svg{width:18px;height:18px}
   .authmsg{margin-top:12px;font-size:13.5px;padding:10px 12px;border-radius:9px;display:none}
   .authmsg.err{display:block;background:#fbeae6;color:var(--danger);border:1px solid #e6b6ab}
+  .authmsg.ok{display:block;background:#e7f4ec;color:#1f6f43;border:1px solid #bfe0cb}
+  .forgot{text-align:right;margin:-4px 0 12px;font-size:13px}.forgot a{color:var(--sub);text-decoration:underline}
+  .upsheet .sub{color:var(--sub);font-size:13.5px;margin:0 0 12px}
   .demohint{margin-top:16px;font-size:12px;color:var(--sub);text-align:center;line-height:1.5}
   .demohint code{background:#f0efe9;padding:1px 6px;border-radius:5px;color:var(--accent);font-weight:700}
 
@@ -385,6 +388,7 @@
       </div>
       <div class="field"><label>Email</label><input id="f_email" type="email" autocomplete="email" required></div>
       <div class="field"><label>Password</label><input id="f_pw" type="password" autocomplete="current-password" required></div>
+      <div class="forgot" id="forgotRow"><a href="#" onclick="openForgot();return false;">Forgot password?</a></div>
       <div id="termsBlock" style="display:none">
         <div class="statenote" id="stateNotice">OffRamp gives you public record data on properties headed to foreclosure sale. It is information. It is not legal advice and we are not a broker or a foreclosure consultant. Some states restrict how and when you may contact an owner after a notice of default and what you may put in a contract with them. Oregon. Washington. California. Minnesota. Maryland. New York. Illinois. Colorado and others. Know the law in every state you work. You are responsible for your outreach.</div>
         <label class="fcheck" style="margin-top:8px"><input type="checkbox" id="f_terms"> I have read the <a href="/terms" target="_blank" rel="noopener">Terms</a> and the state notice and I agree.</label>
@@ -566,11 +570,62 @@ function setTab(t){
   document.getElementById('tabSignup').classList.toggle('on',!login);
   document.getElementById('nameField').style.display=login?'none':'block';
   document.getElementById('termsBlock').style.display=login?'none':'block';
+  document.getElementById('forgotRow').style.display=login?'block':'none';
   document.getElementById('authSubmit').textContent=login?'Log in':'Create account';
   document.getElementById('f_pw').autocomplete=login?'current-password':'new-password';
   document.getElementById('authForm').dataset.mode=t;
 }
 function authErr(m){ var e=document.getElementById('authMsg'); e.textContent=m; e.className='authmsg err'; }
+function authOk(m){ var e=document.getElementById('authMsg'); e.textContent=m; e.className='authmsg ok'; }
+/* ?next=<path>: where to go after login (gated /_folder/ pages link here). Same-origin relative paths only. */
+var NEXT=(function(){ var m=window.location.search.match(/[?&]next=([^&#]+)/); if(!m)return null; var n; try{ n=decodeURIComponent(m[1]); }catch(e){ return null; } return (/^\/(?![\/\\])[\x21-\x7e]{0,500}$/.test(n)&&n.indexOf('\\')<0)?n:null; })();
+var RESET_TOKEN=(function(){ var m=window.location.search.match(/[?&]reset=([A-Za-z0-9_\-.]+)/); return m?m[1]:null; })();
+function sheetMsg(id,m,ok){ var e=document.getElementById(id); if(!e)return; e.textContent=m; e.className='authmsg '+(ok?'ok':'err'); }
+function openForgot(){
+  var el=document.getElementById('upsheet'); if(!el){ el=document.createElement('div'); el.id='upsheet'; document.body.appendChild(el); }
+  var em=(document.getElementById('f_email').value||'').trim();
+  el.innerHTML='<div class="upsheet-bg" onclick="closeUpgradeSheet()"></div><div class="upsheet"><div class="grab"></div><div class="upt">Reset your password</div>'+
+    '<p class="sub">Enter your email. We will send a link that works once and expires in 30 minutes.</p>'+
+    '<div class="field"><label>Email</label><input id="fg_email" type="email" autocomplete="email" value="'+esc(em)+'"></div>'+
+    '<button class="btn-primary" id="fgBtn" onclick="sendForgot()">Send reset link</button>'+
+    '<div class="authmsg" id="fgMsg"></div>'+
+    '<button class="btn-ghost" onclick="closeUpgradeSheet()">Cancel</button></div>';
+  el.style.display='block';
+  setTimeout(function(){ var i=document.getElementById('fg_email'); if(i&&!i.value)i.focus(); },50);
+}
+function sendForgot(){
+  var em=(document.getElementById('fg_email').value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ sheetMsg('fgMsg','Enter a valid email.'); return; }
+  var b=document.getElementById('fgBtn'); b.disabled=true;
+  api('/api/auth/forgot',{method:'POST',body:{email:em}}).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+   .then(function(res){
+     if(res.ok){ sheetMsg('fgMsg','If that email has an account a reset link is on its way. Check your inbox.',true); b.style.display='none'; }
+     else { b.disabled=false; sheetMsg('fgMsg',res.j.error||'Something went wrong'); }
+   }).catch(function(){ b.disabled=false; sheetMsg('fgMsg','Network error'); });
+}
+function showResetSheet(){
+  var el=document.getElementById('upsheet'); if(!el){ el=document.createElement('div'); el.id='upsheet'; document.body.appendChild(el); }
+  el.innerHTML='<div class="upsheet-bg"></div><div class="upsheet"><div class="grab"></div><div class="upt">Choose a new password</div>'+
+    '<p class="sub">At least 8 characters.</p>'+
+    '<div class="field"><label>New password</label><input id="rs_pw" type="password" autocomplete="new-password"></div>'+
+    '<div class="field"><label>Type it again</label><input id="rs_pw2" type="password" autocomplete="new-password"></div>'+
+    '<button class="btn-primary" id="rsBtn" onclick="doReset()">Set new password</button>'+
+    '<div class="authmsg" id="rsMsg"></div>'+
+    '<button class="btn-ghost" onclick="closeUpgradeSheet();openForgot()">Request a new link</button></div>';
+  el.style.display='block';
+}
+function doReset(){
+  var p1=document.getElementById('rs_pw').value, p2=document.getElementById('rs_pw2').value;
+  if(p1.length<8){ sheetMsg('rsMsg','Use at least 8 characters.'); return; }
+  if(p1!==p2){ sheetMsg('rsMsg','The two passwords do not match.'); return; }
+  var b=document.getElementById('rsBtn'); b.disabled=true;
+  api('/api/auth/reset',{method:'POST',body:{token:RESET_TOKEN,password:p1}}).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+   .then(function(res){
+     if(!res.ok){ b.disabled=false; sheetMsg('rsMsg',res.j.error||'Something went wrong'); return; }
+     RESET_TOKEN=null; try{ history.replaceState(null,'','/app/'); }catch(e){}
+     closeUpgradeSheet(); ME=res.j.user; toast('Your password is set.'); enterApp();
+   }).catch(function(){ b.disabled=false; sheetMsg('rsMsg','Network error'); });
+}
 function doAuth(ev){
   ev.preventDefault();
   var mode=document.getElementById('authForm').dataset.mode||'login';
@@ -593,7 +648,7 @@ function acceptTerms(){
   if(!document.getElementById('g_terms').checked){ toast('Please check the box'); return; }
   api('/api/auth/accept-terms',{method:'POST',body:{}}).then(function(r){ if(r.ok){ ME.terms_accepted=true; closeUpgradeSheet(); enterApp(); } else toast('Could not save'); }).catch(function(){ toast('Network error'); });
 }
-function ssoLogin(p){ window.location.href='/api/auth/sso?provider='+p; }
+function ssoLogin(p){ window.location.href='/api/auth/sso?provider='+p+(NEXT?'&next='+encodeURIComponent(NEXT):''); }
 function doLogout(){ api('/api/auth/logout',{method:'POST'}).then(function(){location.reload();}); }
 function doUpgrade(plan){
   fetch('/api/billing/checkout-link',{method:'POST',credentials:'include',
@@ -606,6 +661,7 @@ function doUpgrade(plan){
 /* ---------- boot ---------- */
 function enterApp(){
   if(ME&&ME.terms_accepted===false){ showTermsGate(); return; }
+  if(NEXT){ var n=NEXT; NEXT=null; window.location.replace(n); return; }
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('shell').classList.remove('hidden');
   renderHeader();
@@ -1438,8 +1494,9 @@ function doExport(){
 
 /* ---------- boot ---------- */
 api('/api/me').then(function(r){ if(r.ok)return r.json(); throw 0; })
- .then(function(j){ ME=j.user; enterApp(); })
+ .then(function(j){ ME=j.user; if(RESET_TOKEN){ showResetSheet(); return; } enterApp(); })
  .catch(function(){
+   if(RESET_TOKEN){ showResetSheet(); return; }
    if(/[?&]signup=1\b/.test(window.location.search)) setTab('signup');
    var co=(window.location.search.match(/[?&]checkout=(pro|premium|trial)\b/)||[])[1]; if(co){ window.PENDING_CHECKOUT=co; }
  });

@@ -11,6 +11,8 @@ redirects keep working) PLUS a real application API:
     POST /api/auth/signup   {email,password,full_name}
     POST /api/auth/login    {email,password}
     POST /api/auth/logout
+    POST /api/auth/forgot   {email}            (always 200; emails a signed 30-min single-use link)
+    POST /api/auth/reset    {token,password}
     GET  /api/auth/sso?provider=google|apple   (demo SSO stub -> real OAuth is a config flip)
     GET  /api/me
 
@@ -26,7 +28,7 @@ Plans:
     free : 100 lookups/mo, no skip-trace, no export
     pro  : 2000 lookups/mo, 250 skip-traces/mo, CSV export <= 2000 rows
 """
-import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets
+import json, os, re, io, csv, time, hmac, base64, hashlib, secrets as _secrets, posixpath
 import functools, sys, threading, urllib.request, urllib.error, urllib.parse
 import seo_pages
 sys.path.insert(0, "/home/cortextos/cortextos/services/lib")
@@ -105,6 +107,42 @@ DOC_PULL_PRICE = STRIPE_IDS.get("price_doc_pull") or "price_1UMbjiLq4QlEucPyj798
 DOC_PULL_DOCS = {"mortgage": "Recorded mortgage", "nod": "Notice of default",
                  "lis_pendens": "Lis pendens", "bankruptcy": "Bankruptcy petition"}
 DOC_PULL_ADMIN = "ted@americahomerestoration.com"
+
+# ------------------------- security hardening (2026-10-03) --------------------
+# Canonical origin for links we put in email (never trust the Host header for that).
+APP_ORIGIN = (os.environ.get("OFFRAMP_ORIGIN", "").strip() or "https://offramprei.com").rstrip("/")
+RESET_TTL = 30 * 60   # password-reset links live 30 minutes and die on first use
+
+# Login gate for the static deliverable folders (/_<name>/...: mockups, reports, drafts).
+# Everything under a top-level "_" folder is admin-only unless the folder is listed in
+# public_folders.json (array of folder names, re-read every 30s so no restart is needed).
+# ALWAYS_GATED wins over the allowlist.
+PUBLIC_FOLDERS_PATH = os.path.join(DIR, "public_folders.json")
+ALWAYS_GATED = {"_uat-report-4d1f", "_api-credits-7c2e", "_serial-buyers-2026-10-03-9b4e", "__pycache__"}
+
+# Response headers on every response. CSP ships REPORT-ONLY first (launch weekend): flip
+# CSP_REPORT_ONLY to False once /api/csp-report stays quiet. One string so the switch is a
+# one-liner. Origins reflect what the shell + public pages really load: Leaflet from unpkg,
+# OSM tiles + listing photos as <img>, Google Fonts on the public pages, Google Maps embeds
+# in two marketing pages. Inline handlers/styles are everywhere, hence 'unsafe-inline'.
+CSP = ("default-src 'self'; "
+       "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+       "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; "
+       "font-src 'self' data: https://fonts.gstatic.com; "
+       "img-src 'self' data: blob: https:; "
+       "connect-src 'self'; "
+       "frame-src https://www.google.com; "
+       "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; "
+       "report-uri /api/csp-report")
+CSP_REPORT_ONLY = True
+SECURITY_HEADERS = [
+    ("Strict-Transport-Security", "max-age=31536000; includeSubDomains"),
+    ("X-Content-Type-Options", "nosniff"),
+    ("X-Frame-Options", "DENY"),   # nothing embeds the site: the iOS wrapper is a WebView, the two <iframe>s are outbound maps
+    ("Referrer-Policy", "strict-origin-when-cross-origin"),
+    ("Permissions-Policy", "camera=(), microphone=(), geolocation=()"),   # the map is address-pinned; no getCurrentPosition anywhere in app/
+    (("Content-Security-Policy-Report-Only" if CSP_REPORT_ONLY else "Content-Security-Policy"), CSP),
+]
 
 # on-disk cache for proxied property imagery (Street View / satellite)
 PHOTO_CACHE = os.path.join(DIR, "cache", "photos")
@@ -336,6 +374,72 @@ def read_state(token):
         return d
     except Exception:
         return None
+
+
+_SAFE_NEXT = re.compile(r"^/(?![/\\])[\x21-\x7e]{0,500}$")
+def _safe_next(s):
+    """Same-origin relative path only (no //host, no backslash, no control chars)."""
+    s = (s or "").strip()
+    return s if _SAFE_NEXT.match(s) and "\\" not in s else ""
+
+
+def _pw_fingerprint(u):
+    return hashlib.sha256((u.get("password_hash") or "").encode()).hexdigest()[:16]
+
+
+def make_reset_token(u):
+    # Signed with SESSION_SECRET under its own HMAC domain ("reset:") so a reset token can never
+    # be replayed as a session cookie. "ph" pins it to the current password hash: once the
+    # password changes the token is dead, which makes it single-use without a DB table.
+    payload = json.dumps({"k": "reset", "uid": str(u["id"]), "ph": _pw_fingerprint(u),
+                          "exp": int(time.time()) + RESET_TTL}).encode()
+    sig = hmac.new(SESSION_SECRET, b"reset:" + payload, hashlib.sha256).digest()
+    return f"{_b64u(payload)}.{_b64u(sig)}"
+
+
+def read_reset_token(token):
+    try:
+        p_b64, sig_b64 = token.split(".")
+        payload = _b64u_dec(p_b64)
+        expected = hmac.new(SESSION_SECRET, b"reset:" + payload, hashlib.sha256).digest()
+        if not hmac.compare_digest(expected, _b64u_dec(sig_b64)):
+            return None
+        d = json.loads(payload)
+        if d.get("k") != "reset" or d.get("exp", 0) < time.time():
+            return None
+        return d
+    except Exception:
+        return None
+
+
+_PUBLIC_FOLDERS = {"at": 0.0, "val": frozenset()}
+def public_folders():
+    now = time.time()
+    if now - _PUBLIC_FOLDERS["at"] > 30:
+        try:
+            with open(PUBLIC_FOLDERS_PATH) as f:
+                names = json.load(f)
+            _PUBLIC_FOLDERS["val"] = frozenset(n for n in names if isinstance(n, str))
+        except Exception as ex:   # missing/broken allowlist = everything stays gated
+            print(f"[gate] public_folders.json unreadable, failing closed: {ex}", flush=True)
+            _PUBLIC_FOLDERS["val"] = frozenset()
+        _PUBLIC_FOLDERS["at"] = now
+    return _PUBLIC_FOLDERS["val"]
+
+
+def gated_folder(route):
+    """Return the top-level '_' folder name a request falls under when it needs the admin gate, else None."""
+    try:
+        # decode %5F etc, collapse //, resolve ../ -- then look at the first segment
+        clean = posixpath.normpath("/" + urllib.parse.unquote(route).lstrip("/"))
+    except Exception:
+        return "_"
+    first = clean.split("/")[1] if len(clean) > 1 else ""
+    if not first.startswith("_"):
+        return None
+    if first in ALWAYS_GATED or first not in public_folders():
+        return first
+    return None
 
 
 def google_exchange_code(code, redirect_uri):
@@ -1199,6 +1303,8 @@ class Handler(SimpleHTTPRequestHandler):
         pth = self.path.split("?")[0]
         if pth in ("/app/", "/app/index.html", "/app/sw.js", "/app/manifest.json"):
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        for k, v in SECURITY_HEADERS:
+            self.send_header(k, v)
         super().end_headers()
     # ---- helpers ----
     def _json(self, code, obj, extra_headers=None):
@@ -1257,6 +1363,46 @@ class Handler(SimpleHTTPRequestHandler):
     def _clear_cookie(self):
         return ("Set-Cookie", "offramp_sess=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax")
 
+    def _gate(self, route):
+        """Admin-only gate for /_<folder>/... . Returns True when the response has been sent."""
+        folder = gated_folder(route)
+        if not folder:
+            return False
+        u = self._current_user()
+        if u and u.get("email") == DOC_PULL_ADMIN:
+            return False
+        nxt = _safe_next(route) or "/"
+        if u:
+            code, title, body = 403, "This page is private", (
+                "<p>Your account cannot open it.</p>"
+                "<a class=\"btn\" href=\"/app/\">Back to the app</a>")
+        else:
+            code, title, body = 401, "Sign in to view this page", (
+                "<p>This page is for the account owner.</p>"
+                f"<a class=\"btn\" href=\"/app/?next={urllib.parse.quote(nxt, safe='')}\">Sign in</a>")
+        page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>{title} - OffRamp REI</title>
+<style>body{{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F6F5F1;color:#15221B;font-family:-apple-system,Segoe UI,Arial,sans-serif}}
+.card{{background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-width:380px;width:calc(100% - 32px);padding:28px;text-align:center}}
+.brand{{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:18px;margin-bottom:14px}}.brand img{{width:28px;height:28px}}.brand span{{color:#5C6B62;font-weight:600}}
+h1{{font-size:20px;margin:0 0 8px}}p{{color:#5C6B62;font-size:14px;margin:0 0 18px}}
+.btn{{display:inline-block;background:#1B4332;color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px;font-size:15px}}</style></head>
+<body><div class="card"><div class="brand"><img src="/brand/mark_ramp.png" alt="">OffRamp <span>REI</span></div><h1>{title}</h1>{body}</div></body></html>"""
+        data = page.encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "private, no-store")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
+        return True
+
+    def do_HEAD(self):
+        if self._gate(self.path.split("?")[0]):
+            return
+        return super().do_HEAD()
+
     # ---- GET ----
     def do_GET(self):
         route = self.path.split("?")[0]
@@ -1269,6 +1415,8 @@ class Handler(SimpleHTTPRequestHandler):
         elif seo_pages.serve(self, route, qs):
             return
         if not route.startswith("/api/"):
+            if self._gate(route):   # /_<folder>/ deliverables are admin-only unless allowlisted
+                return
             if route in ("/app", "/app/", "/app/index.html"):
                 funnel("app_open", user_id=self._session_uid(), handler=self)
             return super().do_GET()
@@ -1321,7 +1469,11 @@ class Handler(SimpleHTTPRequestHandler):
                         or self.headers.get("Host") or "offramprei.com")
                 host = host.split(",")[0].strip()
                 redirect_uri = f"https://{host}/api/auth/google/callback"
-                state = sign_state({"n": _secrets.token_hex(8), "ru": redirect_uri})
+                st_payload = {"n": _secrets.token_hex(8), "ru": redirect_uri}
+                nxt = _safe_next((qs.get("next") or [""])[0])
+                if nxt:
+                    st_payload["next"] = nxt
+                state = sign_state(st_payload)
                 params = urllib.parse.urlencode({
                     "client_id": GOOGLE_OAUTH_CID, "redirect_uri": redirect_uri,
                     "response_type": "code", "scope": "openid email profile",
@@ -1383,7 +1535,7 @@ class Handler(SimpleHTTPRequestHandler):
                body={"last_login_at": datetime.now(timezone.utc).isoformat(),
                      "sso_provider": "google"}, headers={"Prefer": "return=minimal"})
             self.send_response(302)
-            self.send_header("Location", "/app/")
+            self.send_header("Location", _safe_next(st.get("next") or "") or "/app/")
             k, v = self._set_session_cookie(u["id"], u["email"])
             self.send_header(k, v)
             self.end_headers()
@@ -1533,6 +1685,25 @@ class Handler(SimpleHTTPRequestHandler):
             except OSError:
                 pass
             return self._json(200, {"flushed": n, "sitemap_cleared": True})
+
+        if route == "/api/csp-report":
+            # Browser CSP violation reports (report-only phase). One log line each, body capped, never fails.
+            try:
+                n = min(int(self.headers.get("Content-Length", 0)), 8192)
+                raw = self.rfile.read(n).decode(errors="replace") if n > 0 else ""
+                r = json.loads(raw or "{}")
+                r = r.get("csp-report") or r   # legacy report-uri wrapper vs reporting-api shape
+                if isinstance(r, list):
+                    r = (r[0] or {}).get("body", {}) if r else {}
+                print(f"[csp] doc={str(r.get('document-uri') or r.get('documentURL') or '')[:120]} "
+                      f"blocked={str(r.get('blocked-uri') or r.get('blockedURL') or '')[:160]} "
+                      f"directive={str(r.get('violated-directive') or r.get('effectiveDirective') or '')[:60]}", flush=True)
+            except Exception:
+                pass
+            self.send_response(204)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
 
         if route == "/api/stripe/webhook":
             n = int(self.headers.get("Content-Length", 0))
@@ -1779,6 +1950,49 @@ class Handler(SimpleHTTPRequestHandler):
                body={"last_login_at": datetime.now(timezone.utc).isoformat()},
                headers={"Prefer": "return=minimal"})
             return self._json(200, {"user": public_user(ensure_period(u))},
+                              extra_headers=[self._set_session_cookie(u["id"], u["email"])])
+
+        if route == "/api/auth/forgot":
+            # Always 200 so nobody can probe which emails have accounts. Same per-IP throttle as the lead forms.
+            if throttled(_client_ip(self)):
+                return self._json(429, {"error": "too many requests"})
+            data = self._body()
+            if data is None:
+                return self._json(400, {"error": "bad request"})
+            email = (data.get("email") or "").strip().lower()[:160]
+            if not EMAIL_RE.match(email):
+                return self._json(400, {"error": "valid email required"})
+            def _send(em=email):
+                try:
+                    u = get_user_by_email(em)
+                    if not u:
+                        return
+                    link = f"{APP_ORIGIN}/app/?reset={make_reset_token(u)}"
+                    send_reset_email(em, link)
+                    print(f"[reset] link sent to {em}", flush=True)
+                except Exception as ex:
+                    print(f"[reset] forgot error: {ex}", flush=True)
+            threading.Thread(target=_send, daemon=True).start()   # off the request thread: equal timing either way
+            return self._json(200, {"ok": True})
+
+        if route == "/api/auth/reset":
+            if throttled(_client_ip(self)):
+                return self._json(429, {"error": "too many requests"})
+            data = self._body()
+            if data is None:
+                return self._json(400, {"error": "bad request"})
+            pw = data.get("password") or ""
+            if len(pw) < 8:
+                return self._json(400, {"error": "Use at least 8 characters."})
+            tok = read_reset_token(str(data.get("token") or ""))
+            u = get_user_by_id(urllib.parse.quote(str(tok["uid"]))) if tok else None
+            if not u or not hmac.compare_digest(tok["ph"], _pw_fingerprint(u)):
+                return self._json(400, {"error": "That link has expired or was already used. Request a new one."})
+            sb("PATCH", f"/offramp_users?id=eq.{urllib.parse.quote(str(u['id']))}",
+               body={"password_hash": hash_pw(pw), "last_login_at": datetime.now(timezone.utc).isoformat()},
+               headers={"Prefer": "return=minimal"})
+            print(f"[reset] password set for {u['email']}", flush=True)
+            return self._json(200, {"user": public_user(ensure_period(get_user_by_id(u["id"]) or u))},
                               extra_headers=[self._set_session_cookie(u["id"], u["email"])])
 
         if route == "/api/auth/logout":
@@ -2126,16 +2340,11 @@ def is_unsubscribed(email):
         return False
 
 
-def send_welcome(first, email):
-    if not RESEND_KEY or is_unsubscribed(email):
+def _send_email(to, subject, html, tag="email"):
+    """Transactional send through the mail API (the same path the welcome email uses)."""
+    if not RESEND_KEY:
         return False
-    html = f"""<div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1b2b22">
-<h2 style="color:#1B4332">Welcome to OffRamp REI, {first}.</h2>
-<p>You're in. OffRamp surfaces every upcoming auction, pre-foreclosure, and probate in your market — with verified equity and skip-traced owner contact on every lead.</p>
-<p><a href="https://offramprei.com/learn" style="background:#1B4332;color:#fff;padding:11px 20px;border-radius:8px;text-decoration:none;display:inline-block">Open the Learn hub &rarr;</a></p>
-<p>&mdash; The OffRamp REI team</p></div>"""
-    body = {"from": FROM, "to": [email],
-            "subject": "You're in — welcome to OffRamp REI", "html": html}
+    body = {"from": FROM, "to": [to], "subject": subject, "html": html}
     try:
         req = urllib.request.Request("https://api.resend.com/emails",
             data=json.dumps(body).encode(),
@@ -2144,8 +2353,30 @@ def send_welcome(first, email):
         with urllib.request.urlopen(req, timeout=30):
             return True
     except Exception as e:
-        print(f"[signup] welcome-email deferred: {e}")
+        print(f"[{tag}] email deferred: {e}")
         return False
+
+
+def send_reset_email(email, link):
+    html = f"""<div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1b2b22">
+<h2 style="color:#1B4332">Reset your OffRamp password</h2>
+<p>Someone asked to reset the password for this account. If that was you tap the button.</p>
+<p><a href="{link}" style="background:#1B4332;color:#fff;padding:11px 20px;border-radius:8px;text-decoration:none;display:inline-block">Choose a new password</a></p>
+<p>The link works once. It expires in 30 minutes.</p>
+<p>If this was not you ignore this email. Your password stays the same.</p>
+<p>&mdash; The OffRamp REI team</p></div>"""
+    return _send_email(email, "Reset your OffRamp password", html, tag="reset")
+
+
+def send_welcome(first, email):
+    if not RESEND_KEY or is_unsubscribed(email):
+        return False
+    html = f"""<div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1b2b22">
+<h2 style="color:#1B4332">Welcome to OffRamp REI, {first}.</h2>
+<p>You're in. OffRamp surfaces every upcoming auction, pre-foreclosure, and probate in your market — with verified equity and skip-traced owner contact on every lead.</p>
+<p><a href="https://offramprei.com/learn" style="background:#1B4332;color:#fff;padding:11px 20px;border-radius:8px;text-decoration:none;display:inline-block">Open the Learn hub &rarr;</a></p>
+<p>&mdash; The OffRamp REI team</p></div>"""
+    return _send_email(email, "You're in — welcome to OffRamp REI", html, tag="signup")
 
 
 if __name__ == "__main__":
