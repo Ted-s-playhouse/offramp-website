@@ -568,7 +568,8 @@ function money(n){ if(n===null||n===undefined||n==='')return '—'; var x=Number
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(function(){t.style.display='none';},2600); }
 function api(path,opts){ opts=opts||{}; opts.credentials='include'; if(opts.body&&typeof opts.body!=='string'){opts.headers=Object.assign({'Content-Type':'application/json'},opts.headers||{});opts.body=JSON.stringify(opts.body);} return fetch(path,opts); }
-function fullAddr(r){ return [r.property_street,r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '); }
+function cleanStreet(s){ return (s||'').replace(/\s*\(DUP-MERGED\)\s*/gi,'').trim(); }
+function fullAddr(r){ return [cleanStreet(r.property_street),r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '); }
   function photoUrl(r){
     if(r.photo_url) return r.photo_url;
     var a=fullAddr(r);
@@ -840,8 +841,6 @@ function search(){
     var seen={}; enriched.forEach(function(r){ seen[((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase()]=1; });
     var extra=national.filter(function(r){ var k=((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase(); if(seen[k])return false; seen[k]=1; return true; });
     ROWS=enriched.concat(extra);
-    var _minEq=parseInt((document.getElementById('fEqPct').value||''),10)||0;
-    if(_minEq>0){ROWS=ROWS.filter(function(r){var _eq=equityView(r);return !_eq.unv&&_eq.pct!=null&&_eq.pct>=_minEq;});}
     renderList(); if(MAP)renderPins(); prefetchLeaflet();
     var where=STATE?(STATE_NAMES[STATE]||STATE):'all states';
     document.getElementById('countLine').textContent=ROWS.length?(ROWS.length+' deals in '+where+(enriched.length&&extra.length?' · '+enriched.length+' with owner data':'')):'';
@@ -884,7 +883,7 @@ function renderList(){
     return '<div class="lead" onclick="openDetail('+i+')">'+
       '<div class="top">'+thumb+
         '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
-          '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
+          '<div class="street">'+esc(cleanStreet(r.property_street)||'No address')+'</div>'+
           '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+'</div></div>'+
         '<div class="right"><div class="eq'+(equityView(r).unv?' eq-unv':'')+'">'+(equityView(r).unv?'n/a':(equityView(r).pct!=null?equityView(r).pct+'%':'—'))+'</div><div class="eqk">'+(equityView(r).unv?'equity unverified':'equity')+'</div>'+
           '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
@@ -986,7 +985,7 @@ function detailHeadHtml(r){
     '<div class="dhead">'+
       '<button class="dback" onclick="closeDetail()">‹ Back</button>'+
       '<div class="owner">'+esc(owner)+'</div>'+
-      '<div class="street">'+esc(r.property_street||'No address')+'</div>'+
+      '<div class="street">'+esc(cleanStreet(r.property_street)||'No address')+'</div>'+
       '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
       '<div class="badges">'+hbadges+occupancyChip(r)+basicsChips(r)+'</div>'+
       '<div class="dkv">'+
@@ -1074,7 +1073,8 @@ function equityView(r){  // Ted 2026-10-03 (two screenshots): equity must net EV
   var v=Number(r.avm||r.market_value||0), tot=lienTotal(r), mb=Number(r.mortgage_balance||0), first=Number(r.lien_first_amount||0);
   var hasLiens=(r.lien_count>0&&tot>0);
   if(hasLiens&&v>0&&tot>=v)return {unv:false,neg:true,why:'',pct:Math.round((v-tot)/v*100),dollars:Math.round(v-tot),net:true};  // Ted 2026-10-03: liens over value = negative equity. Show the number. n/a is only for a lien we cannot verify.
-  if(r.equity_unverified)return {unv:true,why:'',pct:null,dollars:null,net:false};
+  if(r.equity_unverified&&r.equity_pct==null)return {unv:true,why:'',pct:null,dollars:null,net:false};
+  if(r.equity_unverified)return {unv:false,why:'',pct:Math.round(Number(r.equity_pct)),dollars:(r.equity_dollars!=null?Number(r.equity_dollars):null),net:false};
   var agree=hasLiens&&mb>0&&first>0&&Math.abs(mb-first)<=first*0.02;
   if(hasLiens&&!agree&&mb>0&&tot>mb*1.15)return {unv:true,why:'Recorded liens exceed the loan balance on file. A blanket or commercial loan may cover more than this property.',pct:null,dollars:null,net:false};
   if(hasLiens&&v>0&&tot>mb){ var d=v-tot; return {unv:false,why:'',pct:Math.round(d/v*100),dollars:Math.round(d),net:true}; }  // net of all liens, not just the first
@@ -1259,24 +1259,24 @@ function loanRows(r,paid,prem){  // Ted 2026-10-03: super simple. Free = equity 
   var terms=[r.mortgage_loan_type,(r.mortgage_interest_rate!=null?pct(r.mortgage_interest_rate):''),(r.mortgage_recording_date?'recorded '+fmtDate(r.mortgage_recording_date):''),(r.mortgage_maturity_date?'matures '+fmtDate(r.mortgage_maturity_date):'')].filter(Boolean).join(' · ');
   var pay=agree?estPayment(r):null;
   var rows=[
-    unv?line('Equity','Unverified'):(ev.pct!=null?line('Equity',ev.pct+'%'+(ev.neg?' · negative':'')):''),
+    unv?line('Equity','Unverified'):line('Equity',ev.pct!=null?(ev.pct+'%'+(ev.neg?' · negative':'')):'—'),
     lineIf('Value',(r.avm||r.market_value)!=null?money(r.avm||r.market_value):''),
     (r.mls_active===true||r.mls_status)?line('Listed',r.mls_list_price?('On MLS · '+money(r.mls_list_price)):'On MLS'):'',
     hasLiens?line('First mortgage',(r.lien_first_lender||'Lender not on record')+(first>0?' · '+money(first):'')):lineIf('Mortgage',mb>0?((r.mortgage_lender?r.mortgage_lender+' · ':'')+money(mb)):''),
     lineIf('Second mortgage',(r.lien_second_amount&&!dupLien(r))?money(r.lien_second_amount):''),
-    (hasLiens&&lienCount(r)>1&&lienTotal(r))?line('Total debt',money(lienTotal(r))):'',
+    (hasLiens&&lienCount(r)>1&&lienTotal(r)&&(prem||(!r.tax_lien&&!r.judgment_flag&&(r.lien_count||0)<=2)))?line('Total debt',money(lienTotal(r))):'',
     lineIf('Mortgages',(r.lien_count===0)?'None recorded':''),
     r.reverse_mortgage===true?line('Reverse mortgage','Yes'):'',
     paid?lineIf('Equity $',(ev.dollars!=null&&!unv)?(ev.dollars<0?'-'+money(-ev.dollars):money(ev.dollars)):''):lockedRow('Equity $','pro'),
     paid?(pay?line('Est. payment',money(pay)+' /mo'):''):lockedRow('Est. payment','pro')
   ];
-  if(prem){  // Ted 2026-10-03: everybody gets lien + value + listed + deceased basics; Premium keeps the rest
+  rows.push(lineIf('More mortgages',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''));
+  if(prem){
     rows=rows.concat([
-      lineIf('More mortgages',(r.lien_count>2)?((r.lien_count-2)+' more on record'):''),
       lineIf('Tax lien',r.tax_lien?'Yes':''),
       lineIf('Judgment',r.judgment_flag?'Yes':'')
     ]);
-  } else if(r.lien_count>2||r.tax_lien||r.judgment_flag){
+  } else if(r.tax_lien||r.judgment_flag){
     rows.push(lockedRow('Judgments & tax liens','premium'));
   }
   return rows;

@@ -823,7 +823,7 @@ def property_facts(row, live_ok):
         payload, src2 = reapi_lookup(addr)
         if payload is None:
             return None, src2
-        src, when = "live", datetime.date.today().isoformat()
+        src, when = "live", str(datetime.now().date())
     d = payload.get("data") if isinstance(payload, dict) and isinstance(payload.get("data"), dict) else payload
     if not isinstance(d, dict):
         return None, "bad-payload"
@@ -832,7 +832,7 @@ def property_facts(row, live_ok):
     if row.get("lien_count") is None and row.get("id"):
         try:
             liens = liens_from_detail(d)
-            sb("PATCH", f"/hit_list?id=eq.{urllib.parse.quote(str(row['id']))}", body=dict(liens, updated_at=datetime.datetime.now(datetime.timezone.utc).isoformat()),
+            sb("PATCH", f"/hit_list?id=eq.{urllib.parse.quote(str(row['id']))}", body=dict(liens, updated_at=datetime.now(timezone.utc).isoformat()),
                headers={"Prefer": "return=minimal"})
         except Exception as e:
             print(f"[facts] jit lien write failed: {e}")
@@ -1082,6 +1082,36 @@ def tier_allows(u, tier):
     if tier == "pro":
         return u is None or is_paid(u)
     return u is None or has_premium(u)
+
+
+def _client_equity_pct(r):
+    """Replicate equityView() from index.html so the filter matches the card display.
+    Returns the pct the card would show, or None when the card would show 'n/a' (unverified)."""
+    v = float(r.get('avm') or r.get('market_value') or 0)
+    lc = r.get('lien_count') or 0
+    lf = float(r.get('lien_first_amount') or 0)
+    ls = float(r.get('lien_second_amount') or 0)
+    lt = float(r.get('lien_total_amount') or 0)
+    mb = float(r.get('mortgage_balance') or 0)
+    dup = lc >= 2 and lf > 0 and ls > 0 and lf == ls  # identical amounts = double recording (Ted 2026-10-03)
+    tot = lf if dup else lt
+    has_liens = lc > 0 and tot > 0
+    # negative equity: liens >= AVM — show the negative number (equityView line 1074)
+    if has_liens and v > 0 and tot >= v:
+        return round((v - tot) / v * 100)
+    # DB-flagged unverified (equityView line 1075)
+    if r.get('equity_unverified'):
+        return None
+    # client-side unverified: liens don't agree with mortgage balance (equityView line 1076-1077)
+    agree = has_liens and mb > 0 and lf > 0 and abs(mb - lf) <= lf * 0.02
+    if has_liens and not agree and mb > 0 and tot > mb * 1.15:
+        return None  # card shows 'n/a'
+    # net of all liens (equityView line 1078)
+    if has_liens and v > 0 and tot > mb:
+        return round((v - tot) / v * 100)
+    # fall back to DB value (equityView line 1079)
+    ep = r.get('equity_pct')
+    return round(float(ep)) if ep is not None else None
 
 
 def build_search_query(qs, limit, u=None, cols=SEARCH_COLS):
@@ -1787,6 +1817,10 @@ h1{{font-size:20px;margin:0 0 8px}}p{{color:#5C6B62;font-size:14px;margin:0 0 18
                 rows = sb("GET", path)
             except urllib.error.HTTPError as e:
                 return self._json(500, {"error": e.read().decode()[:200]})
+            meq = (qs.get("min_equity_pct") or [""])[0].strip()
+            if meq.isdigit() and "min_equity_pct" not in ignored:
+                meq_int = int(meq)
+                rows = [r for r in rows if _client_equity_pct(r) is not None and _client_equity_pct(r) >= meq_int]
             out = [gate_row(u, r) for r in rows]
             return self._json(200, {"count": len(out), "results": out, "plan": u["plan"],
                                     "paid": is_paid(u), "premium": has_premium(u), "ignored_filters": ignored})
@@ -1823,6 +1857,8 @@ h1{{font-size:20px;margin:0 0 8px}}p{{color:#5C6B62;font-size:14px;margin:0 0 18
             pid = (qs.get("id") or [""])[0]
             if not pid:
                 return self._json(400, {"error": "id required"})
+            if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', pid):
+                return self._json(200, {"facts": None, "source": "no-uuid"})
             rows = sb("GET", f"/hit_list?select=id,addr_key,property_street,property_city,property_state,property_zip,lien_count&id=eq.{pid}&limit=1")
             if not rows:
                 return self._json(404, {"error": "not found"})
