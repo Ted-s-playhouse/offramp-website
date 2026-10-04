@@ -344,7 +344,7 @@
   .docbtn[disabled]{opacity:.6;cursor:default}
   .dochint{font-size:12px;color:var(--sub);line-height:1.4;padding:8px 2px 4px}
   .revealbtn.inline{display:inline-block;width:auto;padding:6px 10px;font-size:12px;margin-left:8px}
-  #upsheet{display:none;position:fixed;inset:0;z-index:60}
+  #upsheet{display:none;position:fixed;inset:0;z-index:80}
   .upsheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
   .upsheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg,#fff);border-radius:18px 18px 0 0;padding:10px 16px calc(24px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto}
   .upsheet .grab{width:40px;height:4px;border-radius:2px;background:#ccc;margin:0 auto 12px}.upt{font-weight:800;font-size:16px;margin:4px 0 10px}
@@ -817,7 +817,10 @@ function search(){
     if(res[0].ignored_filters&&res[0].ignored_filters.length){ toast('Some filters need '+(ME&&ME.paid?'Premium':'Pro')+' — ignored'); }
     var seen={}; enriched.forEach(function(r){ seen[((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase()]=1; });
     var extra=national.filter(function(r){ var k=((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase(); if(seen[k])return false; seen[k]=1; return true; });
-    ROWS=enriched.concat(extra); renderList(); if(MAP)renderPins();
+    ROWS=enriched.concat(extra);
+    var _minEq=parseInt((document.getElementById('fEqPct').value||''),10)||0;
+    if(_minEq>0){ROWS=ROWS.filter(function(r){var _eq=equityView(r);return !_eq.unv&&_eq.pct!=null&&_eq.pct>=_minEq;});}
+    renderList(); if(MAP)renderPins();
     var where=STATE?(STATE_NAMES[STATE]||STATE):'all states';
     document.getElementById('countLine').textContent=ROWS.length?(ROWS.length+' deals in '+where+(enriched.length&&extra.length?' · '+enriched.length+' with owner data':'')):'';
   });
@@ -934,7 +937,7 @@ function openDetail(i){
   var contactRows='<div id="contacts"></div>';
   if(!paid){ contactRows=lockedRow('Phone','pro')+lockedRow('Email','pro')+lockedRow('Next of kin','pro'); }
   else if(!prem){ contactRows+=lockedRow('Next of kin','premium'); }
-  else { contactRows+=(r.next_of_kin?line('Next of kin',r.next_of_kin):'<div class="rowline"><span class="k">Next of kin</span><span class="v empty-v">None on file</span></div>'); }
+  else { contactRows+=(r.next_of_kin?line('Next of kin',nokStr(r.next_of_kin)):'<div class="rowline"><span class="k">Next of kin</span><span class="v empty-v">None on file</span></div>'); }
 
   var maplinks='<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>';
   var rbF=rampBid(r);
@@ -997,11 +1000,15 @@ function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)retur
   var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
   return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
 function trusteeLive(r){ var v=r.sale_verified_source||''; return !!(v && !/realestateapi/i.test(v) && /^(active|scheduled|live)$/i.test(r.sale_status_verified||'')); }
+function nokStr(v){ if(!v)return ''; if(typeof v==='object')return v.name||v.full_name||v.relationship||JSON.stringify(v); return String(v); }
 function statusLabel(r){ if(r.surplus_amount!=null&&r.surplus_amount!=='')return 'Sold';  // Ted 2026-10-03: surplus rows are past-sale
   var st=(r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,'');  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
   if(/^postponed/i.test(st))return 'Postponed';                       // Ted 2026-10-03: plain Postponed tag; dates go to the 'Sale moved' line
   if(/cured|reinstat|cancel/i.test(st)){ return trusteeLive(r)?'Scheduled':'Cured'; }  // Ted 2026-10-03: a trustee-verified live sale beats stale feed text; a real cure is a red stop sign
   if(r.auction_date&&(!st||/pre.?foreclosure|notice of|^foreclosure$/i.test(st)))return 'Scheduled';  // dated row = scheduled, whatever the feed called it
+  if(/^SALE_PENDING_CLEARED$/i.test(st))return 'Cured';
+  if(/^SALE_PENDING$|^AUCTION_IN_PROGRESS$/i.test(st))return 'Scheduled';
+  if(!st||!/^(Scheduled|Postponed|Cured|Sold)$/.test(st))return '';
   return st; }
 function dupLien(r){ return !!(r.lien_count>=2&&r.lien_first_amount!=null&&r.lien_second_amount!=null&&Number(r.lien_first_amount)===Number(r.lien_second_amount)); }  // Ted 2026-10-03 rule: identical first and second = a double recording, count it once
 function lienTotal(r){ var t=Number(r.lien_total_amount||0); if(dupLien(r))return Number(r.lien_first_amount)||t; return t; }
@@ -1225,7 +1232,7 @@ function lienTile(r){  // Ted 2026-10-03: in this industry a mortgage is a mortg
   return '<div class="vtile flag"><div class="ico">&#9873;</div><div><div class="title">Liens</div><div class="word">'+esc(items.join(' + ').toUpperCase())+'</div><div class="proof">On the county record. Paid before the owner sees a dime.</div></div></div>';
 }
 function nokTile(r){
-  if(r.next_of_kin)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Next of kin</div><div class="word">ON FILE</div><div class="detail">'+esc(r.next_of_kin)+'</div><div class="proof">Family and relative records for the owner.</div></div></div>';
+  if(r.next_of_kin)return '<div class="vtile clear"><div class="ico">&#10003;</div><div><div class="title">Next of kin</div><div class="word">ON FILE</div><div class="detail">'+esc(nokStr(r.next_of_kin))+'</div><div class="proof">Family and relative records for the owner.</div></div></div>';
   return '<div class="vtile none"><div class="ico">&#8212;</div><div><div class="title">Next of kin</div><div class="word">NONE ON FILE</div><div class="proof">Family and relative records attach here when a Premium skip trace finds them.</div></div></div>';
 }
 function checksSection(r,paid,prem){
@@ -1282,7 +1289,19 @@ function loadFacts(r){
     var f=j.facts, rows=factsTiered(r,f);
     if(f.liens&&r.lien_count==null){ Object.assign(r,f.liens); var lc=document.getElementById('loanchecks'); if(lc){ var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); lc.innerHTML=section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem); } renderList(); }  // JIT: the opened lead fills its own mortgages + liens
     el2.innerHTML=(rows||basic)+'<div class="hint">OffRamp county record'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
-  }).catch(function(){ var el2=document.getElementById('facts'); if(el2&&CUR===r)el2.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; });
+  }).catch(function(){
+    // Retry once on transient failure before showing "unavailable"
+    api('/api/property-facts?id='+encodeURIComponent(r.id)).then(function(x){return x.json();}).then(function(j){
+      if(CUR!==r)return; var el2=document.getElementById('facts'); if(!el2)return;
+      if(!j.facts){
+        if(j.source==='locked'){ el2.innerHTML=basic+lockedRow('Full county record','premium')+'<div class="hint">Zoning, lot, garage, taxes, flood zone, last sale and years owned are on the full county record.</div>'; return; }
+        el2.innerHTML=basic+'<div class="hint">No county record came back for this address.</div>'; return;
+      }
+      var f=j.facts, rows=factsTiered(r,f);
+      if(f.liens&&r.lien_count==null){ Object.assign(r,f.liens); var lc=document.getElementById('loanchecks'); if(lc){ var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); lc.innerHTML=section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem); } renderList(); }
+      el2.innerHTML=(rows||basic)+'<div class="hint">OffRamp county record'+(f.fetched?' · pulled '+fmtDate(f.fetched):'')+'.</div>';
+    }).catch(function(){ var el2=document.getElementById('facts'); if(el2&&CUR===r)el2.innerHTML=basic+'<div class="hint">County record unavailable right now.</div>'; });
+  });
 }
 function premiumSection(r){
   if(r.premium_locked){
@@ -1290,7 +1309,7 @@ function premiumSection(r){
     return '<div class="sec">Next of kin &amp; PACER</div><div class="locked"><b>🔒 Premium data on this lead</b>Next-of-kin and bankruptcy case tracking unlock on Premium.<br><button class="cta" onclick="showScreen(\'acct\');closeDetail()">See Premium</button></div>';
   }
   return section('Next of kin & PACER',[
-    lineIf('Next of kin',r.next_of_kin),
+    lineIf('Next of kin',nokStr(r.next_of_kin)),
     lineIf('Deceased party',r.deceased_party),
     lineIf('Probate case #',r.probate_case_number),
     lineIf('Bankruptcy case',r.bankruptcy_case),
