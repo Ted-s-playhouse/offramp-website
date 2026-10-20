@@ -395,6 +395,10 @@
     body.desk #sheet .grab{display:none}
     body.desk #sheet .sheet-bg{display:none}
   }
+  #seoFooter{padding:24px 16px 32px;text-align:center;font-size:12px;color:var(--sub);border-top:1px solid var(--border);margin-top:8px}
+  #seoFooter .seofoot-title{font-weight:600;margin-bottom:10px}
+  #seoFooter a{color:var(--sub);text-decoration:none;margin:3px 5px;display:inline-block}
+  #seoFooter a:hover{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -545,6 +549,7 @@
       <div class="ftier"><span class="plan-pill premium">Premium</span> who &amp; why they sell <span class="lock tierlock" data-tier="premium" onclick="openUpgradeSheet('premium')">Premium</span></div>
       <div class="fgroup" data-tier="premium">
       <label class="fcheck"><input type="checkbox" id="fDeceased" data-f="deceased"> Deceased or inherited</label>
+      <label class="fcheck"><input type="checkbox" id="fObit" data-f="obit"> Has obituary match</label>
       <label class="fcheck"><input type="checkbox" id="fBk" data-f="bankruptcy"> Bankruptcy on file</label>
       <label class="fcheck"><input type="checkbox" id="fReverse" data-f="reverse"> Reverse mortgage</label>
       <label class="fcheck"><input type="checkbox" id="fOos" data-f="out_of_state"> Out-of-state owner</label>
@@ -725,6 +730,7 @@ function enterApp(){
   if(NEXT){ var n=NEXT; NEXT=null; window.location.replace(n); return; }
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('shell').classList.remove('hidden');
+  document.getElementById('seoFooter').hidden = true;
   renderHeader();
   // search is the entry point; states are a secondary browse. Default = all states (national).
   try{ STATE=localStorage.getItem('offramp_state')||null; }catch(e){}
@@ -895,13 +901,13 @@ function search(){
     var seen={}; enriched.forEach(function(r){ seen[((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase()]=1; });
     var extra=national.filter(function(r){ var k=((r.property_street||'')+'|'+(r.property_zip||'')).toUpperCase(); if(seen[k])return false; seen[k]=1; return true; });
     ROWS=enriched.concat(extra);
-    renderList(); if(MAP)renderPins(); prefetchLeaflet();
+    renderList(); if(MAP)renderPins(); prefetchLeaflet(); checkDeepLink();
     var where=STATE?(STATE_NAMES[STATE]||STATE):'all states';
     document.getElementById('countLine').textContent=ROWS.length?(ROWS.length+' deals in '+where+(enriched.length&&extra.length?' · '+enriched.length+' with owner data':'')):'';
   });
 }
 function basicsChips(r){  // Ted 2026-10-03: everybody needs the basics — listed, deceased
-  var o=''; if(r.mls_active===true||!!r.mls_status)o+='<span class="badge outline">Listed on MLS</span>'; if(r.deceased_flag===true)o+='<span class="badge outline">Deceased owner</span>'; return o; }
+  var o=''; if(r.mls_active===true||!!r.mls_status)o+='<span class="badge outline">Listed on MLS</span>'; if(r.deceased_flag===true)o+='<span class="badge outline">Deceased owner</span>'; if(r.obit_url)o+='<span class="badge outline">Obituary</span>'; return o; }
 function badgeHtml(r){
   var out='';
   if(statusLabel(r)){ var _sl=statusLabel(r); out+='<span class="badge status'+(_sl==='Cured'?' stop':'')+'">'+esc(_sl)+'</span>'; }  // Ted 2026-10-03: one color, badges are confidence tokens
@@ -1034,6 +1040,7 @@ function closeUpgradeSheet(){ var el=document.getElementById('upsheet'); if(el)e
 function isHitRow(r){ return !!(r&&r.id&&String(r.id).indexOf('nat:')!==0); }
 function openDetail(i){
   CUR=ROWS[i]; var r=CUR;
+  try{ var u=new URL(window.location.href); u.searchParams.set('lead',r.id); history.replaceState(null,'',u.pathname+u.search); }catch(e){}
   // perf 2026-10-03: feed rows are card-sized (CARD_COLS). The header paints at once from the card; the body renders
   // from the full row, fetched through /api/property on open (one ~3 KB call, in parallel with the county facts).
   var full=!!r._full||!isHitRow(r);
@@ -1090,7 +1097,7 @@ function detailHeadHtml(r){
       '<button class="dback" onclick="closeDetail()">‹ Back</button>'+
       '<div class="owner">'+esc(owner)+'</div>'+
       '<div class="street">'+esc(cleanStreet(r.property_street)||'No address')+'</div>'+
-      '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county)+' County':'')+'</div>'+
+      '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+(r.county?' · '+esc(r.county.trim().replace(/ County$/i,''))+' County':'')+'</div>'+
       '<div class="badges">'+hbadges+occupancyChip(r)+basicsChips(r)+'</div>'+
       '<div class="dkv">'+
         cell('Beds / Baths',(r.beds||'—')+' / '+(r.baths||'—'))+
@@ -1218,6 +1225,7 @@ function flagStrip(r){
   return '<div class="flagstrip">'+f.map(function(x){return '<span class="flag '+x[0]+'">'+esc(x[1])+'</span>';}).join('')+'</div>';
 }
 function closeDetail(){
+  try{ var u=new URL(window.location.href); u.searchParams.delete('lead'); history.replaceState(null,'',u.pathname+(u.search==='?'?'':u.search)); }catch(e){}
   if(DESK){
     CUR=null;
     document.getElementById('detailInner').innerHTML='';
@@ -1227,6 +1235,14 @@ function closeDetail(){
     return;
   }
   document.getElementById('detail').classList.remove('open');
+}
+function checkDeepLink(){
+  try{
+    var lid=(new URL(window.location.href)).searchParams.get('lead');
+    if(!lid||!ROWS.length)return;
+    var idx=ROWS.findIndex(function(r){return r.id===lid;});
+    if(idx>=0)openDetail(idx);
+  }catch(e){}
 }
 
 /* ---------- $5 document pull (Ted 2026-10-03: pick the document, pay five dollars, the recorded filing arrives as a PDF) ---------- */
@@ -1502,7 +1518,8 @@ function premiumSection(r){
     lineIf('Bankruptcy case',r.bankruptcy_case),
     lineIf('Case title',r.bankruptcy_case_title),
     r.bankruptcy_active_stay===true?line('Automatic stay','Active'):'',
-    r.bankruptcy_case_link?lineRaw('PACER','<a href="'+esc(r.bankruptcy_case_link)+'" target="_blank" rel="noopener">Open case ›</a>'):''
+    r.bankruptcy_case_link?lineRaw('PACER','<a href="'+esc(r.bankruptcy_case_link)+'" target="_blank" rel="noopener">Open case ›</a>'):'',
+    r.obit_url?lineRaw('Obituary','<a href="'+esc(r.obit_url)+'" target="_blank" rel="noopener">'+(r.deceased_source==='obituary'?'Confirmed match':'View obituary')+(r.date_of_death?' · d. '+fmtDate(r.date_of_death):'')+' ›</a>'):''
   ]);
 }
 function renderContacts(){
@@ -1761,5 +1778,30 @@ function installApp(){ if(!deferredInstall)return; deferredInstall.prompt(); def
   };
 })();
 </script>
+<footer id="seoFooter">
+  <div class="seofoot-title"><a href="/foreclosure">Browse Foreclosures by State</a></div>
+  <div>
+    <a href="/foreclosure/pa">Pennsylvania</a>
+    <a href="/foreclosure/az">Arizona</a>
+    <a href="/foreclosure/co">Colorado</a>
+    <a href="/foreclosure/id">Idaho</a>
+    <a href="/foreclosure/fl">Florida</a>
+    <a href="/foreclosure/tn">Tennessee</a>
+    <a href="/foreclosure/wa">Washington</a>
+    <a href="/foreclosure/va">Virginia</a>
+    <a href="/foreclosure/il">Illinois</a>
+    <a href="/foreclosure/la">Louisiana</a>
+    <a href="/foreclosure/nc">North Carolina</a>
+    <a href="/foreclosure/al">Alabama</a>
+    <a href="/foreclosure/ca">California</a>
+    <a href="/foreclosure/nj">New Jersey</a>
+    <a href="/foreclosure/or">Oregon</a>
+    <a href="/foreclosure/ut">Utah</a>
+    <a href="/foreclosure/tx">Texas</a>
+    <a href="/foreclosure/mn">Minnesota</a>
+    <a href="/foreclosure/ar">Arkansas</a>
+    <a href="/foreclosure/in">Indiana</a>
+  </div>
+</footer>
 </body>
 </html>
