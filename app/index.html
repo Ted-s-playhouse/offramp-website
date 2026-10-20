@@ -393,6 +393,7 @@
     body.desk #sheet:not(.hidden){display:flex;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(11,31,22,.45);z-index:200}
     body.desk #sheet .sheet{position:static;transform:none;width:440px;max-height:80vh;border-radius:18px;left:auto;bottom:auto;overflow:auto}
     body.desk #sheet .grab{display:none}
+    body.desk #sheet .sheet-bg{display:none}
   }
 </style>
 </head>
@@ -416,7 +417,7 @@
       <div class="forgot" id="forgotRow"><a href="#" onclick="openForgot();return false;">Forgot password?</a></div>
       <div id="termsBlock" style="display:none">
         <div class="statenote" id="stateNotice">OffRamp gives you public record data on properties headed to foreclosure sale. It is information. It is not legal advice and we are not a broker or a foreclosure consultant. Some states restrict how and when you may contact an owner after a notice of default and what you may put in a contract with them. Oregon. Washington. California. Minnesota. Maryland. New York. Illinois. Colorado and others. Know the law in every state you work. You are responsible for your outreach.</div>
-        <label class="fcheck" style="margin-top:8px"><input type="checkbox" id="f_terms"> I have read the <a href="/terms" target="_blank" rel="noopener">Terms</a> and the state notice and I agree.</label>
+        <label class="fcheck" style="margin-top:8px"><input type="checkbox" id="f_terms"><span>I have read the <a href="/terms" target="_blank" rel="noopener">Terms</a> and the state notice and I agree.</span></label>
       </div>
       <button class="btn-primary" id="authSubmit" type="submit">Log in</button>
     </form>
@@ -700,7 +701,7 @@ function showTermsGate(){  // SSO users never saw the signup form (Ted 2026-10-0
   var el=document.getElementById('upsheet'); if(!el){ el=document.createElement('div'); el.id='upsheet'; document.body.appendChild(el); }
   el.innerHTML='<div class="upsheet-bg"></div><div class="upsheet"><div class="grab"></div><div class="upt">One thing before you start</div>'+
     '<div class="statenote">'+document.getElementById('stateNotice').innerHTML+'</div>'+
-    '<label class="fcheck" style="margin-top:10px"><input type="checkbox" id="g_terms"> I have read the <a href="/terms" target="_blank" rel="noopener">Terms</a> and the state notice and I agree.</label>'+
+    '<label class="fcheck" style="margin-top:10px"><input type="checkbox" id="g_terms"><span>I have read the <a href="/terms" target="_blank" rel="noopener">Terms</a> and the state notice and I agree.</span></label>'+
     '<button class="btn-primary" style="margin-top:12px" onclick="acceptTerms()">Continue</button></div>';
   el.style.display='block';
 }
@@ -927,19 +928,21 @@ function renderList(){
   var vis=ROWS.map(function(r,i){return [r,i];}).filter(function(p){return SHOW_HIDDEN||!act(p[0]).hidden;});
   if(!vis.length){ el.innerHTML=toggle+emptyStateHtml(); return; }
   el.innerHTML=toggle+vis.map(function(p){ var r=p[0], i=p[1];
+    var locked=!!r.locked_for_unlock;
     var owner=r.owner_full||[r.owner_first,r.owner_last].filter(Boolean).join(' ')||'Unknown owner';
     var pu=photoUrl(r);
     var fb=photoFallback(r);
     var thumb=pu
       ? '<div class="thumb"><img loading="lazy" src="'+pu+'" data-fb="'+fb+'" alt="" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=this.dataset.fb;return;}this.parentNode.classList.add(\'noimg\');this.remove()"></div>'
       : '<div class="thumb noimg"></div>';
+    var eqView=equityView(r);
+    var eqRight='<div class="eq'+(eqView.unv?' eq-unv':'')+'">'+(eqView.unv?'n/a':(eqView.pct!=null?eqView.pct+'%':'—'))+'</div><div class="eqk">'+(eqView.unv?'equity unverified':'equity')+'</div><div class="val">'+money(r.market_value||r.avm||r.arv)+'</div>';
     return '<div class="lead" data-idx="'+i+'" onclick="openDetail('+i+')">'+
       '<div class="top">'+thumb+
-        '<div class="mid"><div class="owner">'+esc(owner)+'</div>'+
+        '<div class="mid"><div class="owner">'+owner+'</div>'+
           '<div class="street">'+esc(cleanStreet(r.property_street)||'No address')+'</div>'+
           '<div class="csz">'+esc([r.property_city,r.property_state,r.property_zip].filter(Boolean).join(', '))+'</div></div>'+
-        '<div class="right"><div class="eq'+(equityView(r).unv?' eq-unv':'')+'">'+(equityView(r).unv?'n/a':(equityView(r).pct!=null?equityView(r).pct+'%':'—'))+'</div><div class="eqk">'+(equityView(r).unv?'equity unverified':'equity')+'</div>'+
-          '<div class="val">'+money(r.market_value||r.avm||r.arv)+'</div></div>'+
+        '<div class="right">'+eqRight+'</div>'+
       '</div>'+
       '<div class="badges">'+badgeHtml(r)+actChips(r)+'</div>'+sigBadges(r)+'</div>';
   }).join('');
@@ -977,10 +980,43 @@ function renderPins(){
 }
 
 /* ---------- detail ---------- */
+function lockedUnlockSection(r){
+  if(!r.locked_for_unlock) return '';
+  var credits=(ME&&ME.usage&&ME.usage.credits)?ME.usage.credits.limit-ME.usage.credits.used:null;
+  var creditLine=credits!==null?'<div style="font-size:12px;color:var(--muted);margin-top:8px">'+credits+' credit'+(credits===1?'':'s')+' remaining</div>':'';
+  return '<div id="unlockGate" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 18px;text-align:center;margin:16px 0">'
+    +'<div style="font-size:24px;margin-bottom:8px">&#128274;</div>'
+    +'<div style="font-weight:700;font-size:17px;margin-bottom:6px">Unlock this property</div>'
+    +'<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Skip tracing &middot; proprietary signals<br>1 credit &middot; permanent access</div>'
+    +'<button class="revealbtn" style="width:100%;padding:14px;font-size:15px" onclick="doUnlock()">Unlock (1 credit)</button>'
+    +creditLine
+    +'</div>';
+}
+function doUnlock(ev){
+  var btn=(ev&&ev.target&&ev.target.closest('button'))||document.querySelector('#unlockGate button');
+  if(btn){btn.disabled=true;btn.textContent='Unlocking…';}
+  api('/api/unlock',{method:'POST',body:{id:CUR.id}}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+    .then(function(res){
+      if(!res.ok){
+        if(btn){btn.disabled=false;btn.textContent='Unlock (1 credit)';}
+        alert(res.j.error||'Unlock failed'); return;
+      }
+      Object.assign(CUR, res.j.property); CUR.locked_for_unlock=false; CUR._full=true;
+      if(res.j.credits&&ME&&ME.usage&&ME.usage.credits){ME.usage.credits=res.j.credits;}
+      rerenderDetail(CUR);
+    })
+    .catch(function(){if(btn){btn.disabled=false;btn.textContent='Unlock (1 credit)';}});
+}
+
 function lockedRow(label,kind){
   // Free/Pro gray-out: the value is withheld server-side; the blurred placeholder is a lock, not data. The pill is the upgrade button (Ted 2026-10-03: every gray-out leads to checkout).
   var tag=kind==='premium'?'Premium':'Pro';
   return '<div class="rowline locked-row" onclick="openUpgradeSheet(\''+kind+'\')"><span class="k">'+label+'</span><span class="v"><span class="blur">'+(label==='Phone'?'(•••) •••-••••':(label==='Email'?'•••••@•••••.com':'$•••,•••'))+'</span><span class="lock">Unlock · '+tag+' ›</span></span></div>';
+}
+function creditLockRow(label){
+  // 1-credit unlock teaser for skip tracing
+  var ph=label==='Phone'?'(•••) •••-••••':(label==='Email'?'•••••@•••••.com':'—');
+  return '<div class="rowline locked-row" onclick="doUnlock(event)"><span class="k">'+label+'</span><span class="v"><span class="blur">'+ph+'</span><span class="lock">1 credit · unlock ›</span></span></div>';
 }
 function openUpgradeSheet(kind){
   try{ api('/api/track',{method:'POST',body:{event:'upgrade_prompt',path:'lock:'+kind+(CUR&&CUR.property_state?':'+CUR.property_state:'')}}).catch(function(){}); }catch(e){}
@@ -989,7 +1025,7 @@ function openUpgradeSheet(kind){
   el.innerHTML='<div class="upsheet-bg" onclick="closeUpgradeSheet()"></div><div class="upsheet"><div class="grab"></div>'+
     '<div class="upt">'+(isPrem?'Every lien, judgments, court records and next of kin are on Premium':'Owner contact and the numbers are on Pro')+'</div>'+
     trialCard()+
-    '<div class="plangrid">'+planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, equity and loan figures, CSV export.',ME.plan==='pro')+
+    '<div class="plangrid">'+planCard('pro','Pro',ME.prices.pro,(ME.founding?'2,000':'200')+' credits a month. Owner phones &amp; emails, skip-trace, equity and loan figures, CSV export.',ME.plan==='pro')+
     planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',ME.plan==='premium')+'</div>'+
     '<button class="btn-ghost" onclick="closeUpgradeSheet()">Not now</button></div>';
   el.style.display='block';
@@ -1010,12 +1046,21 @@ function openDetail(i){
     if(card)card.classList.add('sel');
     var de=document.getElementById('detailEmpty'); if(de)de.style.display='none';
   }
-  if(full){ if(ME&&ME.paid)renderContacts(); } else hydrateDetail(r);
+  if(full){ if(!r.locked_for_unlock)renderContacts(); } else hydrateDetail(r);
   loadFacts(r);
 }
 function mergeRow(r,p){  // the full row wins, except a value the open lead already filled (JIT liens) is never erased by a null
   for(var k in p){ if(k==='analysis')continue; if(p[k]==null&&r[k]!=null)continue; r[k]=p[k]; }
   r._full=true; return r;
+}
+function runNok(){
+  var r=CUR; if(!r||!r.id)return;
+  var btn=document.getElementById('nokRunBtn'); if(btn){btn.disabled=true;btn.textContent='Searching…';}
+  api('/api/skiptrace',{method:'POST',body:{id:r.id,force_nok:true}}).then(function(x){return x.json().then(function(j){return{ok:x.ok,j:j};});}).then(function(res){
+    if(!res.ok){toast(res.j.error||'NOK lookup failed'); return;}
+    if(res.j.nok&&res.j.nok.length){r.next_of_kin=res.j.nok; rerenderDetail(r); toast('Next of kin found');}
+    else{toast('No next of kin found'); var b=document.getElementById('nokRunBtn'); if(b){b.disabled=false;b.textContent='Run next of kin';}}
+  }).catch(function(){toast('NOK lookup failed'); var b=document.getElementById('nokRunBtn'); if(b){b.disabled=false;b.textContent='Run next of kin';}});
 }
 function hydrateDetail(r){
   api('/api/property?id='+encodeURIComponent(r.id)).then(function(x){return x.json();}).then(function(j){
@@ -1027,7 +1072,7 @@ function rerenderDetail(r){
   var d=document.getElementById('detail'), sc=d?d.scrollTop:0;
   document.getElementById('detailInner').innerHTML=detailHtml(r);
   if(d)d.scrollTop=sc;
-  if(ME&&ME.paid)renderContacts();
+  if(!r.locked_for_unlock)renderContacts();
   if(r._facts!==undefined)renderFacts(r);   // the county record landed before the row did
 }
 function detailHeadHtml(r){
@@ -1062,44 +1107,46 @@ function detailHtml(r){
   var maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(addr);
   var zillow='https://www.zillow.com/homes/'+encodeURIComponent(addr)+'_rb/';
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
+  var unlocked=!r.locked_for_unlock; var canSeePro=paid||unlocked;
   var saleDate=fmtDate(r.auction_date)+(r.auction_time?(' · '+r.auction_time):'');
 
-  // ---- Contact (phone, email, next of kin). Free: all three grayed. Pro: phone row runs skip-trace. Next of kin: Premium.
-  var contactRows='<div id="contacts"></div>';
-  if(!paid){ contactRows=lockedRow('Phone','pro')+lockedRow('Email','pro')+lockedRow('Next of kin','pro'); }
-  else if(!prem){ contactRows+=lockedRow('Next of kin','premium'); }
-  else { contactRows+=(r.next_of_kin?line('Next of kin',nokStr(r.next_of_kin)):'<div class="rowline"><span class="k">Next of kin</span><span class="v empty-v">None on file</span></div>'); }
+  // ---- Contact (phone, email, next of kin). Locked (no credit spent): grayed teaser with 1-credit unlock. Unlocked: skip-trace runs. Next of kin: Premium.
+  var contactRows='';
+  if(!unlocked){ contactRows=creditLockRow('Phone')+creditLockRow('Email'); }
+  else { contactRows='<div id="contacts"></div>'; }
+  if(!prem){ contactRows+=lockedRow('Next of kin','premium'); }
+  else { contactRows+=nokRows(r); }
 
   var maplinks='<div class="maplinks"><a href="'+maps+'" target="_blank" rel="noopener">Open in Maps</a><a href="'+zillow+'" target="_blank" rel="noopener">View on Zillow</a>'+(r.public_url?'<a href="'+esc(r.public_url)+'" target="_blank" rel="noopener">Public page</a>':'')+'</div>';
   var rbF=rampBid(r);
   var html=detailHeadHtml(r)+
     '<div class="dbody">'+
-      '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
-      signalsSection(r)+
-      '<div id="loanchecks">'+section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem)+'</div>'+
-      '<div class="sec">Engage</div>'+
-      actionBar(r)+maplinks+
-      flagStrip(r)+
-      docsSection(r)+
-      section('Foreclosure',[
-        lineIf('Status',statusLabel(r)+(trusteeMark(r)?' (trustee verified)':'')),
-        lineIf('Sale moved',saleMoved(r)),
-        lineIf('Sale date',saleDate),
-        lineIf('Days to auction',(r.days_to_auction!=null&&r.days_to_auction>=0)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
-        lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
-        (paid&&r.trustee_opening_bid==null&&rbF&&SIGNALS_PILOT_STATES[(r.property_state||'').toUpperCase()])?lineRaw('Ramp Bid&trade;','<span>'+money(rbF.v)+'<small>OffRamp opening-bid model</small></span>'):'',
-        lineIf('Foreclosing atty',r.foreclosing_attorney),
-        r.attorney_phone?lineRaw('Attorney phone','<a href="tel:'+String(r.attorney_phone).replace(/\D/g,'')+'">'+esc(r.attorney_phone)+'</a>'):'',
-        (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
-      ].concat(prem?[
-        lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
-        lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
-        lineIf('Case / NOD #',r.nod_case_number),
-        lineIf('Trustee file #',r.trustee_file_no),
-        lineIf('Sale venue',[r.venue_name,r.venue_address].filter(Boolean).join(' · '))
-      ]:[(r.nod_case_number||r.trustee_file_no||r.venue_name)?lockedRow('Case number & venue','premium'):'']))+
-      premiumSection(r)+
-      '<div class="sec">Property facts</div><div class="card2" id="facts"><div class="hint">Pulling the county record…</div></div>'+
+    '<div class="sec">Contact</div><div class="card2 contactcard">'+contactRows+'</div>'+
+    signalsSection(r,unlocked)+
+    '<div id="loanchecks">'+section('Loan &amp; equity',loanRows(r,paid,prem))+surplusSection(r)+checksSection(r,paid,prem)+'</div>'+
+    '<div class="sec">Engage</div>'+
+    actionBar(r)+maplinks+
+    flagStrip(r)+
+    docsSection(r)+
+    section('Foreclosure',[
+      lineIf('Status',statusLabel(r)+(trusteeMark(r)?' (trustee verified)':'')),
+      lineIf('Sale moved',saleMoved(r)),
+      lineIf('Sale date',saleDate),
+      lineIf('Days to auction',(r.days_to_auction!=null&&r.days_to_auction>=0)?(r.days_to_auction+(Math.abs(r.days_to_auction)===1?' day':' days')):''),
+      lineIf('Opening bid',r.trustee_opening_bid!=null?money(r.trustee_opening_bid):''),
+      (unlocked&&r.trustee_opening_bid==null&&rbF&&SIGNALS_PILOT_STATES[(r.property_state||'').toUpperCase()])?lineRaw('Ramp Bid&trade;','<span>'+money(rbF.v)+'<small>OffRamp opening-bid model</small></span>'):'',
+      lineIf('Foreclosing atty',r.foreclosing_attorney),
+      r.attorney_phone?lineRaw('Attorney phone','<a href="tel:'+String(r.attorney_phone).replace(/\D/g,'')+'">'+esc(r.attorney_phone)+'</a>'):'',
+      (r.notice_url && !/foreclosure\.com/i.test(r.notice_url))?lineRaw('Foreclosure notice','<a href="'+esc(r.notice_url)+'" target="_blank" rel="noopener">View filing ›</a>'):''
+    ].concat(prem?[
+      lineIf('Type',r.is_judicial===true?'Judicial':(r.is_judicial===false?'Non-judicial':'')),
+      lineIf('Est. value at auction',r.auction_est_value!=null?money(r.auction_est_value):''),
+      lineIf('Case / NOD #',r.nod_case_number),
+      lineIf('Trustee file #',r.trustee_file_no),
+      lineIf('Sale venue',[r.venue_name,r.venue_address].filter(Boolean).join(' · '))
+    ]:[(r.nod_case_number||r.trustee_file_no||r.venue_name)?lockedRow('Case number & venue','premium'):'']))+
+    premiumSection(r)+
+    '<div class="sec">Property facts</div><div class="card2" id="facts"><div class="hint">Pulling the county record…</div></div>'+
     '</div>';
   return html;
 }
@@ -1115,7 +1162,9 @@ function lienLine(r){ if(r.lien_count==null)return ''; if(r.lien_count===0)retur
   var s2=r.lien_second_amount?'; Second $'+Math.round(r.lien_second_amount).toLocaleString():'';
   return r.lien_count+(f?' — '+f:'')+s2+(r.lien_count>2?' +'+(r.lien_count-2)+' more':''); }
 function trusteeLive(r){ var v=r.sale_verified_source||''; return !!(v && !/realestateapi/i.test(v) && /^(active|scheduled|live)$/i.test(r.sale_status_verified||'')); }
-function nokStr(v){ if(!v)return ''; if(typeof v==='object')return v.name||v.full_name||v.relationship||JSON.stringify(v); return String(v); }
+function nokStr(v){ if(!v)return ''; if(Array.isArray(v)){return v.map(function(n){var nm=n.name||n.full_name||'';var rel=n.relation||n.type||n.relationship||'';return nm+(rel?' ('+rel+')':'');}).filter(Boolean).join(', ')||'On file';} if(typeof v==='object')return v.name||v.full_name||v.relationship||'On file'; return String(v); }
+function _nokPh(ph){ if(!ph||!ph.length)return ''; var p=ph[0]; var n=typeof p==='object'?(p.number||p.value||''):String(p); n=n.replace(/\D/g,''); if(n.length===11&&n[0]==='1')n=n.slice(1); return n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n; }
+function nokRows(r){ var v=r.next_of_kin; var none='<div class="rowline"><span class="k">Next of kin</span><span class="v"><span class="empty-v">None on file.</span> <button class="revealbtn inline" id="nokRunBtn" onclick="runNok()">Run next of kin</button></span></div>'; if(!v)return none; var arr=Array.isArray(v)?v:[v]; if(!arr.length)return none; return arr.map(function(n,i){ var nm=esc(n.name||n.full_name||'Unknown'); var rel=n.relation||n.type||n.relationship||''; var ph=_nokPh(n.phones||[]); var label=nm+(rel?' <span class="badge">'+esc(rel)+'</span>':''); var val=ph?'<a href="tel:'+ph+'" class="phonelink">'+ph+'</a>':''; return '<div class="rowline"><span class="k">'+(i===0?'Next of kin':'')+'</span><span class="v">'+label+(val?' &nbsp;'+val:'')+'</span></div>'; }).join(''); }
 function statusLabel(r){ if(r.surplus_amount!=null&&r.surplus_amount!=='')return 'Sold';  // Ted 2026-10-03: surplus rows are past-sale
   var st=(r.foreclosure_status||'').replace(/^\s*unconfirmed\s*:\s*/i,'');  // Ted 2026-10-03: never show 'Unconfirmed' — absence of the trustee mark is the national default
   if(/^postponed/i.test(st))return 'Postponed';                       // Ted 2026-10-03: plain Postponed tag; dates go to the 'Sale moved' line
@@ -1128,15 +1177,23 @@ function statusLabel(r){ if(r.surplus_amount!=null&&r.surplus_amount!=='')return
 function dupLien(r){ return !!(r.lien_count>=2&&r.lien_first_amount!=null&&r.lien_second_amount!=null&&Number(r.lien_first_amount)===Number(r.lien_second_amount)); }  // Ted 2026-10-03 rule: identical first and second = a double recording, count it once
 function lienTotal(r){ var t=Number(r.lien_total_amount||0); if(dupLien(r))return Number(r.lien_first_amount)||t; return t; }
 function lienCount(r){ return dupLien(r)?Math.max(1,(r.lien_count||2)-1):r.lien_count; }
-function equityView(r){  // Ted 2026-10-03 (two screenshots): equity must net EVERY recorded lien, and must go Unverified when the lien sheet and the loan on file disagree.
-  var v=Number(r.avm||r.market_value||0), tot=lienTotal(r), mb=Number(r.mortgage_balance||0), first=Number(r.lien_first_amount||0);
+function isHFALender(r){
+  // Housing finance agencies record max-claim/subsidy amounts, not real market debt — treat as unverified
+  var l=String(r.lien_first_lender||r.mortgage_lender||'').toUpperCase();
+  return /\b(IHFA|HFA\b|HOUSING FINANCE|HOUSING AUTHORITY|HUD\b|RURAL HOUSING|USDA RURAL)\b/.test(l);
+}
+function equityView(r){  // Equity = AVM - total debt. Show negative equity when underwater. Ted 2026-10-05.
+  var v=Number(r.avm||r.market_value||0), tot=lienTotal(r), mb=Number(r.mortgage_balance||0);
   var hasLiens=(r.lien_count>0&&tot>0);
-  if(hasLiens&&v>0&&tot>=v)return {unv:false,neg:true,why:'',pct:Math.round((v-tot)/v*100),dollars:Math.round(v-tot),net:true};  // Ted 2026-10-03: liens over value = negative equity. Show the number. n/a is only for a lien we cannot verify.
+  // Use total debt when REAPI has lien data — but flag HFA lenders as unverified (inflated subsidy amounts)
+  if(hasLiens&&v>0){
+    if(isHFALender(r))return {unv:true,why:'Housing finance agency lien — recorded amount may be a max-claim or subsidy, not real market debt.',pct:null,dollars:null,net:true};
+    var d=v-tot; return {unv:false,neg:(d<0),why:'',pct:Math.round(d/v*100),dollars:Math.round(d),net:true};
+  }
+  // No REAPI lien data — use stored values
   if(r.equity_unverified&&r.equity_pct==null)return {unv:true,why:'',pct:null,dollars:null,net:false};
   if(r.equity_unverified)return {unv:false,why:'',pct:Math.round(Number(r.equity_pct)),dollars:(r.equity_dollars!=null?Number(r.equity_dollars):null),net:false};
-  var agree=hasLiens&&mb>0&&first>0&&Math.abs(mb-first)<=first*0.02;
-  if(hasLiens&&!agree&&mb>0&&tot>mb*1.15)return {unv:true,why:'Recorded liens exceed the loan balance on file. A blanket or commercial loan may cover more than this property.',pct:null,dollars:null,net:false};
-  if(hasLiens&&v>0&&tot>mb){ var d=v-tot; return {unv:false,why:'',pct:Math.round(d/v*100),dollars:Math.round(d),net:true}; }  // net of all liens, not just the first
+  if(v>0&&mb>0){ var d2=v-mb; return {unv:false,why:'',pct:Math.round(d2/v*100),dollars:Math.round(d2),net:false}; }
   return {unv:false,why:'',pct:(r.equity_pct!=null?Math.round(Number(r.equity_pct)):null),dollars:(r.equity_dollars!=null?Number(r.equity_dollars):null),net:false};
 }
 function equityConflict(r){ var e=equityView(r); return e.unv&&!r.equity_unverified; }
@@ -1291,24 +1348,25 @@ var SIGNALS_PILOT_STATES={UT:1};  // Ted 2026-10-03: pilot small before going gl
 function sigBadges(r){
   if(!SIGNALS_PILOT_STATES[(r.property_state||'').toUpperCase()])return '';
   // list cards: at most ONE badge, paid users only, and only a strong call (Ted 2026-10-03: extremely sparingly). Ramp Bid never rides on a card.
-  var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium); if(!paid)return '';
+  var prem=!!(ME&&ME.premium);
   // UT check 2026-10-03: pre-sale surplus room + Reversion Low fired on 42% of cards (high-equity market). Cards get only what already happened or cannot be argued:
-  var s=surplusChaser(r); if(s&&s.sold&&prem)return '<div class="mbrow"><span class="mb surplus">'+SIG_ICON.coin+'Surplus Chaser <span class="mv">'+moneyK(s.v)+'</span></span></div>';
+  var s=surplusChaser(r); if(s&&s.sold)return '<div class="mbrow"><span class="mb surplus">'+SIG_ICON.coin+'Surplus Chaser <span class="mv">'+moneyK(s.v)+'</span></span></div>';
   var g=gavelOdds(r); if(g==='high')return '<div class="mbrow"><span class="mb gavel high">'+SIG_ICON.gavel+'Gavel Odds <span class="mv">High</span></span></div>';
   var m=reversion(r); if(m==='high')return '<div class="mbrow"><span class="mb meter">'+meterBars(m)+'Reversion <span class="mv">High</span></span></div>';
   return '';
 }
-function signalsSection(r){
+function signalsSection(r,canSeePro){
   if(!SIGNALS_PILOT_STATES[(r.property_state||'').toUpperCase()])return '';
   var paid=!!(ME&&ME.paid), prem=!!(ME&&ME.premium);
+  if(canSeePro===undefined)canSeePro=paid;
   var rb=rampBid(r), g=gavelOdds(r), m=reversion(r), s=surplusChaser(r);
   if(!rb&&!g&&!m&&!s)return '';
-  var lk=paid?'':' locked', h='';
+  var lk=canSeePro?'':' locked', h='';
   h+='<div class="sec">OffRamp Signals</div><div class="sigintro">Proprietary models built on 94,000 foreclosure records. A signal only shows when the call is clear.</div>';
-  if(!paid)h+='<div class="siglock"><span>Signals unlock on Pro</span><button class="cta" style="margin:0" onclick="showScreen(\'acct\');closeDetail()">See Pro</button></div>';
-  if(rb)h+='<div class="sig ramp'+lk+'"><div class="nm">Ramp Bid<sup>&trade;</sup></div><div class="big">'+(paid?money(rb.v):'$•••,•••')+(rb.posted&&paid?' <span class="lk" style="font-size:10px;vertical-align:middle;background:#9fe3bf;color:#0f172a;padding:2px 7px;border-radius:9px">trustee posted</span>':'')+'</div><div class="how">'+(rb.posted?'The trustee has posted this opening bid. It is the real number.':'Our proprietary opening-bid model. Reconstructs what the lender is owed on sale day. Calibrated against real trustee bids.')+'</div></div>';
-  if(g)h+='<div class="sig gavel '+g+lk+'"><div class="nm">Gavel Odds<sup>&trade;</sup></div><div class="big">'+(paid?LVL[g]:'•••')+'</div><div class="how">Our read on whether this sale actually hits the block. Trustee activity, liens, listings and equity in one call.</div></div>';
-  if(m)h+='<div class="sig meter'+lk+'"><div class="nm">Reversion Meter<sup>&trade;</sup></div><div class="big">'+(paid?LVL[m]:'•••')+'</div><div class="how">Odds the bank ends up owning it. Ramp Bid against value. High means investors stay home. Low means a bidding war.</div></div>';
+  if(!canSeePro)h+='<div class="siglock"><span>Signals unlock for 1 credit</span><button class="cta" style="margin:0" onclick="doUnlock(event)">Unlock</button></div>';
+  if(rb)h+='<div class="sig ramp'+lk+'"><div class="nm">Ramp Bid<sup>&trade;</sup></div><div class="big">'+(canSeePro?money(rb.v):'$•••,•••')+(rb.posted&&canSeePro?' <span class="lk" style="font-size:10px;vertical-align:middle;background:#9fe3bf;color:#0f172a;padding:2px 7px;border-radius:9px">trustee posted</span>':'')+'</div><div class="how">'+(rb.posted?'The trustee has posted this opening bid. It is the real number.':'Our proprietary opening-bid model. Reconstructs what the lender is owed on sale day. Calibrated against real trustee bids.')+'</div></div>';
+  if(g)h+='<div class="sig gavel '+g+lk+'"><div class="nm">Gavel Odds<sup>&trade;</sup></div><div class="big">'+(canSeePro?LVL[g]:'•••')+'</div><div class="how">Our read on whether this sale actually hits the block. Trustee activity, liens, listings and equity in one call.</div></div>';
+  if(m)h+='<div class="sig meter'+lk+'"><div class="nm">Reversion Meter<sup>&trade;</sup></div><div class="big">'+(canSeePro?LVL[m]:'•••')+'</div><div class="how">Odds the bank ends up owning it. Ramp Bid against value. High means investors stay home. Low means a bidding war.</div></div>';
   if(s&&prem)h+='<div class="sig surplus"><div class="nm">Surplus Chaser<sup>&trade;</sup></div><div class="big">'+money(s.v)+'</div><div class="how">'+(s.sold?'Sold above the debt. The overage belongs to the former owner and we track it from the recorded deed.':'Value room above the Ramp Bid. If bidding runs past the debt the owner walks away with the difference.')+'</div></div>';
   return h;
 }
@@ -1449,7 +1507,7 @@ function premiumSection(r){
 }
 function renderContacts(){
   var el=document.getElementById('contacts'); if(!el)return; var r=CUR;
-  if(!ME.paid){ el.innerHTML=''; return; } // free never reaches here; locked rows render instead
+  if(!ME.paid&&!(CUR&&!CUR.locked_for_unlock)){ el.innerHTML=''; return; } // free with no unlock gets locked rows; unlocked free users see contacts
   if(r.phones&&r.phones.length){ el.innerHTML=callButton(r.phones)+phoneHtml(r.phones,r.emails); return; }
   // CRM empty state (mirrors Revive ContactPhoneBlock): no numbers yet, skip trace is the action on the phone row.
   el.innerHTML='<div class="rowline"><span class="k">Phone</span><span class="v"><span class="empty-v">No phones on file yet.</span> <button class="revealbtn inline" onclick="reveal()">Run skip trace</button></span></div>'+
@@ -1468,7 +1526,8 @@ function callButton(phones){ return '';
   return '<a class="callbtn" href="tel:'+n+'" onclick="setAction(\'contacted\',true)">📞 Call owner · '+f+'</a>';
 }
 function phoneHtml(phones,emails){
-  var all=(phones||[]);  // Ted 2026-10-03: every number is its own tappable row (DealMachine property sheet), no single call button; DNC listed but not dialable
+  var seen={};
+  var all=(phones||[]).filter(function(p){var n=String(p.number||'').replace(/\D/g,'');if(!n||seen[n])return false;seen[n]=true;return true;});
   var h=all.map(function(p){var n=String(p.number||'').replace(/\D/g,'');var f=n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):n; var t=(p.dnc?'DNC':esc(p.type||'mobile'));
     return '<a class="phone'+(p.dnc?' dnc':'')+'" href="tel:'+n+'" onclick="setAction(\'contacted\',true)"><span class="num">&#128222; '+f+'</span><span class="tag'+(p.dnc?' dnc':'')+'">'+t+'</span></a>';}).join('');  // Ted 2026-10-03: DNC numbers stay dialable (one cash-offer call is not an FTC violation); the tag is information, not a block
   if(emails&&emails.length){ h+='<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">'+emails.map(function(e){var em=(typeof e==='string')?e:(e.email||'');return '<a class="emailchip" href="mailto:'+esc(em)+'" style="text-decoration:none">'+esc(em)+'</a>';}).join('')+'</div>'; }
@@ -1572,7 +1631,7 @@ function runLookup(){
 /* ---------- account ---------- */
 function planLabel(){ if(ME.plan==='trial')return 'Trial · Premium features'; if(ME.plan==='premium')return 'Premium'; if(ME.plan==='pro')return ME.founding?'Pro · Founding':'Pro'; return 'Free'; }
 function fmtDay(iso){ try{ var d=new Date(iso); if(isNaN(d))return ''; return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return ''; } }
-/* item 37: 7-day free trial, card on file, Premium features during the trial, converts to Pro $49/mo on day 8. One per customer. */
+/* item 37: 30-day free trial, card on file, Premium features during the trial, converts to Pro $97/mo on day 31. One per customer. */
 function trialCard(){
   if(!(ME&&ME.trial_eligible))return '';
   var days=ME.trial_days||7;
@@ -1621,7 +1680,7 @@ function renderAccount(){
   if(ME.founding){ html+='<div class="infocard"><div class="inner" style="font-size:13px">🏅 Founding member. Your founding price and allowance are locked for your term.</div></div>'; }
   html+=trialStatusCard()+trialCard();
   html+='<div class="plangrid">'+
-    planCard('pro','Pro',ME.prices.pro,'200 credits a month. Owner phones &amp; emails, skip-trace, CSV export. Overage $0.35 a credit.',ME.plan==='pro')+
+    planCard('pro','Pro',ME.prices.pro,(ME.founding?'2,000':'200')+' credits a month. Owner phones &amp; emails, skip-trace, CSV export.'+(ME.founding?'':' Overage $0.35 a credit.'),ME.plan==='pro')+
     planCard('premium','Premium',ME.prices.premium,'Everything in Pro plus next-of-kin and PACER bankruptcy tracking on every lead.',isPrem)+
   '</div>';
   if(isPaid){ html+='<button class="btn-ghost" onclick="doExport()">⬇ Export current search (CSV)</button>'; }
@@ -1655,6 +1714,52 @@ if('serviceWorker' in navigator){ window.addEventListener('load',function(){ nav
 var deferredInstall=null;
 window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferredInstall=e; var b=document.getElementById('installBtn'); if(b)b.style.display='block'; });
 function installApp(){ if(!deferredInstall)return; deferredInstall.prompt(); deferredInstall.userChoice.then(function(){ deferredInstall=null; var b=document.getElementById('installBtn'); if(b)b.style.display='none'; }); }
+</script>
+<!-- Feedback button -->
+<style>
+#fbBtn{position:fixed;bottom:80px;right:16px;background:#1B4332;color:#fff;border:none;border-radius:50px;padding:10px 16px;font-size:.8rem;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.18);z-index:9000;display:none}
+#fbModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9100;align-items:flex-end;justify-content:center}
+#fbModal.open{display:flex}
+#fbBox{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;padding:24px 20px 32px;box-shadow:0 -4px 24px rgba(0,0,0,.12)}
+#fbBox h3{font-size:1rem;color:#1B4332;margin-bottom:10px}
+#fbText{width:100%;height:100px;border:1.5px solid #d1dbd4;border-radius:8px;padding:10px;font-size:.95rem;resize:vertical;outline:none;font-family:inherit}
+#fbText:focus{border-color:#1B4332}
+#fbSend{margin-top:10px;width:100%;background:#1B4332;color:#fff;border:none;padding:12px;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer}
+#fbClose{position:absolute;top:14px;right:18px;background:none;border:none;font-size:1.4rem;color:#666;cursor:pointer}
+</style>
+<button id="fbBtn" onclick="openFb()">Feedback</button>
+<div id="fbModal">
+  <div id="fbBox" style="position:relative">
+    <button id="fbClose" onclick="closeFb()">&#x2715;</button>
+    <h3>Send feedback</h3>
+    <textarea id="fbText" placeholder="What's working? What's broken? What do you wish this did?"></textarea>
+    <button id="fbSend" onclick="submitFb()">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('fbBtn');
+  var modal=document.getElementById('fbModal');
+  var txt=document.getElementById('fbText');
+  var send=document.getElementById('fbSend');
+  function showBtn(){ if(typeof ME!=='undefined'&&ME&&ME.id) btn.style.display='block'; }
+  var _t=setInterval(function(){ if(typeof ME!=='undefined'&&ME&&ME.id){ showBtn(); clearInterval(_t); } },500);
+  window.openFb=function(){ modal.classList.add('open'); txt.focus(); };
+  window.closeFb=function(){ modal.classList.remove('open'); };
+  window.submitFb=function(){
+    var v=txt.value.trim(); if(!v) return;
+    send.disabled=true; send.textContent='Sending…';
+    fetch('/api/feedback',{method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({feedback:v,page_path:window.location.pathname})})
+    .then(function(r){return r.json();})
+    .then(function(j){
+      if(j.ok){ txt.value=''; closeFb(); if(typeof toast==='function') toast('Thanks for the feedback!'); }
+      else{ if(typeof toast==='function') toast('Could not send — try again'); }
+      send.disabled=false; send.textContent='Send';
+    }).catch(function(){ send.disabled=false; send.textContent='Send'; });
+  };
+})();
 </script>
 </body>
 </html>
